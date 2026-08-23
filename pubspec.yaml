@@ -1,0 +1,52 @@
+name: awqat_salaah
+description: "أوقات الصلاة - Prayer Times with Home Screen Widget"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Prayer time calculation — astronomical algorithms (Jean Meeus), offline
+  adhan: ^2.0.0+1
+
+  # State management — clean, testable, scalable
+  flutter_bloc: ^9.0.0
+  equatable: ^2.0.5
+
+  # Notifications — local notification scheduling with channels
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+
+  # Location — GPS with permission handling
+  geolocator: ^13.0.1
+  geocoding: ^4.0.0
+
+  # Storage — lightweight persistence, shared with native Android
+  shared_preferences: ^2.3.2
+
+  # Hijri calendar — approximate Hijri date conversion
+  hijri: ^3.0.0
+
+  # Internationalization — date formatting & localization
+  intl: ^0.20.3
+
+  # Permissions — unified permission management
+  permission_handler: 11.3.1
+
+  # Google Fonts — modern typography
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true

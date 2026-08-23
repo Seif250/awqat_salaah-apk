@@ -1,0 +1,131 @@
+import 'dart:async';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../services/prayer_calculation_service.dart';
+import '../../../../services/storage_service.dart';
+import '../../../../services/widget_service.dart';
+import '../../../../services/notification_service.dart';
+import 'prayer_event.dart';
+import 'prayer_state.dart';
+
+class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
+  final PrayerCalculationService _calculationService;
+  final StorageService _storageService;
+  final NotificationService _notificationService;
+  Timer? _timer;
+
+  PrayerBloc({
+    required PrayerCalculationService calculationService,
+    required StorageService storageService,
+    required NotificationService notificationService,
+  })  : _calculationService = calculationService,
+        _storageService = storageService,
+        _notificationService = notificationService,
+        super(const PrayerInitial()) {
+    on<LoadPrayerTimesEvent>(_onLoadPrayerTimes);
+    on<RefreshPrayerTimesEvent>(_onRefreshPrayerTimes);
+    on<TimerTickEvent>(_onTimerTick);
+
+    _startCountdownTimer();
+  }
+
+  void _startCountdownTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      add(const TimerTickEvent());
+    });
+  }
+
+  Future<void> _onLoadPrayerTimes(
+    LoadPrayerTimesEvent event,
+    Emitter<PrayerState> emit,
+  ) async {
+    emit(const PrayerLoading());
+    _calculateAndEmit(emit);
+  }
+
+  Future<void> _onRefreshPrayerTimes(
+    RefreshPrayerTimesEvent event,
+    Emitter<PrayerState> emit,
+  ) async {
+    _calculateAndEmit(emit);
+  }
+
+  void _calculateAndEmit(Emitter<PrayerState> emit) {
+    try {
+      final lat = _storageService.latitude;
+      final lng = _storageService.longitude;
+      final city = _storageService.cityName;
+      final country = _storageService.countryName;
+      final method = _storageService.calculationMethod;
+      final madhab = _storageService.madhab;
+
+      final now = DateTime.now();
+      final prayerDay = _calculationService.calculatePrayerTimes(
+        latitude: lat,
+        longitude: lng,
+        date: now,
+        method: method,
+        madhab: madhab,
+        adjustFajr: _storageService.adjustFajr,
+        adjustSunrise: _storageService.adjustSunrise,
+        adjustDhuhr: _storageService.adjustDhuhr,
+        adjustAsr: _storageService.adjustAsr,
+        adjustMaghrib: _storageService.adjustMaghrib,
+        adjustIsha: _storageService.adjustIsha,
+      );
+
+      final remaining = prayerDay.nextPrayerTime.difference(now);
+
+      emit(PrayerLoaded(
+        prayerDay: prayerDay,
+        remainingDuration: remaining.isNegative ? Duration.zero : remaining,
+        cityName: city,
+        countryName: country,
+        lastCalculated: now,
+      ));
+
+      // Sync with Native Home Screen Widget
+      WidgetService.updateHomeWidget(
+        prayerDay: prayerDay,
+        cityName: city,
+        isArabic: true,
+        is24Hour: _storageService.is24HourFormat,
+      );
+
+      // Schedule Silent Notifications
+      _notificationService.schedulePrayerNotifications(
+        prayerDay: prayerDay,
+        isEnabled: _storageService.notificationsEnabled,
+        offsetMinutes: _storageService.notificationOffsetMinutes,
+        isArabic: true,
+        is24Hour: _storageService.is24HourFormat,
+      );
+    } catch (e) {
+      emit(PrayerError(e.toString()));
+    }
+  }
+
+  void _onTimerTick(
+    TimerTickEvent event,
+    Emitter<PrayerState> emit,
+  ) {
+    if (state is PrayerLoaded) {
+      final loaded = state as PrayerLoaded;
+      final now = DateTime.now();
+      final remaining = loaded.prayerDay.nextPrayerTime.difference(now);
+
+      // If prayer time reached or midnight passed, recalculate immediately
+      if (remaining.inSeconds <= 0 || now.day != loaded.lastCalculated.day) {
+        _calculateAndEmit(emit);
+      } else {
+        emit(loaded.copyWith(remainingDuration: remaining));
+      }
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _timer?.cancel();
+    return super.close();
+  }
+}

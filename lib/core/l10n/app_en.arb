@@ -1,0 +1,107 @@
+{
+  "@@locale": "en",
+  "appTitle": "Prayer Times",
+  "nextPrayer": "Next Prayer",
+  "remaining": "Remaining",
+  "hours": "Hours",
+  "minutes": "Minutes",
+  "seconds": "Seconds",
+  "fajr": "Fajr",
+  "sunrise": "Sunrise",
+  "dhuhr": "Dhuhr",
+  "asr": "Asr",
+  "maghrib": "Maghrib",
+  "isha": "Isha",
+  "settings": "Settings",
+  "location": "Location",
+  "currentLocation": "Current Location",
+  "manualCity": "Manual City",
+  "calculationMethod": "Calculation Method",
+  "madhab": "Madhab",
+  "shafi": "Shafi",
+  "hanafi": "Hanafi",
+  "notifications": "Notifications",
+  "notificationBeforePrayer": "Notification Before Prayer",
+  "atPrayerTime": "At prayer time",
+  "minutesBefore": "{count} minutes before",
+  "@minutesBefore": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "theme": "Theme",
+  "lightTheme": "Light",
+  "darkTheme": "Dark",
+  "systemTheme": "System",
+  "timeFormat24": "24-hour format",
+  "onboardingWelcome": "Welcome to Prayer Times",
+  "onboardingDescription": "Get accurate prayer times based on your location with astronomical calculations.",
+  "onboardingLocationTitle": "Choose Your Location",
+  "onboardingLocationDesc": "We need your location to calculate accurate prayer times.",
+  "useCurrentLocation": "Use Current Location",
+  "selectCityManually": "Select City Manually",
+  "searchCity": "Search city...",
+  "selectCalculationMethod": "Select Calculation Method",
+  "getStarted": "Get Started",
+  "next": "Next",
+  "skip": "Skip",
+  "todayAt": "Today at {time}",
+  "@todayAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "prayerTimeNotification": "{prayer} Prayer",
+  "@prayerTimeNotification": {
+    "placeholders": {
+      "prayer": {"type": "String"}
+    }
+  },
+  "prayerTimeStarted": "{prayer} time has started.",
+  "@prayerTimeStarted": {
+    "placeholders": {
+      "prayer": {"type": "String"}
+    }
+  },
+  "prayerInMinutes": "{prayer} is in {count} minutes.",
+  "@prayerInMinutes": {
+    "placeholders": {
+      "prayer": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "locationPermissionTitle": "Location Permission",
+  "locationPermissionDesc": "Prayer times are calculated based on your geographical location. We need access to your location to provide accurate times.",
+  "grantPermission": "Grant Permission",
+  "notificationPermissionTitle": "Notification Permission",
+  "notificationPermissionDesc": "Allow notifications to receive silent reminders for prayer times.",
+  "egyptianAuthority": "Egyptian General Authority",
+  "muslimWorldLeague": "Muslim World League",
+  "isna": "ISNA",
+  "ummAlQura": "Umm Al-Qura",
+  "karachi": "University of Islamic Sciences, Karachi",
+  "moonsightingCommittee": "Moonsighting Committee",
+  "kuwait": "Kuwait",
+  "qatar": "Qatar",
+  "singapore": "Singapore",
+  "tehran": "Tehran",
+  "turkey": "Turkey",
+  "dubai": "Dubai",
+  "northAmerica": "North America (ISNA)",
+  "prayerTimeAdjustments": "Prayer Time Adjustments",
+  "adjustmentMinutes": "{count} min",
+  "@adjustmentMinutes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "disable": "Disable",
+  "enable": "Enable",
+  "about": "About",
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  }
+}
