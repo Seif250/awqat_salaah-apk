@@ -14,6 +14,7 @@ class AppConstants {
   static const String keyCalculationMethod = 'calculation_method';
   static const String keyMadhab = 'madhab';
   static const String keyNotificationsEnabled = 'notifications_enabled';
+  static const String keyNotificationSoundEnabled = 'notifications_sound_enabled';
   static const String keyNotificationOffset = 'notification_offset_minutes';
   static const String keyThemeMode = 'theme_mode';
   static const String keyIs24HourFormat = 'is_24_hour_format';
@@ -48,7 +49,7 @@ class AppConstants {
   static const String keyWidgetIsha = 'widget_isha';
 
   // Notification Channel
-  static const String notificationChannelId = 'prayer_times_silent_channel';
-  static const String notificationChannelName = 'Prayer Times Notifications';
-  static const String notificationChannelDesc = 'Silent notifications for daily prayer times';
+  static const String notificationChannelId = 'prayer_times_active_channel_v3';
+  static const String notificationChannelName = 'تنبيهات مواقيت الصلاة';
+  static const String notificationChannelDesc = 'إشعارات وتنبيهات أوقات الصلاة اليومية';
 }

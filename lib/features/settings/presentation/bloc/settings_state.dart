@@ -6,6 +6,7 @@ class SettingsState extends Equatable {
   final AppCalculationMethod calculationMethod;
   final AppMadhab madhab;
   final bool notificationsEnabled;
+  final bool notificationSoundEnabled;
   final int notificationOffsetMinutes;
   final ThemeMode themeMode;
   final bool is24HourFormat;
@@ -29,6 +30,7 @@ class SettingsState extends Equatable {
     this.calculationMethod = AppCalculationMethod.egyptian,
     this.madhab = AppMadhab.shafi,
     this.notificationsEnabled = true,
+    this.notificationSoundEnabled = true,
     this.notificationOffsetMinutes = 0,
     this.themeMode = ThemeMode.system,
     this.is24HourFormat = false,
@@ -49,6 +51,7 @@ class SettingsState extends Equatable {
     AppCalculationMethod? calculationMethod,
     AppMadhab? madhab,
     bool? notificationsEnabled,
+    bool? notificationSoundEnabled,
     int? notificationOffsetMinutes,
     ThemeMode? themeMode,
     bool? is24HourFormat,
@@ -68,6 +71,8 @@ class SettingsState extends Equatable {
       calculationMethod: calculationMethod ?? this.calculationMethod,
       madhab: madhab ?? this.madhab,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      notificationSoundEnabled:
+          notificationSoundEnabled ?? this.notificationSoundEnabled,
       notificationOffsetMinutes:
           notificationOffsetMinutes ?? this.notificationOffsetMinutes,
       themeMode: themeMode ?? this.themeMode,
@@ -91,6 +96,7 @@ class SettingsState extends Equatable {
         calculationMethod,
         madhab,
         notificationsEnabled,
+        notificationSoundEnabled,
         notificationOffsetMinutes,
         themeMode,
         is24HourFormat,

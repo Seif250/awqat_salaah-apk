@@ -22,18 +22,18 @@ class NotificationService {
     await _notificationsPlugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (details) {
-        // App open on tap
+        // App opened on tap
       },
     );
 
-    // Create Silent Notification Channel for Android 8.0+
+    // Create High Importance Notification Channel for Android 8.0+
     const androidChannel = AndroidNotificationChannel(
       AppConstants.notificationChannelId,
       AppConstants.notificationChannelName,
       description: AppConstants.notificationChannelDesc,
-      importance: Importance.defaultImportance,
-      playSound: false, // NO SOUND
-      enableVibration: false, // NO VIBRATION
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
       showBadge: true,
     );
 
@@ -45,6 +45,10 @@ class NotificationService {
       await androidImplementation.createNotificationChannel(androidChannel);
       // Request Android 13+ POST_NOTIFICATIONS permission
       await androidImplementation.requestNotificationsPermission();
+      // Request exact alarm permission if available
+      try {
+        await androidImplementation.requestExactAlarmsPermission();
+      } catch (_) {}
     }
   }
 
@@ -52,9 +56,34 @@ class NotificationService {
     await _notificationsPlugin.cancelAll();
   }
 
+  /// Show an immediate test notification to verify delivery
+  Future<void> showTestNotification({required bool isSoundEnabled}) async {
+    final androidDetails = AndroidNotificationDetails(
+      AppConstants.notificationChannelId,
+      AppConstants.notificationChannelName,
+      channelDescription: AppConstants.notificationChannelDesc,
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: isSoundEnabled,
+      enableVibration: isSoundEnabled,
+      autoCancel: true,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    final notificationDetails = NotificationDetails(android: androidDetails);
+
+    await _notificationsPlugin.show(
+      999,
+      '🕌 تجربة إشعارات أوقات الصلاة',
+      'الإشعارات تعمل بنجاح وستصلك عند مواعيد الصلاة والإقامة بإذن الله.',
+      notificationDetails,
+    );
+  }
+
   Future<void> schedulePrayerNotifications({
     required PrayerDayModel prayerDay,
     required bool isEnabled,
+    required bool isSoundEnabled,
     required int offsetMinutes,
     required bool isArabic,
     required bool is24Hour,
@@ -87,10 +116,15 @@ class NotificationService {
         String body;
 
         if (offsetMinutes == 0) {
-          title = isArabic ? 'حان الآن موعد صلاة $prayerName' : '$prayerName Prayer Time';
-          body = isArabic ? 'دخل الآن وقت صلاة $prayerName' : '$prayerName time has started.';
+          title = isArabic ? '🕌 حان الآن موعد صلاة $prayerName' : '🕌 $prayerName Prayer Time';
+          final iqamahInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0)
+              ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة'
+              : '';
+          body = isArabic
+              ? 'دخل الآن وقت صلاة $prayerName$iqamahInfo'
+              : '$prayerName time has started.';
         } else {
-          title = isArabic ? 'اقتراب موعد صلاة $prayerName' : '$prayerName Prayer Upcoming';
+          title = isArabic ? '⏳ اقتراب موعد صلاة $prayerName' : '⏳ $prayerName Prayer Upcoming';
           body = isArabic
               ? 'متبقي $offsetMinutes دقائق على أذان صلاة $prayerName'
               : '$prayerName is in $offsetMinutes minutes.';
@@ -101,6 +135,7 @@ class NotificationService {
           title: title,
           body: body,
           scheduledDate: notificationTime,
+          isSoundEnabled: isSoundEnabled,
         );
       }
     }
@@ -111,21 +146,23 @@ class NotificationService {
     required String title,
     required String body,
     required DateTime scheduledDate,
+    required bool isSoundEnabled,
   }) async {
     final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       AppConstants.notificationChannelId,
       AppConstants.notificationChannelName,
       channelDescription: AppConstants.notificationChannelDesc,
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      playSound: false, // NO SOUND
-      enableVibration: false, // NO VIBRATION
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: isSoundEnabled,
+      enableVibration: isSoundEnabled,
       autoCancel: true,
+      icon: '@mipmap/ic_launcher',
     );
 
-    const notificationDetails = NotificationDetails(android: androidDetails);
+    final notificationDetails = NotificationDetails(android: androidDetails);
 
     try {
       await _notificationsPlugin.zonedSchedule(
@@ -139,7 +176,6 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (_) {
-      // If exact alarm permission is not granted on newer Android, fallback to inexact
       try {
         await _notificationsPlugin.zonedSchedule(
           id,

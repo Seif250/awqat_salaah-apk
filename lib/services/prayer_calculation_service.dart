@@ -80,7 +80,7 @@ class PrayerCalculationService {
 
     final rawPrayerTimes = PrayerTimes(coordinates, dateComponents, params);
 
-    // Apply manual minute adjustments if any
+    // Apply manual minute adjustments
     final fajr = rawPrayerTimes.fajr.add(Duration(minutes: adjustFajr));
     final sunrise = rawPrayerTimes.sunrise.add(Duration(minutes: adjustSunrise));
     final dhuhr = rawPrayerTimes.dhuhr.add(Duration(minutes: adjustDhuhr));
@@ -88,95 +88,125 @@ class PrayerCalculationService {
     final maghrib = rawPrayerTimes.maghrib.add(Duration(minutes: adjustMaghrib));
     final isha = rawPrayerTimes.isha.add(Duration(minutes: adjustIsha));
 
-    final now = DateTime.now();
-    PrayerType nextPrayer = PrayerType.none;
-    DateTime nextTime = fajr;
-    PrayerType currentPrayer = PrayerType.none;
+    // Calculate exact Iqamah timestamps
+    final fajrIqamah = fajr.add(Duration(minutes: iqamahFajr));
+    final dhuhrIqamah = dhuhr.add(Duration(minutes: iqamahDhuhr));
+    final asrIqamah = asr.add(Duration(minutes: iqamahAsr));
+    final maghribIqamah = maghrib.add(Duration(minutes: iqamahMaghrib));
+    final ishaIqamah = isha.add(Duration(minutes: iqamahIsha));
 
-    // Determine current and next prayer
+    final now = DateTime.now();
+
+    PrayerType focusPrayer;
+    DateTime targetTime;
+    PrayerPhase phase;
+
+    // Full 24-hour phase-aware lifecycle:
+    // Before Adhan -> During Iqamah -> Next Prayer
     if (now.isBefore(fajr)) {
-      nextPrayer = PrayerType.fajr;
-      nextTime = fajr;
-      currentPrayer = PrayerType.isha; // From previous night
+      focusPrayer = PrayerType.fajr;
+      targetTime = fajr;
+      phase = PrayerPhase.beforeAdhan;
+    } else if (now.isBefore(fajrIqamah)) {
+      focusPrayer = PrayerType.fajr;
+      targetTime = fajrIqamah;
+      phase = PrayerPhase.duringIqamah;
     } else if (now.isBefore(sunrise)) {
-      nextPrayer = PrayerType.sunrise;
-      nextTime = sunrise;
-      currentPrayer = PrayerType.fajr;
+      focusPrayer = PrayerType.sunrise;
+      targetTime = sunrise;
+      phase = PrayerPhase.beforeAdhan;
     } else if (now.isBefore(dhuhr)) {
-      nextPrayer = PrayerType.dhuhr;
-      nextTime = dhuhr;
-      currentPrayer = PrayerType.sunrise;
+      focusPrayer = PrayerType.dhuhr;
+      targetTime = dhuhr;
+      phase = PrayerPhase.beforeAdhan;
+    } else if (now.isBefore(dhuhrIqamah)) {
+      focusPrayer = PrayerType.dhuhr;
+      targetTime = dhuhrIqamah;
+      phase = PrayerPhase.duringIqamah;
     } else if (now.isBefore(asr)) {
-      nextPrayer = PrayerType.asr;
-      nextTime = asr;
-      currentPrayer = PrayerType.dhuhr;
+      focusPrayer = PrayerType.asr;
+      targetTime = asr;
+      phase = PrayerPhase.beforeAdhan;
+    } else if (now.isBefore(asrIqamah)) {
+      focusPrayer = PrayerType.asr;
+      targetTime = asrIqamah;
+      phase = PrayerPhase.duringIqamah;
     } else if (now.isBefore(maghrib)) {
-      nextPrayer = PrayerType.maghrib;
-      nextTime = maghrib;
-      currentPrayer = PrayerType.asr;
+      focusPrayer = PrayerType.maghrib;
+      targetTime = maghrib;
+      phase = PrayerPhase.beforeAdhan;
+    } else if (now.isBefore(maghribIqamah)) {
+      focusPrayer = PrayerType.maghrib;
+      targetTime = maghribIqamah;
+      phase = PrayerPhase.duringIqamah;
     } else if (now.isBefore(isha)) {
-      nextPrayer = PrayerType.isha;
-      nextTime = isha;
-      currentPrayer = PrayerType.maghrib;
+      focusPrayer = PrayerType.isha;
+      targetTime = isha;
+      phase = PrayerPhase.beforeAdhan;
+    } else if (now.isBefore(ishaIqamah)) {
+      focusPrayer = PrayerType.isha;
+      targetTime = ishaIqamah;
+      phase = PrayerPhase.duringIqamah;
     } else {
-      // After Isha today, the next prayer is tomorrow's Fajr
+      // After Isha Iqamah: next prayer is tomorrow's Fajr
       final tomorrow = date.add(const Duration(days: 1));
       final tomorrowComponents = DateComponents.from(tomorrow);
       final tomorrowPrayerTimes = PrayerTimes(coordinates, tomorrowComponents, params);
-      nextPrayer = PrayerType.fajr;
-      nextTime = tomorrowPrayerTimes.fajr.add(Duration(minutes: adjustFajr));
-      currentPrayer = PrayerType.isha;
+      focusPrayer = PrayerType.fajr;
+      targetTime = tomorrowPrayerTimes.fajr.add(Duration(minutes: adjustFajr));
+      phase = PrayerPhase.beforeAdhan;
     }
 
-    final remaining = nextTime.difference(now);
+    final remaining = targetTime.difference(now);
 
     return PrayerDayModel(
       date: date,
       fajr: PrayerTimeModel(
         type: PrayerType.fajr,
         time: fajr,
-        isNext: nextPrayer == PrayerType.fajr,
-        isCurrent: currentPrayer == PrayerType.fajr,
+        isNext: focusPrayer == PrayerType.fajr && phase == PrayerPhase.beforeAdhan,
+        isCurrent: focusPrayer == PrayerType.fajr && phase == PrayerPhase.duringIqamah,
         iqamahOffsetMinutes: iqamahFajr,
       ),
       sunrise: PrayerTimeModel(
         type: PrayerType.sunrise,
         time: sunrise,
-        isNext: nextPrayer == PrayerType.sunrise,
-        isCurrent: currentPrayer == PrayerType.sunrise,
+        isNext: focusPrayer == PrayerType.sunrise,
+        isCurrent: false,
         iqamahOffsetMinutes: 0,
       ),
       dhuhr: PrayerTimeModel(
         type: PrayerType.dhuhr,
         time: dhuhr,
-        isNext: nextPrayer == PrayerType.dhuhr,
-        isCurrent: currentPrayer == PrayerType.dhuhr,
+        isNext: focusPrayer == PrayerType.dhuhr && phase == PrayerPhase.beforeAdhan,
+        isCurrent: focusPrayer == PrayerType.dhuhr && phase == PrayerPhase.duringIqamah,
         iqamahOffsetMinutes: iqamahDhuhr,
       ),
       asr: PrayerTimeModel(
         type: PrayerType.asr,
         time: asr,
-        isNext: nextPrayer == PrayerType.asr,
-        isCurrent: currentPrayer == PrayerType.asr,
+        isNext: focusPrayer == PrayerType.asr && phase == PrayerPhase.beforeAdhan,
+        isCurrent: focusPrayer == PrayerType.asr && phase == PrayerPhase.duringIqamah,
         iqamahOffsetMinutes: iqamahAsr,
       ),
       maghrib: PrayerTimeModel(
         type: PrayerType.maghrib,
         time: maghrib,
-        isNext: nextPrayer == PrayerType.maghrib,
-        isCurrent: currentPrayer == PrayerType.maghrib,
+        isNext: focusPrayer == PrayerType.maghrib && phase == PrayerPhase.beforeAdhan,
+        isCurrent: focusPrayer == PrayerType.maghrib && phase == PrayerPhase.duringIqamah,
         iqamahOffsetMinutes: iqamahMaghrib,
       ),
       isha: PrayerTimeModel(
         type: PrayerType.isha,
         time: isha,
-        isNext: nextPrayer == PrayerType.isha,
-        isCurrent: currentPrayer == PrayerType.isha,
+        isNext: focusPrayer == PrayerType.isha && phase == PrayerPhase.beforeAdhan,
+        isCurrent: focusPrayer == PrayerType.isha && phase == PrayerPhase.duringIqamah,
         iqamahOffsetMinutes: iqamahIsha,
       ),
-      nextPrayerType: nextPrayer,
-      nextPrayerTime: nextTime,
-      timeRemainingToNextPrayer: remaining.isNegative ? Duration.zero : remaining,
+      focusPrayerType: focusPrayer,
+      targetTime: targetTime,
+      phase: phase,
+      timeRemaining: remaining.isNegative ? Duration.zero : remaining,
     );
   }
 }

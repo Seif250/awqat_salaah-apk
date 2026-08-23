@@ -79,7 +79,7 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
         iqamahIsha: _storageService.iqamahIsha,
       );
 
-      final remaining = prayerDay.nextPrayerTime.difference(now);
+      final remaining = prayerDay.targetTime.difference(now);
 
       emit(PrayerLoaded(
         prayerDay: prayerDay,
@@ -97,10 +97,11 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
         is24Hour: _storageService.is24HourFormat,
       );
 
-      // Schedule Silent Notifications
+      // Schedule Active Notifications
       _notificationService.schedulePrayerNotifications(
         prayerDay: prayerDay,
         isEnabled: _storageService.notificationsEnabled,
+        isSoundEnabled: _storageService.notificationSoundEnabled,
         offsetMinutes: _storageService.notificationOffsetMinutes,
         isArabic: true,
         is24Hour: _storageService.is24HourFormat,
@@ -117,9 +118,10 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
     if (state is PrayerLoaded) {
       final loaded = state as PrayerLoaded;
       final now = DateTime.now();
-      final remaining = loaded.prayerDay.nextPrayerTime.difference(now);
+      final remaining = loaded.prayerDay.targetTime.difference(now);
 
-      // If prayer time reached or midnight passed, recalculate immediately
+      // If target time reached (Adhan reached or Iqamah reached) or midnight passed,
+      // recalculate immediately to transition to next phase/prayer!
       if (remaining.inSeconds <= 0 || now.day != loaded.lastCalculated.day) {
         _calculateAndEmit(emit);
       } else {

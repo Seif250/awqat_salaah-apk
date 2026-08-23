@@ -13,28 +13,40 @@ class WidgetService {
     required bool is24Hour,
   }) async {
     try {
-      final nextPrayerName = isArabic
-          ? prayerDay.nextPrayerType.nameArabic
-          : prayerDay.nextPrayerType.nameEnglish;
+      final isDuringIqamah = prayerDay.phase == PrayerPhase.duringIqamah;
+      final focusedPrayer = prayerDay.getPrayer(prayerDay.focusPrayerType);
+
+      final nextPrayerName = isDuringIqamah
+          ? (isArabic
+              ? '${prayerDay.focusPrayerType.nameArabic} (أُذِّن الآن)'
+              : '${prayerDay.focusPrayerType.nameEnglish} (Adhan)')
+          : (isArabic
+              ? prayerDay.focusPrayerType.nameArabic
+              : prayerDay.focusPrayerType.nameEnglish);
 
       final nextPrayerTimeFormatted = DateUtilsHelper.formatPrayerTime(
-        prayerDay.nextPrayerTime,
+        prayerDay.targetTime,
         is24Hour: is24Hour,
       );
 
-      final nextPrayerModel = prayerDay.getPrayer(prayerDay.nextPrayerType);
-      final iqamahTime = nextPrayerModel?.iqamahTime;
-      final iqamahSubtitle = (iqamahTime != null && nextPrayerModel!.iqamahOffsetMinutes > 0)
-          ? 'الإقامة: ${DateUtilsHelper.formatPrayerTime(iqamahTime, is24Hour: is24Hour)} (+${nextPrayerModel.iqamahOffsetMinutes}د)'
-          : 'أوقات الصلاة اليومية';
+      final iqamahTime = focusedPrayer?.iqamahTime;
+      final iqamahSubtitle = isDuringIqamah
+          ? (iqamahTime != null
+              ? 'متبقي للإقامة (في ${DateUtilsHelper.formatPrayerTime(iqamahTime, is24Hour: is24Hour)})'
+              : 'انتظار الإقامة')
+          : (iqamahTime != null && focusedPrayer!.iqamahOffsetMinutes > 0
+              ? 'الإقامة: ${DateUtilsHelper.formatPrayerTime(iqamahTime, is24Hour: is24Hour)} (+${focusedPrayer.iqamahOffsetMinutes}د)'
+              : 'أوقات الصلاة اليومية');
 
       final Map<String, dynamic> data = {
         'widget_city_name': cityName,
         'widget_next_prayer_name': nextPrayerName,
-        'widget_next_prayer_time': nextPrayerTimeFormatted,
+        'widget_next_prayer_time': isDuringIqamah
+            ? (iqamahTime != null ? DateUtilsHelper.formatPrayerTime(iqamahTime, is24Hour: is24Hour) : nextPrayerTimeFormatted)
+            : nextPrayerTimeFormatted,
         'widget_countdown_text': iqamahSubtitle,
         'widget_next_prayer_timestamp':
-            prayerDay.nextPrayerTime.millisecondsSinceEpoch,
+            prayerDay.targetTime.millisecondsSinceEpoch,
         'widget_fajr': DateUtilsHelper.formatPrayerTime(prayerDay.fajr.time,
             is24Hour: is24Hour),
         'widget_sunrise': DateUtilsHelper.formatPrayerTime(

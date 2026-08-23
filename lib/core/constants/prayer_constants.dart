@@ -8,6 +8,11 @@ enum PrayerType {
   none,
 }
 
+enum PrayerPhase {
+  beforeAdhan, // متبقي للأذان
+  duringIqamah, // متبقي للإقامة (بين الأذان والإقامة)
+}
+
 enum AppMadhab {
   shafi,
   hanafi,

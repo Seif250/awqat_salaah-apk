@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/prayer_constants.dart';
+import '../../../../services/notification_service.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
@@ -100,20 +101,29 @@ class SettingsPage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Section: Notifications
-              _buildSectionHeader(context, 'الإشعارات (صامتة)', Icons.notifications_none_rounded),
+              _buildSectionHeader(context, 'إشعارات وتنبيهات الصلاة', Icons.notifications_active_outlined),
               _buildCard(
                 context,
                 child: Column(
                   children: [
                     SwitchListTile(
                       title: const Text('تفعيل إشعارات الصلاة'),
-                      subtitle: const Text('إشعارات هادئة بدون صوت أو اهتزاز'),
+                      subtitle: const Text('إرسال تنبيه على الشاشة عند دخول الوقت'),
                       value: state.notificationsEnabled,
                       onChanged: (val) {
                         context.read<SettingsBloc>().add(ToggleNotificationsEvent(val));
                       },
                     ),
                     if (state.notificationsEnabled) ...[
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: const Text('صوت التنبيه والاهتزاز'),
+                        subtitle: const Text('تشغيل صوت إشعار النظام الافتراضي'),
+                        value: state.notificationSoundEnabled,
+                        onChanged: (val) {
+                          context.read<SettingsBloc>().add(ToggleNotificationSoundEvent(val));
+                        },
+                      ),
                       const Divider(height: 1),
                       ListTile(
                         title: const Text('وقت التنبيه'),
@@ -125,6 +135,25 @@ class SettingsPage extends StatelessWidget {
                           context,
                           state.notificationOffsetMinutes,
                         ),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.send_rounded, color: AppColors.accentGold),
+                        title: const Text('إرسال إشعار تجريبي الآن'),
+                        subtitle: const Text('لتجربة ظهور الإشعار على هاتفك'),
+                        onTap: () async {
+                          await NotificationService().showTestNotification(
+                            isSoundEnabled: state.notificationSoundEnabled,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('تم إرسال الإشعار التجريبي بنجاح! تفقد شريط الإشعارات أعلى الشاشة.'),
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        },
                       ),
                     ],
                   ],

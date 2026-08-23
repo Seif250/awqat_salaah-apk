@@ -70,6 +70,12 @@ class StorageService {
   Future<void> setNotificationsEnabled(bool enabled) =>
       _prefs.setBool(AppConstants.keyNotificationsEnabled, enabled);
 
+  bool get notificationSoundEnabled =>
+      _prefs.getBool(AppConstants.keyNotificationSoundEnabled) ?? true;
+
+  Future<void> setNotificationSoundEnabled(bool enabled) =>
+      _prefs.setBool(AppConstants.keyNotificationSoundEnabled, enabled);
+
   int get notificationOffsetMinutes =>
       _prefs.getInt(AppConstants.keyNotificationOffset) ?? 0; // 0 = at prayer time
 

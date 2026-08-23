@@ -10,9 +10,12 @@ class PrayerDayModel extends Equatable {
   final PrayerTimeModel asr;
   final PrayerTimeModel maghrib;
   final PrayerTimeModel isha;
-  final PrayerType nextPrayerType;
-  final DateTime nextPrayerTime;
-  final Duration timeRemainingToNextPrayer;
+
+  // Active focus prayer and phase (before Adhan vs during Iqamah)
+  final PrayerType focusPrayerType;
+  final DateTime targetTime;
+  final PrayerPhase phase;
+  final Duration timeRemaining;
 
   const PrayerDayModel({
     required this.date,
@@ -22,10 +25,16 @@ class PrayerDayModel extends Equatable {
     required this.asr,
     required this.maghrib,
     required this.isha,
-    required this.nextPrayerType,
-    required this.nextPrayerTime,
-    required this.timeRemainingToNextPrayer,
+    required this.focusPrayerType,
+    required this.targetTime,
+    required this.phase,
+    required this.timeRemaining,
   });
+
+  // Backwards compatibility getters
+  PrayerType get nextPrayerType => focusPrayerType;
+  DateTime get nextPrayerTime => targetTime;
+  Duration get timeRemainingToNextPrayer => timeRemaining;
 
   List<PrayerTimeModel> get allTimes => [
         fajr,
@@ -63,7 +72,6 @@ class PrayerDayModel extends Equatable {
     }
   }
 
-  /// Returns the prayer that is currently in its Iqamah window (between Adhan and Iqamah), if any
   PrayerTimeModel? activeIqamahPrayer(DateTime now) {
     for (final p in prayerTimesOnly) {
       if (p.isCurrentlyInIqamahWindow(now)) {
@@ -82,8 +90,9 @@ class PrayerDayModel extends Equatable {
         asr,
         maghrib,
         isha,
-        nextPrayerType,
-        nextPrayerTime,
-        timeRemainingToNextPrayer,
+        focusPrayerType,
+        targetTime,
+        phase,
+        timeRemaining,
       ];
 }

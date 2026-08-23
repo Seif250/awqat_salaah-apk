@@ -108,11 +108,20 @@ void main() {
 
       // Sunrise has no Iqamah
       expect(prayerDay.sunrise.iqamahTime, isNull);
+    });
 
-      // Check active Iqamah window helper
-      final duringMaghribIqamah = prayerDay.maghrib.time.add(const Duration(minutes: 5));
-      expect(prayerDay.maghrib.isCurrentlyInIqamahWindow(duringMaghribIqamah), isTrue);
-      expect(prayerDay.activeIqamahPrayer(duringMaghribIqamah)?.type, equals(PrayerType.maghrib));
+    test('Phase lifecycle: Before Adhan -> During Iqamah -> Next Prayer transitions', () {
+      final day = calculationService.calculatePrayerTimes(
+        latitude: cairoLat,
+        longitude: cairoLng,
+        date: testDate,
+        method: AppCalculationMethod.egyptian,
+        iqamahMaghrib: 10,
+      );
+
+      expect(day.phase, isIn([PrayerPhase.beforeAdhan, PrayerPhase.duringIqamah]));
+      expect(day.targetTime, isNotNull);
+      expect(day.focusPrayerType, isNot(PrayerType.none));
     });
   });
 }

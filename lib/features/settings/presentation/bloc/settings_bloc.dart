@@ -13,6 +13,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<ChangeCalculationMethodEvent>(_onChangeCalculationMethod);
     on<ChangeMadhabEvent>(_onChangeMadhab);
     on<ToggleNotificationsEvent>(_onToggleNotifications);
+    on<ToggleNotificationSoundEvent>(_onToggleNotificationSound);
     on<ChangeNotificationOffsetEvent>(_onChangeNotificationOffset);
     on<ChangeThemeModeEvent>(_onChangeThemeMode);
     on<Toggle24HourFormatEvent>(_onToggle24HourFormat);
@@ -28,6 +29,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       calculationMethod: _storageService.calculationMethod,
       madhab: _storageService.madhab,
       notificationsEnabled: _storageService.notificationsEnabled,
+      notificationSoundEnabled: _storageService.notificationSoundEnabled,
       notificationOffsetMinutes: _storageService.notificationOffsetMinutes,
       themeMode: _storageService.themeMode,
       is24HourFormat: _storageService.is24HourFormat,
@@ -67,6 +69,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     await _storageService.setNotificationsEnabled(event.enabled);
     emit(state.copyWith(notificationsEnabled: event.enabled));
+  }
+
+  Future<void> _onToggleNotificationSound(
+    ToggleNotificationSoundEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setNotificationSoundEnabled(event.soundEnabled);
+    emit(state.copyWith(notificationSoundEnabled: event.soundEnabled));
   }
 
   Future<void> _onChangeNotificationOffset(
