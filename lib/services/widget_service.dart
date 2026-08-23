@@ -22,10 +22,14 @@ class WidgetService {
         is24Hour: is24Hour,
       );
 
+      final countdownFormatted =
+          DateUtilsHelper.formatCountdown(prayerDay.timeRemainingToNextPrayer);
+
       final Map<String, dynamic> data = {
         'widget_city_name': cityName,
         'widget_next_prayer_name': nextPrayerName,
         'widget_next_prayer_time': nextPrayerTimeFormatted,
+        'widget_countdown_text': countdownFormatted,
         'widget_next_prayer_timestamp':
             prayerDay.nextPrayerTime.millisecondsSinceEpoch,
         'widget_fajr': DateUtilsHelper.formatPrayerTime(prayerDay.fajr.time,
