@@ -4,6 +4,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../core/constants/app_constants.dart';
 import '../core/constants/prayer_constants.dart';
 import '../features/prayer_times/data/models/prayer_day_model.dart';
+import '../features/prayer_times/data/models/prayer_time_model.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -26,13 +27,14 @@ class NotificationService {
       },
     );
 
-    // Create High Importance Notification Channel for Android 8.0+
+    // Create High Importance Notification Channel with Takbeer Sound
     const androidChannel = AndroidNotificationChannel(
       AppConstants.notificationChannelId,
       AppConstants.notificationChannelName,
       description: AppConstants.notificationChannelDesc,
       importance: Importance.max,
       playSound: true,
+      sound: RawResourceAndroidNotificationSound(AppConstants.notificationSoundName),
       enableVibration: true,
       showBadge: true,
     );
@@ -43,9 +45,7 @@ class NotificationService {
 
     if (androidImplementation != null) {
       await androidImplementation.createNotificationChannel(androidChannel);
-      // Request Android 13+ POST_NOTIFICATIONS permission
       await androidImplementation.requestNotificationsPermission();
-      // Request exact alarm permission if available
       try {
         await androidImplementation.requestExactAlarmsPermission();
       } catch (_) {}
@@ -56,7 +56,7 @@ class NotificationService {
     await _notificationsPlugin.cancelAll();
   }
 
-  /// Show an immediate test notification to verify delivery
+  /// Show an immediate test notification to verify delivery & Takbeer sound
   Future<void> showTestNotification({required bool isSoundEnabled}) async {
     final androidDetails = AndroidNotificationDetails(
       AppConstants.notificationChannelId,
@@ -65,6 +65,9 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       playSound: isSoundEnabled,
+      sound: isSoundEnabled
+          ? const RawResourceAndroidNotificationSound(AppConstants.notificationSoundName)
+          : null,
       enableVibration: isSoundEnabled,
       autoCancel: true,
       icon: '@mipmap/ic_launcher',
@@ -74,8 +77,8 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       999,
-      '🕌 تجربة إشعارات أوقات الصلاة',
-      'الإشعارات تعمل بنجاح وستصلك عند مواعيد الصلاة والإقامة بإذن الله.',
+      '🕌 الله أكبر الله أكبر — تجربة تنبيه الصلاة',
+      'التنبيه يعمل بصوت التكبير وسينبهك عند الأذان ومع فترات الإقامة بإذن الله.',
       notificationDetails,
     );
   }
@@ -103,20 +106,20 @@ class NotificationService {
     final now = DateTime.now();
 
     for (final entry in prayersToSchedule) {
-      final id = entry.key;
+      final baseId = entry.key;
       final prayer = entry.value;
 
-      // Exact notification time with offset
-      final notificationTime = prayer.time.subtract(Duration(minutes: offsetMinutes));
+      // 1. Primary Adhan Notification
+      final adhanNotificationTime = prayer.time.subtract(Duration(minutes: offsetMinutes));
 
-      if (notificationTime.isAfter(now)) {
+      if (adhanNotificationTime.isAfter(now)) {
         final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
 
         String title;
         String body;
 
         if (offsetMinutes == 0) {
-          title = isArabic ? '🕌 حان الآن موعد صلاة $prayerName' : '🕌 $prayerName Prayer Time';
+          title = isArabic ? '🕌 الله أكبر — حان موعد صلاة $prayerName' : '🕌 $prayerName Prayer Time';
           final iqamahInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0)
               ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة'
               : '';
@@ -131,12 +134,41 @@ class NotificationService {
         }
 
         await _scheduleSingleNotification(
-          id: id,
+          id: baseId,
           title: title,
           body: body,
-          scheduledDate: notificationTime,
+          scheduledDate: adhanNotificationTime,
           isSoundEnabled: isSoundEnabled,
         );
+      }
+
+      // 2. Periodic Iqamah Interval Reminders (e.g. every 5 minutes during Iqamah window)
+      if (prayer.type.isActualPrayer && prayer.iqamahOffsetMinutes > 5) {
+        final totalIqamahMinutes = prayer.iqamahOffsetMinutes;
+        
+        // Reminder intervals every 5 minutes from Adhan until Iqamah
+        for (int m = 5; m < totalIqamahMinutes; m += 5) {
+          final reminderTime = prayer.time.add(Duration(minutes: m));
+          final remainingToIqamah = totalIqamahMinutes - m;
+
+          if (reminderTime.isAfter(now)) {
+            final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
+            final reminderTitle = isArabic
+                ? '⏳ تذكير إقامة صلاة $prayerName'
+                : '⏳ $prayerName Iqamah Reminder';
+            final reminderBody = isArabic
+                ? 'متبقي $remainingToIqamah دقائق على إقامة صلاة $prayerName'
+                : '$remainingToIqamah minutes remaining to $prayerName Iqamah.';
+
+            await _scheduleSingleNotification(
+              id: baseId * 100 + m,
+              title: reminderTitle,
+              body: reminderBody,
+              scheduledDate: reminderTime,
+              isSoundEnabled: isSoundEnabled,
+            );
+          }
+        }
       }
     }
   }
@@ -157,6 +189,9 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       playSound: isSoundEnabled,
+      sound: isSoundEnabled
+          ? const RawResourceAndroidNotificationSound(AppConstants.notificationSoundName)
+          : null,
       enableVibration: isSoundEnabled,
       autoCancel: true,
       icon: '@mipmap/ic_launcher',
