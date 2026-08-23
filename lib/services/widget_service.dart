@@ -22,14 +22,17 @@ class WidgetService {
         is24Hour: is24Hour,
       );
 
-      final countdownFormatted =
-          DateUtilsHelper.formatCountdown(prayerDay.timeRemainingToNextPrayer);
+      final nextPrayerModel = prayerDay.getPrayer(prayerDay.nextPrayerType);
+      final iqamahTime = nextPrayerModel?.iqamahTime;
+      final iqamahSubtitle = (iqamahTime != null && nextPrayerModel!.iqamahOffsetMinutes > 0)
+          ? 'الإقامة: ${DateUtilsHelper.formatPrayerTime(iqamahTime, is24Hour: is24Hour)} (+${nextPrayerModel.iqamahOffsetMinutes}د)'
+          : 'أوقات الصلاة اليومية';
 
       final Map<String, dynamic> data = {
         'widget_city_name': cityName,
         'widget_next_prayer_name': nextPrayerName,
         'widget_next_prayer_time': nextPrayerTimeFormatted,
-        'widget_countdown_text': countdownFormatted,
+        'widget_countdown_text': iqamahSubtitle,
         'widget_next_prayer_timestamp':
             prayerDay.nextPrayerTime.millisecondsSinceEpoch,
         'widget_fajr': DateUtilsHelper.formatPrayerTime(prayerDay.fajr.time,

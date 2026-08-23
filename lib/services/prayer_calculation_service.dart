@@ -27,7 +27,6 @@ class PrayerCalculationService {
         params = CalculationMethod.karachi.getParameters();
         break;
       case AppCalculationMethod.moonsightingCommittee:
-        // Moonsighting Committee standard: 18.0 Fajr, 18.0 Isha
         params = CalculationParameters(fajrAngle: 18.0, ishaAngle: 18.0);
         break;
       case AppCalculationMethod.kuwait:
@@ -69,6 +68,11 @@ class PrayerCalculationService {
     int adjustAsr = 0,
     int adjustMaghrib = 0,
     int adjustIsha = 0,
+    int iqamahFajr = 20,
+    int iqamahDhuhr = 15,
+    int iqamahAsr = 15,
+    int iqamahMaghrib = 10,
+    int iqamahIsha = 15,
   }) {
     final coordinates = Coordinates(latitude, longitude);
     final dateComponents = DateComponents.from(date);
@@ -133,36 +137,42 @@ class PrayerCalculationService {
         time: fajr,
         isNext: nextPrayer == PrayerType.fajr,
         isCurrent: currentPrayer == PrayerType.fajr,
+        iqamahOffsetMinutes: iqamahFajr,
       ),
       sunrise: PrayerTimeModel(
         type: PrayerType.sunrise,
         time: sunrise,
         isNext: nextPrayer == PrayerType.sunrise,
         isCurrent: currentPrayer == PrayerType.sunrise,
+        iqamahOffsetMinutes: 0,
       ),
       dhuhr: PrayerTimeModel(
         type: PrayerType.dhuhr,
         time: dhuhr,
         isNext: nextPrayer == PrayerType.dhuhr,
         isCurrent: currentPrayer == PrayerType.dhuhr,
+        iqamahOffsetMinutes: iqamahDhuhr,
       ),
       asr: PrayerTimeModel(
         type: PrayerType.asr,
         time: asr,
         isNext: nextPrayer == PrayerType.asr,
         isCurrent: currentPrayer == PrayerType.asr,
+        iqamahOffsetMinutes: iqamahAsr,
       ),
       maghrib: PrayerTimeModel(
         type: PrayerType.maghrib,
         time: maghrib,
         isNext: nextPrayer == PrayerType.maghrib,
         isCurrent: currentPrayer == PrayerType.maghrib,
+        iqamahOffsetMinutes: iqamahMaghrib,
       ),
       isha: PrayerTimeModel(
         type: PrayerType.isha,
         time: isha,
         isNext: nextPrayer == PrayerType.isha,
         isCurrent: currentPrayer == PrayerType.isha,
+        iqamahOffsetMinutes: iqamahIsha,
       ),
       nextPrayerType: nextPrayer,
       nextPrayerTime: nextTime,

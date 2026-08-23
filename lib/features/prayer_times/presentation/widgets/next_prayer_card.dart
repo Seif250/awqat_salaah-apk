@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/prayer_constants.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../data/models/prayer_day_model.dart';
+import '../../data/models/prayer_time_model.dart';
 
 class NextPrayerCard extends StatelessWidget {
   final PrayerDayModel prayerDay;
@@ -39,113 +41,155 @@ class NextPrayerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final now = DateTime.now();
+
+    // Check if we are currently between an Adhan and its Iqamah
+    final activeIqamahPrayer = prayerDay.activeIqamahPrayer(now);
+    final isIqamahActive = activeIqamahPrayer != null;
+
+    final nextPrayerModel = prayerDay.getPrayer(prayerDay.nextPrayerType);
     final nextPrayerName = prayerDay.nextPrayerType.nameArabic;
     final nextPrayerTimeFormatted = DateUtilsHelper.formatPrayerTime(
       prayerDay.nextPrayerTime,
       is24Hour: is24Hour,
     );
-    final countdownFormatted = DateUtilsHelper.formatCountdown(remainingDuration);
+
+    final nextPrayerIqamahFormatted = nextPrayerModel?.iqamahTime != null
+        ? DateUtilsHelper.formatPrayerTime(
+            nextPrayerModel!.iqamahTime!,
+            is24Hour: is24Hour,
+          )
+        : null;
+
+    final countdownFormatted = isIqamahActive
+        ? DateUtilsHelper.formatCountdown(
+            activeIqamahPrayer.timeRemainingToIqamah(now) ?? Duration.zero)
+        : DateUtilsHelper.formatCountdown(remainingDuration);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDark
+          colors: isIqamahActive
               ? [
-                  const Color(0xFF133626),
-                  const Color(0xFF0D241A),
-                  const Color(0xFF091710),
+                  const Color(0xFF1B4D3E),
+                  const Color(0xFF0F382B),
+                  const Color(0xFF0A261D),
                 ]
-              : [
-                  AppColors.primary,
-                  const Color(0xFF12633E),
-                  const Color(0xFF0A3D25),
-                ],
+              : (isDark
+                  ? [
+                      const Color(0xFF133626),
+                      const Color(0xFF0D241A),
+                      const Color(0xFF091710),
+                    ]
+                  : [
+                      AppColors.primary,
+                      const Color(0xFF12633E),
+                      const Color(0xFF0A3D25),
+                    ]),
         ),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : AppColors.primary).withOpacity(0.3),
+            color: (isDark ? Colors.black : AppColors.primary).withOpacity(0.35),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(
-          color: AppColors.accentGold.withOpacity(0.3),
+          color: isIqamahActive
+              ? const Color(0xFF48CAE4).withOpacity(0.6)
+              : AppColors.accentGold.withOpacity(0.35),
           width: 1.5,
         ),
       ),
       child: Column(
         children: [
-          // Header: Icon + "الصلاة القادمة"
+          // Header: Icon + Status Badge
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.accentGold.withOpacity(0.15),
+                  color: isIqamahActive
+                      ? const Color(0xFF48CAE4).withOpacity(0.2)
+                      : AppColors.accentGold.withOpacity(0.15),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.accentGold.withOpacity(0.4),
+                    color: isIqamahActive
+                        ? const Color(0xFF48CAE4).withOpacity(0.5)
+                        : AppColors.accentGold.withOpacity(0.4),
                     width: 1,
                   ),
                 ),
                 child: Icon(
-                  _getPrayerIcon(prayerDay.nextPrayerType),
-                  color: AppColors.accentGold,
-                  size: 22,
+                  _getPrayerIcon(isIqamahActive
+                      ? activeIqamahPrayer.type
+                      : prayerDay.nextPrayerType),
+                  color: isIqamahActive
+                      ? const Color(0xFF90E0EF)
+                      : AppColors.accentGold,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 10),
               Text(
-                'الصلاة القادمة',
+                isIqamahActive ? 'حان وقت الصلاة (بين الأذان والإقامة)' : 'الصلاة القادمة',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppColors.accentGoldLight,
+                  color: isIqamahActive
+                      ? const Color(0xFF90E0EF)
+                      : AppColors.accentGoldLight,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Next Prayer Name
+          // Main Prayer Name
           Text(
-            nextPrayerName,
+            isIqamahActive
+                ? activeIqamahPrayer.type.nameArabic
+                : nextPrayerName,
             style: theme.textTheme.headlineLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 38,
+              fontSize: 36,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Live Countdown Display
+          // Live Countdown Box
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withOpacity(0.3),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: isIqamahActive
+                    ? const Color(0xFF48CAE4).withOpacity(0.3)
+                    : Colors.white.withOpacity(0.12),
                 width: 1,
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.timer_outlined,
-                  color: AppColors.accentGold,
+                Icon(
+                  isIqamahActive ? Icons.access_alarms_rounded : Icons.timer_outlined,
+                  color: isIqamahActive
+                      ? const Color(0xFF90E0EF)
+                      : AppColors.accentGold,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'متبقي: ',
+                  isIqamahActive ? 'متبقي للإقامة: ' : 'متبقي للأذان: ',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.white70,
                     fontWeight: FontWeight.w500,
@@ -154,7 +198,9 @@ class NextPrayerCard extends StatelessWidget {
                 Text(
                   countdownFormatted,
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    color: AppColors.accentGold,
+                    color: isIqamahActive
+                        ? const Color(0xFF90E0EF)
+                        : AppColors.accentGold,
                     fontWeight: FontWeight.bold,
                     fontFeatures: const [FontFeature.tabularFigures()],
                     letterSpacing: 1.5,
@@ -165,14 +211,50 @@ class NextPrayerCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Prayer exact time
-          Text(
-            'اليوم في $nextPrayerTimeFormatted',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.85),
-              fontWeight: FontWeight.w500,
+          // Adhan & Iqamah Time Summary Footer
+          if (isIqamahActive) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'الإقامة في: ${DateUtilsHelper.formatPrayerTime(activeIqamahPrayer.iqamahTime!, is24Hour: is24Hour)} (+${activeIqamahPrayer.iqamahOffsetMinutes} د)',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-          ),
+          ] else ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'الأذان: $nextPrayerTimeFormatted',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (nextPrayerIqamahFormatted != null &&
+                    nextPrayerModel!.iqamahOffsetMinutes > 0) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text('•', style: TextStyle(color: Colors.white.withOpacity(0.5))),
+                  ),
+                  Text(
+                    'الإقامة: $nextPrayerIqamahFormatted (+${nextPrayerModel.iqamahOffsetMinutes}د)',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.accentGoldLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ],
       ),
     );

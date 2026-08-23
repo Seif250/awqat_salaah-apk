@@ -73,6 +73,32 @@ class SettingsPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
+              // Section: Iqamah Intervals
+              _buildSectionHeader(context, 'فارق وقت الإقامة (بعد الأذان بالدقائق)', Icons.timer_outlined),
+              _buildCard(
+                context,
+                child: Column(
+                  children: [
+                    _buildIqamahRow(context, 'الفجر', state.iqamahFajr, (val) {
+                      if (val >= 0) context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(fajr: val));
+                    }),
+                    _buildIqamahRow(context, 'الظهر', state.iqamahDhuhr, (val) {
+                      if (val >= 0) context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(dhuhr: val));
+                    }),
+                    _buildIqamahRow(context, 'العصر', state.iqamahAsr, (val) {
+                      if (val >= 0) context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(asr: val));
+                    }),
+                    _buildIqamahRow(context, 'المغرب', state.iqamahMaghrib, (val) {
+                      if (val >= 0) context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(maghrib: val));
+                    }),
+                    _buildIqamahRow(context, 'العشاء', state.iqamahIsha, (val) {
+                      if (val >= 0) context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(isha: val));
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // Section: Notifications
               _buildSectionHeader(context, 'الإشعارات (صامتة)', Icons.notifications_none_rounded),
               _buildCard(
@@ -191,6 +217,55 @@ class SettingsPage extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: child,
+      ),
+    );
+  }
+
+  Widget _buildIqamahRow(
+    BuildContext context,
+    String name,
+    int value,
+    ValueChanged<int> onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(width: 8),
+              Text(
+                'بعد الأذان',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              IconButton.filledTonal(
+                icon: const Icon(Icons.remove, size: 16),
+                onPressed: () => onChanged(value - 1),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  '$value دقيقة',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              IconButton.filledTonal(
+                icon: const Icon(Icons.add, size: 16),
+                onPressed: () => onChanged(value + 1),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

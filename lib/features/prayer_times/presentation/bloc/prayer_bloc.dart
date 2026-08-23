@@ -72,6 +72,11 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
         adjustAsr: _storageService.adjustAsr,
         adjustMaghrib: _storageService.adjustMaghrib,
         adjustIsha: _storageService.adjustIsha,
+        iqamahFajr: _storageService.iqamahFajr,
+        iqamahDhuhr: _storageService.iqamahDhuhr,
+        iqamahAsr: _storageService.iqamahAsr,
+        iqamahMaghrib: _storageService.iqamahMaghrib,
+        iqamahIsha: _storageService.iqamahIsha,
       );
 
       final remaining = prayerDay.nextPrayerTime.difference(now);

@@ -9,12 +9,21 @@ class SettingsState extends Equatable {
   final int notificationOffsetMinutes;
   final ThemeMode themeMode;
   final bool is24HourFormat;
+
+  // Minute Adjustments
   final int adjustFajr;
   final int adjustSunrise;
   final int adjustDhuhr;
   final int adjustAsr;
   final int adjustMaghrib;
   final int adjustIsha;
+
+  // Iqamah Offsets (Minutes after Adhan)
+  final int iqamahFajr;
+  final int iqamahDhuhr;
+  final int iqamahAsr;
+  final int iqamahMaghrib;
+  final int iqamahIsha;
 
   const SettingsState({
     this.calculationMethod = AppCalculationMethod.egyptian,
@@ -29,6 +38,11 @@ class SettingsState extends Equatable {
     this.adjustAsr = 0,
     this.adjustMaghrib = 0,
     this.adjustIsha = 0,
+    this.iqamahFajr = 20,
+    this.iqamahDhuhr = 15,
+    this.iqamahAsr = 15,
+    this.iqamahMaghrib = 10,
+    this.iqamahIsha = 15,
   });
 
   SettingsState copyWith({
@@ -44,6 +58,11 @@ class SettingsState extends Equatable {
     int? adjustAsr,
     int? adjustMaghrib,
     int? adjustIsha,
+    int? iqamahFajr,
+    int? iqamahDhuhr,
+    int? iqamahAsr,
+    int? iqamahMaghrib,
+    int? iqamahIsha,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -59,6 +78,11 @@ class SettingsState extends Equatable {
       adjustAsr: adjustAsr ?? this.adjustAsr,
       adjustMaghrib: adjustMaghrib ?? this.adjustMaghrib,
       adjustIsha: adjustIsha ?? this.adjustIsha,
+      iqamahFajr: iqamahFajr ?? this.iqamahFajr,
+      iqamahDhuhr: iqamahDhuhr ?? this.iqamahDhuhr,
+      iqamahAsr: iqamahAsr ?? this.iqamahAsr,
+      iqamahMaghrib: iqamahMaghrib ?? this.iqamahMaghrib,
+      iqamahIsha: iqamahIsha ?? this.iqamahIsha,
     );
   }
 
@@ -76,5 +100,10 @@ class SettingsState extends Equatable {
         adjustAsr,
         adjustMaghrib,
         adjustIsha,
+        iqamahFajr,
+        iqamahDhuhr,
+        iqamahAsr,
+        iqamahMaghrib,
+        iqamahIsha,
       ];
 }

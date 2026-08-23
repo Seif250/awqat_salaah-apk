@@ -44,6 +44,35 @@ class PrayerDayModel extends Equatable {
         isha,
       ];
 
+  PrayerTimeModel? getPrayer(PrayerType type) {
+    switch (type) {
+      case PrayerType.fajr:
+        return fajr;
+      case PrayerType.sunrise:
+        return sunrise;
+      case PrayerType.dhuhr:
+        return dhuhr;
+      case PrayerType.asr:
+        return asr;
+      case PrayerType.maghrib:
+        return maghrib;
+      case PrayerType.isha:
+        return isha;
+      case PrayerType.none:
+        return null;
+    }
+  }
+
+  /// Returns the prayer that is currently in its Iqamah window (between Adhan and Iqamah), if any
+  PrayerTimeModel? activeIqamahPrayer(DateTime now) {
+    for (final p in prayerTimesOnly) {
+      if (p.isCurrentlyInIqamahWindow(now)) {
+        return p;
+      }
+    }
+    return null;
+  }
+
   @override
   List<Object?> get props => [
         date,

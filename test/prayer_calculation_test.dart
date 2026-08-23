@@ -83,5 +83,36 @@ void main() {
         equals(-3),
       );
     });
+
+    test('Iqamah times are properly calculated from prayer times and offsets', () {
+      final prayerDay = calculationService.calculatePrayerTimes(
+        latitude: cairoLat,
+        longitude: cairoLng,
+        date: testDate,
+        method: AppCalculationMethod.egyptian,
+        iqamahFajr: 25,
+        iqamahMaghrib: 10,
+      );
+
+      expect(prayerDay.fajr.iqamahTime, isNotNull);
+      expect(
+        prayerDay.fajr.iqamahTime!.difference(prayerDay.fajr.time).inMinutes,
+        equals(25),
+      );
+
+      expect(prayerDay.maghrib.iqamahTime, isNotNull);
+      expect(
+        prayerDay.maghrib.iqamahTime!.difference(prayerDay.maghrib.time).inMinutes,
+        equals(10),
+      );
+
+      // Sunrise has no Iqamah
+      expect(prayerDay.sunrise.iqamahTime, isNull);
+
+      // Check active Iqamah window helper
+      final duringMaghribIqamah = prayerDay.maghrib.time.add(const Duration(minutes: 5));
+      expect(prayerDay.maghrib.isCurrentlyInIqamahWindow(duringMaghribIqamah), isTrue);
+      expect(prayerDay.activeIqamahPrayer(duringMaghribIqamah)?.type, equals(PrayerType.maghrib));
+    });
   });
 }

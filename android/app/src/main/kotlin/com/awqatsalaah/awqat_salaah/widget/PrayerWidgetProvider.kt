@@ -36,7 +36,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 val cityName = prefs.getString("widget_city_name", "القاهرة") ?: "القاهرة"
                 val nextPrayerName = prefs.getString("widget_next_prayer_name", "الصلاة القادمة") ?: "الصلاة القادمة"
                 val nextPrayerTime = prefs.getString("widget_next_prayer_time", "--:--") ?: "--:--"
-                val countdownText = prefs.getString("widget_countdown_text", "--:--:--") ?: "--:--:--"
+                val countdownText = prefs.getString("widget_countdown_text", "") ?: ""
 
                 val fajr = prefs.getString("widget_fajr", "--:--") ?: "--:--"
                 val dhuhr = prefs.getString("widget_dhuhr", "--:--") ?: "--:--"
@@ -48,7 +48,10 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_city_name, cityName)
                 views.setTextViewText(R.id.widget_next_prayer_name, nextPrayerName)
                 views.setTextViewText(R.id.widget_next_prayer_time, nextPrayerTime)
-                views.setTextViewText(R.id.widget_countdown_text, countdownText)
+                views.setTextViewText(
+                    R.id.widget_countdown_text,
+                    if (countdownText.isNotEmpty()) countdownText else "أوقات الصلاة اليومية"
+                )
 
                 views.setTextViewText(R.id.widget_time_fajr, fajr)
                 views.setTextViewText(R.id.widget_time_dhuhr, dhuhr)

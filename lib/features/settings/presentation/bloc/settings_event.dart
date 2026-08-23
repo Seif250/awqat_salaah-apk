@@ -81,3 +81,22 @@ class UpdateAdjustmentsEvent extends SettingsEvent {
   @override
   List<Object?> get props => [fajr, sunrise, dhuhr, asr, maghrib, isha];
 }
+
+class UpdateIqamahOffsetsEvent extends SettingsEvent {
+  final int? fajr;
+  final int? dhuhr;
+  final int? asr;
+  final int? maghrib;
+  final int? isha;
+
+  const UpdateIqamahOffsetsEvent({
+    this.fajr,
+    this.dhuhr,
+    this.asr,
+    this.maghrib,
+    this.isha,
+  });
+
+  @override
+  List<Object?> get props => [fajr, dhuhr, asr, maghrib, isha];
+}

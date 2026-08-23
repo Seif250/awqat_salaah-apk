@@ -121,4 +121,25 @@ class StorageService {
     if (maghrib != null) await _prefs.setInt(AppConstants.keyAdjustMaghrib, maghrib);
     if (isha != null) await _prefs.setInt(AppConstants.keyAdjustIsha, isha);
   }
+
+  // Iqamah Intervals (Defaults: Fajr 20m, Dhuhr 15m, Asr 15m, Maghrib 10m, Isha 15m)
+  int get iqamahFajr => _prefs.getInt(AppConstants.keyIqamahFajr) ?? 20;
+  int get iqamahDhuhr => _prefs.getInt(AppConstants.keyIqamahDhuhr) ?? 15;
+  int get iqamahAsr => _prefs.getInt(AppConstants.keyIqamahAsr) ?? 15;
+  int get iqamahMaghrib => _prefs.getInt(AppConstants.keyIqamahMaghrib) ?? 10;
+  int get iqamahIsha => _prefs.getInt(AppConstants.keyIqamahIsha) ?? 15;
+
+  Future<void> setIqamahOffsets({
+    int? fajr,
+    int? dhuhr,
+    int? asr,
+    int? maghrib,
+    int? isha,
+  }) async {
+    if (fajr != null) await _prefs.setInt(AppConstants.keyIqamahFajr, fajr);
+    if (dhuhr != null) await _prefs.setInt(AppConstants.keyIqamahDhuhr, dhuhr);
+    if (asr != null) await _prefs.setInt(AppConstants.keyIqamahAsr, asr);
+    if (maghrib != null) await _prefs.setInt(AppConstants.keyIqamahMaghrib, maghrib);
+    if (isha != null) await _prefs.setInt(AppConstants.keyIqamahIsha, isha);
+  }
 }

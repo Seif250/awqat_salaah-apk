@@ -2,25 +2,36 @@ class AppConstants {
   static const String appName = 'أوقات الصلاة';
   static const String appVersion = '1.0.0';
 
-  // Storage Keys
+  // Storage Keys - Location
   static const String keyIsFirstLaunch = 'is_first_launch';
   static const String keyLatitude = 'latitude';
   static const String keyLongitude = 'longitude';
   static const String keyCityName = 'city_name';
   static const String keyCountryName = 'country_name';
   static const String keyIsAutoLocation = 'is_auto_location';
+
+  // Storage Keys - Calculation & Preferences
   static const String keyCalculationMethod = 'calculation_method';
   static const String keyMadhab = 'madhab';
   static const String keyNotificationsEnabled = 'notifications_enabled';
   static const String keyNotificationOffset = 'notification_offset_minutes';
   static const String keyThemeMode = 'theme_mode';
   static const String keyIs24HourFormat = 'is_24_hour_format';
+
+  // Storage Keys - Minute Adjustments
   static const String keyAdjustFajr = 'adjust_fajr';
   static const String keyAdjustSunrise = 'adjust_sunrise';
   static const String keyAdjustDhuhr = 'adjust_dhuhr';
   static const String keyAdjustAsr = 'adjust_asr';
   static const String keyAdjustMaghrib = 'adjust_maghrib';
   static const String keyAdjustIsha = 'adjust_isha';
+
+  // Storage Keys - Iqamah Intervals (Minutes after Adhan)
+  static const String keyIqamahFajr = 'iqamah_fajr';
+  static const String keyIqamahDhuhr = 'iqamah_dhuhr';
+  static const String keyIqamahAsr = 'iqamah_asr';
+  static const String keyIqamahMaghrib = 'iqamah_maghrib';
+  static const String keyIqamahIsha = 'iqamah_isha';
 
   // HomeWidget Constants
   static const String widgetGroupId = 'group.com.awqatsalaah.widget';

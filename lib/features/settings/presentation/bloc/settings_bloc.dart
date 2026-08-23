@@ -17,6 +17,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<ChangeThemeModeEvent>(_onChangeThemeMode);
     on<Toggle24HourFormatEvent>(_onToggle24HourFormat);
     on<UpdateAdjustmentsEvent>(_onUpdateAdjustments);
+    on<UpdateIqamahOffsetsEvent>(_onUpdateIqamahOffsets);
   }
 
   void _onLoadSettings(
@@ -36,6 +37,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       adjustAsr: _storageService.adjustAsr,
       adjustMaghrib: _storageService.adjustMaghrib,
       adjustIsha: _storageService.adjustIsha,
+      iqamahFajr: _storageService.iqamahFajr,
+      iqamahDhuhr: _storageService.iqamahDhuhr,
+      iqamahAsr: _storageService.iqamahAsr,
+      iqamahMaghrib: _storageService.iqamahMaghrib,
+      iqamahIsha: _storageService.iqamahIsha,
     ));
   }
 
@@ -106,6 +112,26 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       adjustAsr: event.asr,
       adjustMaghrib: event.maghrib,
       adjustIsha: event.isha,
+    ));
+  }
+
+  Future<void> _onUpdateIqamahOffsets(
+    UpdateIqamahOffsetsEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setIqamahOffsets(
+      fajr: event.fajr,
+      dhuhr: event.dhuhr,
+      asr: event.asr,
+      maghrib: event.maghrib,
+      isha: event.isha,
+    );
+    emit(state.copyWith(
+      iqamahFajr: event.fajr,
+      iqamahDhuhr: event.dhuhr,
+      iqamahAsr: event.asr,
+      iqamahMaghrib: event.maghrib,
+      iqamahIsha: event.isha,
     ));
   }
 }
