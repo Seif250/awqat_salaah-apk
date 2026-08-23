@@ -60,7 +60,7 @@ class PrayerCalculationService {
     required double latitude,
     required double longitude,
     required DateTime date,
-    AppCalculationMethod method = AppCalculationMethod.egyptian,
+    AppCalculationMethod method = AppCalculationMethod.muslimWorldLeague,
     AppMadhab madhab = AppMadhab.shafi,
     int adjustFajr = 0,
     int adjustSunrise = 0,

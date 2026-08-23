@@ -45,7 +45,7 @@ class StorageService {
     if (index != null && index >= 0 && index < AppCalculationMethod.values.length) {
       return AppCalculationMethod.values[index];
     }
-    return AppCalculationMethod.egyptian; // Default for Egyptian users
+    return AppCalculationMethod.muslimWorldLeague; // Default: Muslim World League
   }
 
   Future<void> setCalculationMethod(AppCalculationMethod method) =>

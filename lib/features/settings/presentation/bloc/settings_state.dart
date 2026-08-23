@@ -27,7 +27,7 @@ class SettingsState extends Equatable {
   final int iqamahIsha;
 
   const SettingsState({
-    this.calculationMethod = AppCalculationMethod.egyptian,
+    this.calculationMethod = AppCalculationMethod.muslimWorldLeague,
     this.madhab = AppMadhab.shafi,
     this.notificationsEnabled = true,
     this.notificationSoundEnabled = true,
