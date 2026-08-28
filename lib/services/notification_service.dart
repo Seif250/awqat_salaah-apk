@@ -1,10 +1,11 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../core/constants/app_constants.dart';
 import '../core/constants/prayer_constants.dart';
 import '../features/prayer_times/data/models/prayer_day_model.dart';
-import '../features/prayer_times/data/models/prayer_time_model.dart';
+import 'prayer_calculation_service.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -16,6 +17,13 @@ class NotificationService {
 
   Future<void> init() async {
     tz.initializeTimeZones();
+    try {
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      final locationName = timezoneInfo.identifier;
+      tz.setLocalLocation(tz.getLocation(locationName));
+    } catch (_) {
+      // If local timezone detection fails, timezone stays as initialized
+    }
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidSettings);
@@ -37,6 +45,7 @@ class NotificationService {
       sound: RawResourceAndroidNotificationSound(AppConstants.notificationSoundName),
       enableVibration: true,
       showBadge: true,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
     );
 
     final androidImplementation = _notificationsPlugin
@@ -63,7 +72,7 @@ class NotificationService {
       AppConstants.notificationChannelName,
       channelDescription: AppConstants.notificationChannelDesc,
       importance: Importance.max,
-      priority: Priority.high,
+      priority: Priority.max,
       playSound: isSoundEnabled,
       sound: isSoundEnabled
           ? const RawResourceAndroidNotificationSound(AppConstants.notificationSoundName)
@@ -71,6 +80,9 @@ class NotificationService {
       enableVibration: isSoundEnabled,
       autoCancel: true,
       icon: '@mipmap/ic_launcher',
+      category: AndroidNotificationCategory.alarm,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      visibility: NotificationVisibility.public,
     );
 
     final notificationDetails = NotificationDetails(android: androidDetails);
@@ -83,6 +95,152 @@ class NotificationService {
     );
   }
 
+  /// Schedule prayer notifications 7 days in advance for all chosen alert timings
+  Future<void> scheduleWeeklyPrayerNotifications({
+    required PrayerCalculationService calculationService,
+    required double latitude,
+    required double longitude,
+    required AppCalculationMethod method,
+    required AppMadhab madhab,
+    required int adjustFajr,
+    required int adjustSunrise,
+    required int adjustDhuhr,
+    required int adjustAsr,
+    required int adjustMaghrib,
+    required int adjustIsha,
+    required int iqamahFajr,
+    required int iqamahDhuhr,
+    required int iqamahAsr,
+    required int iqamahMaghrib,
+    required int iqamahIsha,
+    required bool isEnabled,
+    required bool isSoundEnabled,
+    required List<int> notificationOffsets,
+    required bool isArabic,
+    required bool is24Hour,
+    int daysToSchedule = 7,
+  }) async {
+    await cancelAllNotifications();
+
+    if (!isEnabled || notificationOffsets.isEmpty) return;
+
+    final now = DateTime.now();
+
+    for (int dayOffset = 0; dayOffset < daysToSchedule; dayOffset++) {
+      final targetDate = now.add(Duration(days: dayOffset));
+      final prayerDay = calculationService.calculatePrayerTimes(
+        latitude: latitude,
+        longitude: longitude,
+        date: targetDate,
+        method: method,
+        madhab: madhab,
+        adjustFajr: adjustFajr,
+        adjustSunrise: adjustSunrise,
+        adjustDhuhr: adjustDhuhr,
+        adjustAsr: adjustAsr,
+        adjustMaghrib: adjustMaghrib,
+        adjustIsha: adjustIsha,
+        iqamahFajr: iqamahFajr,
+        iqamahDhuhr: iqamahDhuhr,
+        iqamahAsr: iqamahAsr,
+        iqamahMaghrib: iqamahMaghrib,
+        iqamahIsha: iqamahIsha,
+      );
+
+      final prayers = [
+        MapEntry(1, prayerDay.fajr),
+        MapEntry(2, prayerDay.dhuhr),
+        MapEntry(3, prayerDay.asr),
+        MapEntry(4, prayerDay.maghrib),
+        MapEntry(5, prayerDay.isha),
+      ];
+
+      for (final entry in prayers) {
+        final prayerIndex = entry.key;
+        final prayer = entry.value;
+
+        // Schedule every selected offset timing for this prayer
+        for (int k = 0; k < notificationOffsets.length; k++) {
+          final offset = notificationOffsets[k];
+          final notificationId = 10000 + (dayOffset * 1000) + (prayerIndex * 100) + (k + 1);
+
+          DateTime alertTime;
+          String title;
+          String body;
+          final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
+
+          if (offset <= 0) {
+            final minutesBefore = -offset;
+            alertTime = prayer.time.subtract(Duration(minutes: minutesBefore));
+
+            if (offset == 0) {
+              title = isArabic ? '🕌 الله أكبر — حان موعد صلاة $prayerName' : '🕌 $prayerName Prayer Time';
+              final iqamahInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0)
+                  ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة'
+                  : '';
+              body = isArabic
+                  ? 'دخل الآن وقت صلاة $prayerName$iqamahInfo'
+                  : '$prayerName time has started.';
+            } else {
+              title = isArabic ? '⏳ اقتراب موعد صلاة $prayerName' : '⏳ $prayerName Prayer Upcoming';
+              body = isArabic
+                  ? 'متبقي $minutesBefore دقائق على أذان صلاة $prayerName'
+                  : '$prayerName is in $minutesBefore minutes.';
+            }
+          } else {
+            // Offset after Adhan
+            alertTime = prayer.time.add(Duration(minutes: offset));
+            title = isArabic ? '⏳ تذكير بعد أذان $prayerName' : '⏳ $prayerName Post-Adhan Reminder';
+            body = isArabic
+                ? 'مضى $offset دقائق على أذان صلاة $prayerName'
+                : '$offset minutes passed since $prayerName Adhan.';
+          }
+
+          if (alertTime.isAfter(now.add(const Duration(seconds: 2)))) {
+            await _scheduleSingleNotification(
+              id: notificationId,
+              title: title,
+              body: body,
+              scheduledDate: alertTime,
+              isSoundEnabled: isSoundEnabled,
+            );
+          }
+        }
+
+        // Periodic Iqamah window reminders if enabled
+        if (prayer.type.isActualPrayer && prayer.iqamahOffsetMinutes > 5) {
+          final totalIqamahMinutes = prayer.iqamahOffsetMinutes;
+          for (int m = 5; m < totalIqamahMinutes; m += 5) {
+            // If already explicitly scheduled as a user offset, skip duplicate
+            if (notificationOffsets.contains(m)) continue;
+
+            final reminderTime = prayer.time.add(Duration(minutes: m));
+            final remainingToIqamah = totalIqamahMinutes - m;
+
+            if (reminderTime.isAfter(now.add(const Duration(seconds: 2)))) {
+              final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
+              final reminderTitle = isArabic
+                  ? '⏳ تذكير إقامة صلاة $prayerName'
+                  : '⏳ $prayerName Iqamah Reminder';
+              final reminderBody = isArabic
+                  ? 'متبقي $remainingToIqamah دقائق على إقامة صلاة $prayerName'
+                  : '$remainingToIqamah minutes remaining to $prayerName Iqamah.';
+
+              await _scheduleSingleNotification(
+                id: 50000 + (dayOffset * 1000) + (prayerIndex * 100) + (m ~/ 5),
+                title: reminderTitle,
+                body: reminderBody,
+                scheduledDate: reminderTime,
+                isSoundEnabled: isSoundEnabled,
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /// Single day schedule helper for backward compatibility
   Future<void> schedulePrayerNotifications({
     required PrayerDayModel prayerDay,
     required bool isEnabled,
@@ -109,10 +267,9 @@ class NotificationService {
       final baseId = entry.key;
       final prayer = entry.value;
 
-      // 1. Primary Adhan Notification
       final adhanNotificationTime = prayer.time.subtract(Duration(minutes: offsetMinutes));
 
-      if (adhanNotificationTime.isAfter(now)) {
+      if (adhanNotificationTime.isAfter(now.add(const Duration(seconds: 2)))) {
         final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
 
         String title;
@@ -141,35 +298,6 @@ class NotificationService {
           isSoundEnabled: isSoundEnabled,
         );
       }
-
-      // 2. Periodic Iqamah Interval Reminders (e.g. every 5 minutes during Iqamah window)
-      if (prayer.type.isActualPrayer && prayer.iqamahOffsetMinutes > 5) {
-        final totalIqamahMinutes = prayer.iqamahOffsetMinutes;
-        
-        // Reminder intervals every 5 minutes from Adhan until Iqamah
-        for (int m = 5; m < totalIqamahMinutes; m += 5) {
-          final reminderTime = prayer.time.add(Duration(minutes: m));
-          final remainingToIqamah = totalIqamahMinutes - m;
-
-          if (reminderTime.isAfter(now)) {
-            final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
-            final reminderTitle = isArabic
-                ? '⏳ تذكير إقامة صلاة $prayerName'
-                : '⏳ $prayerName Iqamah Reminder';
-            final reminderBody = isArabic
-                ? 'متبقي $remainingToIqamah دقائق على إقامة صلاة $prayerName'
-                : '$remainingToIqamah minutes remaining to $prayerName Iqamah.';
-
-            await _scheduleSingleNotification(
-              id: baseId * 100 + m,
-              title: reminderTitle,
-              body: reminderBody,
-              scheduledDate: reminderTime,
-              isSoundEnabled: isSoundEnabled,
-            );
-          }
-        }
-      }
     }
   }
 
@@ -187,7 +315,7 @@ class NotificationService {
       AppConstants.notificationChannelName,
       channelDescription: AppConstants.notificationChannelDesc,
       importance: Importance.max,
-      priority: Priority.high,
+      priority: Priority.max,
       playSound: isSoundEnabled,
       sound: isSoundEnabled
           ? const RawResourceAndroidNotificationSound(AppConstants.notificationSoundName)
@@ -195,6 +323,9 @@ class NotificationService {
       enableVibration: isSoundEnabled,
       autoCancel: true,
       icon: '@mipmap/ic_launcher',
+      category: AndroidNotificationCategory.alarm,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      visibility: NotificationVisibility.public,
     );
 
     final notificationDetails = NotificationDetails(android: androidDetails);

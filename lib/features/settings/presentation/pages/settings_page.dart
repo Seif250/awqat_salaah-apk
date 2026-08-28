@@ -15,8 +15,6 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('الإعدادات'),
@@ -127,13 +125,14 @@ class SettingsPage extends StatelessWidget {
                       const Divider(height: 1),
                       ListTile(
                         title: const Text('وقت التنبيه'),
-                        subtitle: Text(state.notificationOffsetMinutes == 0
-                            ? 'عند دخول وقت الصلاة'
-                            : 'قبل الصلاة بـ ${state.notificationOffsetMinutes} دقائق'),
+                        subtitle: Text(
+                          _formatNotificationOffsets(state.notificationOffsets),
+                          style: const TextStyle(height: 1.3),
+                        ),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                        onTap: () => _showNotificationOffsetDialog(
+                        onTap: () => _showNotificationOffsetsDialog(
                           context,
-                          state.notificationOffsetMinutes,
+                          state.notificationOffsets,
                         ),
                       ),
                       const Divider(height: 1),
@@ -416,35 +415,265 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  void _showNotificationOffsetDialog(BuildContext context, int current) {
-    final options = [
-      const MapEntry(0, 'عند دخول وقت الصلاة'),
-      const MapEntry(5, 'قبل الصلاة بـ 5 دقائق'),
-      const MapEntry(10, 'قبل الصلاة بـ 10 دقائق'),
-      const MapEntry(15, 'قبل الصلاة بـ 15 دقيقة'),
+  String _formatNotificationOffsets(List<int> offsets) {
+    if (offsets.isEmpty) return 'عند دخول وقت الصلاة';
+    final labels = <String>[];
+    for (final o in (offsets.toSet().toList()..sort())) {
+      if (o == 0) {
+        labels.add('عند دخول الوقت');
+      } else if (o < 0) {
+        labels.add('قبل الأذان بـ ${-o} د');
+      } else {
+        labels.add('بعد الأذان بـ $o د');
+      }
+    }
+    return labels.join(' • ');
+  }
+
+  void _showNotificationOffsetsDialog(BuildContext context, List<int> currentOffsets) {
+    final selected = Set<int>.from(currentOffsets);
+    if (selected.isEmpty) selected.add(0);
+
+    final standardOptions = [
+      const MapEntry(-15, 'قبل الأذان بـ 15 دقيقة'),
+      const MapEntry(-10, 'قبل الأذان بـ 10 دقائق'),
+      const MapEntry(-5, 'قبل الأذان بـ 5 دقائق'),
+      const MapEntry(0, 'عند دخول وقت الصلاة (الأذان)'),
+      const MapEntry(5, 'بعد الأذان بـ 5 دقائق (فترة الإقامة)'),
+      const MapEntry(10, 'بعد الأذان بـ 10 دقائق (فترة الإقامة)'),
     ];
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('موعد الإشعار'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: options.map((entry) {
-            return RadioListTile<int>(
-              title: Text(entry.value),
-              value: entry.key,
-              groupValue: current,
-              onChanged: (val) {
-                if (val != null) {
-                  context.read<SettingsBloc>().add(ChangeNotificationOffsetEvent(val));
-                  Navigator.pop(dialogCtx);
-                }
-              },
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final standardKeys = standardOptions.map((e) => e.key).toSet();
+            final customKeys = selected.where((e) => !standardKeys.contains(e)).toList()..sort();
+
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.timer_outlined, color: AppColors.accentGold),
+                  SizedBox(width: 8),
+                  Text('مواعيد تنبيه الصلاة'),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'يمكنك اختيار أكثر من موعد تنبيه للصلاة الواحدة:',
+                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      ...standardOptions.map((entry) {
+                        final isChecked = selected.contains(entry.key);
+                        return CheckboxListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            entry.value,
+                            style: TextStyle(
+                              fontWeight: isChecked ? FontWeight.bold : FontWeight.normal,
+                              color: isChecked ? AppColors.accentGold : null,
+                            ),
+                          ),
+                          value: isChecked,
+                          activeColor: AppColors.accentGold,
+                          onChanged: (bool? val) {
+                            setDialogState(() {
+                              if (val == true) {
+                                selected.add(entry.key);
+                              } else {
+                                if (selected.length > 1) {
+                                  selected.remove(entry.key);
+                                }
+                              }
+                            });
+                          },
+                        );
+                      }),
+                      if (customKeys.isNotEmpty) ...[
+                        const Divider(height: 16),
+                        const Text(
+                          'المواعيد المخصصة:',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        ...customKeys.map((cKey) {
+                          final label = cKey < 0
+                              ? 'قبل الأذان بـ ${-cKey} دقيقة'
+                              : 'بعد الأذان بـ $cKey دقيقة';
+                          final isChecked = selected.contains(cKey);
+                          return CheckboxListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              label,
+                              style: TextStyle(
+                                fontWeight: isChecked ? FontWeight.bold : FontWeight.normal,
+                                color: isChecked ? AppColors.accentGold : null,
+                              ),
+                            ),
+                            secondary: IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                              onPressed: () {
+                                setDialogState(() {
+                                  selected.remove(cKey);
+                                  if (selected.isEmpty) selected.add(0);
+                                });
+                              },
+                            ),
+                            value: isChecked,
+                            activeColor: AppColors.accentGold,
+                            onChanged: (bool? val) {
+                              setDialogState(() {
+                                if (val == true) {
+                                  selected.add(cKey);
+                                } else {
+                                  if (selected.length > 1) {
+                                    selected.remove(cKey);
+                                  }
+                                }
+                              });
+                            },
+                          );
+                        }),
+                      ],
+                      const Divider(height: 16),
+                      Center(
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.add_circle_outline, color: AppColors.accentGold),
+                          label: const Text(
+                            'إضافة وقت تنبيه مخصص',
+                            style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: () async {
+                            final customOffset = await _showCustomOffsetInputDialog(context);
+                            if (customOffset != null) {
+                              setDialogState(() {
+                                selected.add(customOffset);
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('إلغاء'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accentGold,
+                  ),
+                  onPressed: () {
+                    final result = selected.toList()..sort();
+                    context.read<SettingsBloc>().add(ChangeNotificationOffsetsEvent(result));
+                    Navigator.pop(dialogCtx);
+                  },
+                  child: const Text('حفظ'),
+                ),
+              ],
             );
-          }).toList(),
-        ),
-      ),
+          },
+        );
+      },
+    );
+  }
+
+  Future<int?> _showCustomOffsetInputDialog(BuildContext context) async {
+    int minutes = 5;
+    bool isBefore = true;
+    final controller = TextEditingController(text: '5');
+
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setInputState) {
+            return AlertDialog(
+              title: const Text('إضافة وقت مخصص'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Center(child: Text('قبل الأذان')),
+                          selected: isBefore,
+                          selectedColor: AppColors.accentGold.withValues(alpha: 0.2),
+                          onSelected: (val) {
+                            if (val) setInputState(() => isBefore = true);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Center(child: Text('بعد الأذان')),
+                          selected: !isBefore,
+                          selectedColor: AppColors.accentGold.withValues(alpha: 0.2),
+                          onSelected: (val) {
+                            if (val) setInputState(() => isBefore = false);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      labelText: 'عدد الدقائق',
+                      suffixText: 'دقيقة',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (val) {
+                      final parsed = int.tryParse(val);
+                      if (parsed != null && parsed > 0) {
+                        minutes = parsed;
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('إلغاء'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accentGold,
+                  ),
+                  onPressed: () {
+                    final finalMinutes = int.tryParse(controller.text) ?? minutes;
+                    if (finalMinutes <= 0) {
+                      Navigator.pop(ctx, 0);
+                    } else {
+                      final signedOffset = isBefore ? -finalMinutes : finalMinutes;
+                      Navigator.pop(ctx, signedOffset);
+                    }
+                  },
+                  child: const Text('إضافة'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

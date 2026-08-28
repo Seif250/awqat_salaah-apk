@@ -53,6 +53,14 @@ class ChangeNotificationOffsetEvent extends SettingsEvent {
   List<Object?> get props => [offsetMinutes];
 }
 
+class ChangeNotificationOffsetsEvent extends SettingsEvent {
+  final List<int> offsets;
+  const ChangeNotificationOffsetsEvent(this.offsets);
+
+  @override
+  List<Object?> get props => [offsets];
+}
+
 class ChangeThemeModeEvent extends SettingsEvent {
   final ThemeMode themeMode;
   const ChangeThemeModeEvent(this.themeMode);

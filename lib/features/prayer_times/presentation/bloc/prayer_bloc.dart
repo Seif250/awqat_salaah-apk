@@ -40,17 +40,17 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
     Emitter<PrayerState> emit,
   ) async {
     emit(const PrayerLoading());
-    _calculateAndEmit(emit);
+    _calculateAndEmit(emit, rescheduleNotifications: true);
   }
 
   Future<void> _onRefreshPrayerTimes(
     RefreshPrayerTimesEvent event,
     Emitter<PrayerState> emit,
   ) async {
-    _calculateAndEmit(emit);
+    _calculateAndEmit(emit, rescheduleNotifications: true);
   }
 
-  void _calculateAndEmit(Emitter<PrayerState> emit) {
+  void _calculateAndEmit(Emitter<PrayerState> emit, {bool rescheduleNotifications = false}) {
     try {
       final lat = _storageService.latitude;
       final lng = _storageService.longitude;
@@ -97,18 +97,39 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
         is24Hour: _storageService.is24HourFormat,
       );
 
-      // Schedule Active Notifications
-      _notificationService.schedulePrayerNotifications(
-        prayerDay: prayerDay,
-        isEnabled: _storageService.notificationsEnabled,
-        isSoundEnabled: _storageService.notificationSoundEnabled,
-        offsetMinutes: _storageService.notificationOffsetMinutes,
-        isArabic: true,
-        is24Hour: _storageService.is24HourFormat,
-      );
+      // Schedule 7-day advance notifications when requested (e.g. app start, settings update, midnight)
+      if (rescheduleNotifications) {
+        _rescheduleWeeklyNotifications();
+      }
     } catch (e) {
       emit(PrayerError(e.toString()));
     }
+  }
+
+  void _rescheduleWeeklyNotifications() {
+    _notificationService.scheduleWeeklyPrayerNotifications(
+      calculationService: _calculationService,
+      latitude: _storageService.latitude,
+      longitude: _storageService.longitude,
+      method: _storageService.calculationMethod,
+      madhab: _storageService.madhab,
+      adjustFajr: _storageService.adjustFajr,
+      adjustSunrise: _storageService.adjustSunrise,
+      adjustDhuhr: _storageService.adjustDhuhr,
+      adjustAsr: _storageService.adjustAsr,
+      adjustMaghrib: _storageService.adjustMaghrib,
+      adjustIsha: _storageService.adjustIsha,
+      iqamahFajr: _storageService.iqamahFajr,
+      iqamahDhuhr: _storageService.iqamahDhuhr,
+      iqamahAsr: _storageService.iqamahAsr,
+      iqamahMaghrib: _storageService.iqamahMaghrib,
+      iqamahIsha: _storageService.iqamahIsha,
+      isEnabled: _storageService.notificationsEnabled,
+      isSoundEnabled: _storageService.notificationSoundEnabled,
+      notificationOffsets: _storageService.notificationOffsets,
+      isArabic: true,
+      is24Hour: _storageService.is24HourFormat,
+    );
   }
 
   void _onTimerTick(
@@ -120,10 +141,14 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
       final now = DateTime.now();
       final remaining = loaded.prayerDay.targetTime.difference(now);
 
-      // If target time reached (Adhan reached or Iqamah reached) or midnight passed,
-      // recalculate immediately to transition to next phase/prayer!
-      if (remaining.inSeconds <= 0 || now.day != loaded.lastCalculated.day) {
-        _calculateAndEmit(emit);
+      // If midnight passed, recalculate and roll forward weekly notifications
+      if (now.day != loaded.lastCalculated.day) {
+        _calculateAndEmit(emit, rescheduleNotifications: true);
+      }
+      // If target time reached (Adhan reached or Iqamah reached), transition phase
+      // WITHOUT wiping pending scheduled alarms!
+      else if (remaining.inSeconds <= 0) {
+        _calculateAndEmit(emit, rescheduleNotifications: false);
       } else {
         emit(loaded.copyWith(remainingDuration: remaining));
       }

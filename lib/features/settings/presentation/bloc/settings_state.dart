@@ -8,6 +8,7 @@ class SettingsState extends Equatable {
   final bool notificationsEnabled;
   final bool notificationSoundEnabled;
   final int notificationOffsetMinutes;
+  final List<int> notificationOffsets;
   final ThemeMode themeMode;
   final bool is24HourFormat;
 
@@ -32,6 +33,7 @@ class SettingsState extends Equatable {
     this.notificationsEnabled = true,
     this.notificationSoundEnabled = true,
     this.notificationOffsetMinutes = 0,
+    this.notificationOffsets = const [0],
     this.themeMode = ThemeMode.system,
     this.is24HourFormat = false,
     this.adjustFajr = 0,
@@ -53,6 +55,7 @@ class SettingsState extends Equatable {
     bool? notificationsEnabled,
     bool? notificationSoundEnabled,
     int? notificationOffsetMinutes,
+    List<int>? notificationOffsets,
     ThemeMode? themeMode,
     bool? is24HourFormat,
     int? adjustFajr,
@@ -75,6 +78,7 @@ class SettingsState extends Equatable {
           notificationSoundEnabled ?? this.notificationSoundEnabled,
       notificationOffsetMinutes:
           notificationOffsetMinutes ?? this.notificationOffsetMinutes,
+      notificationOffsets: notificationOffsets ?? this.notificationOffsets,
       themeMode: themeMode ?? this.themeMode,
       is24HourFormat: is24HourFormat ?? this.is24HourFormat,
       adjustFajr: adjustFajr ?? this.adjustFajr,
@@ -98,6 +102,7 @@ class SettingsState extends Equatable {
         notificationsEnabled,
         notificationSoundEnabled,
         notificationOffsetMinutes,
+        notificationOffsets,
         themeMode,
         is24HourFormat,
         adjustFajr,

@@ -16,6 +16,7 @@ class AppConstants {
   static const String keyNotificationsEnabled = 'notifications_enabled';
   static const String keyNotificationSoundEnabled = 'notifications_sound_enabled';
   static const String keyNotificationOffset = 'notification_offset_minutes';
+  static const String keyNotificationOffsetsList = 'notification_offsets_list';
   static const String keyThemeMode = 'theme_mode';
   static const String keyIs24HourFormat = 'is_24_hour_format';
 

@@ -82,6 +82,25 @@ class StorageService {
   Future<void> setNotificationOffsetMinutes(int minutes) =>
       _prefs.setInt(AppConstants.keyNotificationOffset, minutes);
 
+  List<int> get notificationOffsets {
+    final list = _prefs.getStringList(AppConstants.keyNotificationOffsetsList);
+    if (list != null && list.isNotEmpty) {
+      final parsed = list.map((e) => int.tryParse(e) ?? 0).toSet().toList()..sort();
+      return parsed.isEmpty ? [0] : parsed;
+    }
+    // Backward compatibility with single offset
+    final single = _prefs.getInt(AppConstants.keyNotificationOffset);
+    if (single != null) {
+      return single == 0 ? [0] : [-single];
+    }
+    return [0]; // Default: At prayer time
+  }
+
+  Future<void> setNotificationOffsets(List<int> offsets) {
+    final clean = (offsets.toSet().toList()..sort()).map((e) => e.toString()).toList();
+    return _prefs.setStringList(AppConstants.keyNotificationOffsetsList, clean);
+  }
+
   // Theme Mode
   ThemeMode get themeMode {
     final modeStr = _prefs.getString(AppConstants.keyThemeMode);
