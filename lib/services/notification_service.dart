@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../core/constants/app_constants.dart';
@@ -15,87 +18,443 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
+  bool _initialized = false;
+
+  /// Diagnostic log for troubleshooting — last N entries
+  final List<String> diagnosticLog = [];
+  void _log(String msg) {
+    final ts = DateTime.now().toIso8601String().substring(11, 19);
+    final entry = '[$ts] $msg';
+    diagnosticLog.add(entry);
+    if (diagnosticLog.length > 200) diagnosticLog.removeAt(0);
+    debugPrint('🕌 NotifSvc: $msg');
+  }
+
   Future<void> init() async {
-    tz.initializeTimeZones();
+    if (_initialized) return;
+
     try {
-      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-      final locationName = timezoneInfo.identifier;
-      tz.setLocalLocation(tz.getLocation(locationName));
-    } catch (_) {
-      // If local timezone detection fails, timezone stays as initialized
+      // ── 1. Timezone ──
+      tz.initializeTimeZones();
+      await _setupTimezone();
+
+      // ── 2. Initialize plugin ──
+      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const initSettings = InitializationSettings(android: androidSettings);
+
+      await _notificationsPlugin.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: (details) {
+          _log('Notification tapped: id=${details.id}');
+        },
+      );
+      _log('Plugin initialized successfully');
+
+      // ── 3. Create notification channels ──
+      await _createNotificationChannel();
+
+      // ── 4. Request notifications permission gracefully ──
+      await _requestPermissions();
+
+      _initialized = true;
+      _log('NotificationService fully initialized ✅');
+    } catch (e, stack) {
+      _log('CRITICAL: init() failed: $e\n$stack');
+    }
+  }
+
+  Future<void> _setupTimezone() async {
+    try {
+      final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+      final timeZoneName = timeZoneInfo.identifier;
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      _log('Timezone initialized via FlutterTimezone: $timeZoneName');
+      return;
+    } catch (e) {
+      _log('FlutterTimezone failed: $e, falling back to offset match');
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidSettings);
+    try {
+      // Fallback: match by offset
+      final offset = DateTime.now().timeZoneOffset;
+      final offsetMs = offset.inMilliseconds;
 
-    await _notificationsPlugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: (details) {
-        // App opened on tap
-      },
-    );
+      const commonZones = [
+        'Africa/Cairo',
+        'Asia/Riyadh',
+        'Asia/Dubai',
+        'Europe/Istanbul',
+        'Asia/Karachi',
+        'Asia/Kolkata',
+        'Asia/Kuala_Lumpur',
+        'Europe/London',
+        'America/New_York',
+        'America/Chicago',
+        'America/Los_Angeles',
+      ];
 
-    // Create High Importance Notification Channel with Takbeer Sound
-    const androidChannel = AndroidNotificationChannel(
-      AppConstants.notificationChannelId,
-      AppConstants.notificationChannelName,
-      description: AppConstants.notificationChannelDesc,
-      importance: Importance.max,
-      playSound: true,
-      sound: RawResourceAndroidNotificationSound(AppConstants.notificationSoundName),
-      enableVibration: true,
-      showBadge: true,
-      audioAttributesUsage: AudioAttributesUsage.alarm,
-    );
+      for (final zoneName in commonZones) {
+        try {
+          final loc = tz.getLocation(zoneName);
+          if (loc.currentTimeZone.offset == offsetMs) {
+            tz.setLocalLocation(loc);
+            _log('Timezone fallback: $zoneName (offset ${offset.inHours}h)');
+            return;
+          }
+        } catch (_) {}
+      }
 
-    final androidImplementation = _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+      final matching = tz.timeZoneDatabase.locations.values.firstWhere(
+        (l) => l.currentTimeZone.offset == offsetMs,
+        orElse: () => tz.getLocation('UTC'),
+      );
+      tz.setLocalLocation(matching);
+      _log('Timezone database fallback: ${matching.name} (offset ${offset.inHours}h)');
+    } catch (e) {
+      _log('Timezone setup error: $e (using UTC)');
+    }
+  }
 
-    if (androidImplementation != null) {
-      await androidImplementation.createNotificationChannel(androidChannel);
-      await androidImplementation.requestNotificationsPermission();
+  Future<void> _createNotificationChannel() async {
+    try {
+      final androidImpl = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidImpl == null) {
+        _log('WARNING: AndroidFlutterLocalNotificationsPlugin is null');
+        return;
+      }
+
+      // Clean up previous channel versions to prevent cached stale channel configs
       try {
-        await androidImplementation.requestExactAlarmsPermission();
+        await androidImpl.deleteNotificationChannel('prayer_times_takbeer_channel_v6');
+        await androidImpl.deleteNotificationChannel('prayer_times_takbeer_channel_v5');
       } catch (_) {}
+
+      // Channel WITH custom takbeer sound & alarm stream
+      const channelWithSound = AndroidNotificationChannel(
+        AppConstants.notificationChannelId,
+        AppConstants.notificationChannelName,
+        description: AppConstants.notificationChannelDesc,
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(AppConstants.notificationSoundName),
+        enableVibration: true,
+        showBadge: true,
+      );
+
+      await androidImpl.createNotificationChannel(channelWithSound);
+      _log('Channel created: ${AppConstants.notificationChannelId}');
+
+      // Fallback channel with DEFAULT sound
+      const fallbackChannel = AndroidNotificationChannel(
+        'prayer_times_default_sound',
+        'تنبيهات الصلاة (صوت افتراضي)',
+        description: 'إشعارات أوقات الصلاة بالصوت الافتراضي للنظام',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+
+      await androidImpl.createNotificationChannel(fallbackChannel);
+      _log('Fallback channel created: prayer_times_default_sound');
+    } catch (e) {
+      _log('Channel creation error: $e');
+    }
+  }
+
+  Future<void> _requestPermissions() async {
+    try {
+      final androidImpl = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidImpl != null) {
+        try {
+          await androidImpl.requestNotificationsPermission();
+          _log('Notification permission requested');
+        } catch (e) {
+          _log('Notification permission error: $e');
+        }
+      }
+    } catch (e) {
+      _log('Permission request error: $e');
+    }
+
+    // NOTE: requestBatteryOptimizationExemption() intentionally removed from startup!
+    // It is now strictly manual from the Settings page so it never annoys the user.
+  }
+
+  /// Request notification permission directly (usable from settings / home)
+  Future<bool> requestNotificationsPermission() async {
+    try {
+      final androidImpl = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImpl != null) {
+        final result = await androidImpl.requestNotificationsPermission();
+        return result ?? false;
+      }
+      return true;
+    } catch (e) {
+      _log('requestNotificationsPermission error: $e');
+      return false;
+    }
+  }
+
+  /// Check if the system allows notifications for this app
+  Future<bool> areNotificationsEnabled() async {
+    try {
+      final androidImpl = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImpl != null) {
+        final result = await androidImpl.areNotificationsEnabled();
+        return result ?? false;
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Check if exact alarms are permitted
+  Future<bool> canScheduleExactAlarms() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      return await Permission.scheduleExactAlarm.isGranted;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Request the system to exempt this app from battery optimization (Manual only).
+  Future<bool> requestBatteryOptimizationExemption() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final status = await Permission.ignoreBatteryOptimizations.status;
+      _log('Battery opt status: $status');
+      if (!status.isGranted) {
+        final result = await Permission.ignoreBatteryOptimizations.request();
+        _log('Battery opt request result: $result');
+        return result.isGranted;
+      }
+      return true;
+    } catch (e) {
+      _log('Battery opt error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> isBatteryOptimizationExempted() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      return (await Permission.ignoreBatteryOptimizations.status).isGranted;
+    } catch (_) {
+      return false;
     }
   }
 
   Future<void> cancelAllNotifications() async {
     await _notificationsPlugin.cancelAll();
+    _log('All notifications cancelled');
   }
 
-  /// Show an immediate test notification to verify delivery & Takbeer sound
+  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+    return await _notificationsPlugin.pendingNotificationRequests();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // TEST METHODS — for verifying notifications work on the device
+  // ═══════════════════════════════════════════════════════════════
+
+  /// SIMPLEST possible test — default sound, minimal config
+  Future<String> showSimpleTestNotification() async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'prayer_times_default_sound',
+        'تنبيهات الصلاة (صوت افتراضي)',
+        channelDescription: 'إشعارات أوقات الصلاة بالصوت الافتراضي للنظام',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        enableVibration: true,
+        autoCancel: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const details = NotificationDetails(android: androidDetails);
+
+      await _notificationsPlugin.show(
+        777,
+        '✅ تجربة ناجحة — الإشعارات تعمل!',
+        'هذا إشعار تجريبي بالصوت الافتراضي للنظام',
+        details,
+      );
+      _log('Simple test notification shown (id=777) ✅');
+      return 'success';
+    } catch (e) {
+      _log('Simple test FAILED: $e');
+      return 'error: $e';
+    }
+  }
+
+  /// Test with TAKBEER custom sound
+  Future<String> showTakbeerTestNotification() async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        AppConstants.notificationChannelId,
+        AppConstants.notificationChannelName,
+        channelDescription: AppConstants.notificationChannelDesc,
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(AppConstants.notificationSoundName),
+        enableVibration: true,
+        autoCancel: true,
+        icon: '@mipmap/ic_launcher',
+        category: AndroidNotificationCategory.alarm,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        visibility: NotificationVisibility.public,
+      );
+
+      const details = NotificationDetails(android: androidDetails);
+
+      await _notificationsPlugin.show(
+        888,
+        '🕌 الله أكبر الله أكبر — تجربة صوت التكبير',
+        'التنبيه يعمل بصوت التكبير والحمد لله',
+        details,
+      );
+      _log('Takbeer test notification shown (id=888) ✅');
+      return 'success';
+    } catch (e) {
+      _log('Takbeer test FAILED: $e');
+      return 'error: $e';
+    }
+  }
+
+  /// Show an immediate test notification (legacy method)
   Future<void> showTestNotification({required bool isSoundEnabled}) async {
-    final androidDetails = AndroidNotificationDetails(
-      AppConstants.notificationChannelId,
-      AppConstants.notificationChannelName,
-      channelDescription: AppConstants.notificationChannelDesc,
-      importance: Importance.max,
-      priority: Priority.max,
-      playSound: isSoundEnabled,
-      sound: isSoundEnabled
-          ? const RawResourceAndroidNotificationSound(AppConstants.notificationSoundName)
-          : null,
-      enableVibration: isSoundEnabled,
-      autoCancel: true,
-      icon: '@mipmap/ic_launcher',
-      category: AndroidNotificationCategory.alarm,
-      audioAttributesUsage: AudioAttributesUsage.alarm,
-      visibility: NotificationVisibility.public,
-    );
-
-    final notificationDetails = NotificationDetails(android: androidDetails);
-
-    await _notificationsPlugin.show(
-      999,
-      '🕌 الله أكبر الله أكبر — تجربة تنبيه الصلاة',
-      'التنبيه يعمل بصوت التكبير وسينبهك عند الأذان ومع فترات الإقامة بإذن الله.',
-      notificationDetails,
-    );
+    await showTakbeerTestNotification();
   }
 
-  /// Schedule prayer notifications 7 days in advance for all chosen alert timings
+  /// Schedule a test alarm N seconds from now
+  Future<String> scheduleTestAlarmInSeconds({
+    required int seconds,
+    required bool isSoundEnabled,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final fireAt = now.add(Duration(seconds: seconds));
+      final tzDate = _localDateTimeToTZ(fireAt);
+
+      _log('Scheduling test: now=$now, fireAt=$fireAt, tz=${tz.local.name}, tzDate=$tzDate');
+
+      const androidDetails = AndroidNotificationDetails(
+        AppConstants.notificationChannelId,
+        AppConstants.notificationChannelName,
+        channelDescription: AppConstants.notificationChannelDesc,
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(AppConstants.notificationSoundName),
+        enableVibration: true,
+        autoCancel: true,
+        icon: '@mipmap/ic_launcher',
+        category: AndroidNotificationCategory.alarm,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        visibility: NotificationVisibility.public,
+      );
+
+      const details = NotificationDetails(android: androidDetails);
+
+      final result = await _scheduleWithFallback(
+        id: 8888,
+        title: '🕌 الله أكبر — تجربة الأذان المجدول',
+        body: 'نجحت تجربة الأذان المجدول والحمد لله! ⏰',
+        tzDate: tzDate,
+        details: details,
+      );
+
+      // Verify
+      final pending = await getPendingNotifications();
+      final found = pending.any((p) => p.id == 8888);
+      _log('Test alarm verify: registered=$found, totalPending=${pending.length}');
+
+      return result;
+    } catch (e) {
+      _log('Schedule test FAILED: $e');
+      return 'error: $e';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // CORE SCHEDULING
+  // ═══════════════════════════════════════════════════════════════
+
+  tz.TZDateTime _localDateTimeToTZ(DateTime local) {
+    return tz.TZDateTime.from(local, tz.local);
+  }
+
+  /// Schedule with cascading fallback: exactAllowWhileIdle → alarmClock → inexact
+  Future<String> _scheduleWithFallback({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime tzDate,
+    required NotificationDetails details,
+  }) async {
+    // Try 1: exactAllowWhileIdle (primary mode for prayer times - wakes from Doze, exact second)
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id, title, body, tzDate, details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      _log('✅ Scheduled id=$id via exactAllowWhileIdle at $tzDate');
+      return 'exactAllowWhileIdle';
+    } catch (e) {
+      _log('⚠️ exactAllowWhileIdle failed id=$id: $e');
+    }
+
+    // Try 2: alarmClock (fallback)
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id, title, body, tzDate, details,
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      _log('✅ Scheduled id=$id via alarmClock at $tzDate');
+      return 'alarmClock';
+    } catch (e) {
+      _log('⚠️ alarmClock failed id=$id: $e');
+    }
+
+    // Try 3: inexact (last resort)
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id, title, body, tzDate, details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      _log('✅ Scheduled id=$id via inexact at $tzDate');
+      return 'inexact';
+    } catch (e) {
+      _log('❌ ALL modes failed id=$id: $e');
+      return 'failed: $e';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // WEEKLY PRAYER SCHEDULING
+  // ═══════════════════════════════════════════════════════════════
+
   Future<void> scheduleWeeklyPrayerNotifications({
     required PrayerCalculationService calculationService,
     required double latitude,
@@ -122,9 +481,15 @@ class NotificationService {
   }) async {
     await cancelAllNotifications();
 
-    if (!isEnabled || notificationOffsets.isEmpty) return;
+    if (!isEnabled || notificationOffsets.isEmpty) {
+      _log('Notifications disabled or no offsets — skipping');
+      return;
+    }
+
+    _log('Weekly scheduling: offsets=$notificationOffsets, days=$daysToSchedule, tz=${tz.local.name}');
 
     final now = DateTime.now();
+    int ok = 0, skip = 0, fail = 0;
 
     for (int dayOffset = 0; dayOffset < daysToSchedule; dayOffset++) {
       final targetDate = now.add(Duration(days: dayOffset));
@@ -159,10 +524,9 @@ class NotificationService {
         final prayerIndex = entry.key;
         final prayer = entry.value;
 
-        // Schedule every selected offset timing for this prayer
         for (int k = 0; k < notificationOffsets.length; k++) {
           final offset = notificationOffsets[k];
-          final notificationId = 10000 + (dayOffset * 1000) + (prayerIndex * 100) + (k + 1);
+          final notifId = 10000 + (dayOffset * 1000) + (prayerIndex * 100) + (k + 1);
 
           DateTime alertTime;
           String title;
@@ -176,68 +540,34 @@ class NotificationService {
             if (offset == 0) {
               title = isArabic ? '🕌 الله أكبر — حان موعد صلاة $prayerName' : '🕌 $prayerName Prayer Time';
               final iqamahInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0)
-                  ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة'
-                  : '';
-              body = isArabic
-                  ? 'دخل الآن وقت صلاة $prayerName$iqamahInfo'
-                  : '$prayerName time has started.';
+                  ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة' : '';
+              body = isArabic ? 'دخل الآن وقت صلاة $prayerName$iqamahInfo' : '$prayerName time has started.';
             } else {
               title = isArabic ? '⏳ اقتراب موعد صلاة $prayerName' : '⏳ $prayerName Prayer Upcoming';
-              body = isArabic
-                  ? 'متبقي $minutesBefore دقائق على أذان صلاة $prayerName'
-                  : '$prayerName is in $minutesBefore minutes.';
+              body = isArabic ? 'متبقي $minutesBefore دقائق على أذان صلاة $prayerName' : '$prayerName is in $minutesBefore minutes.';
             }
           } else {
-            // Offset after Adhan
             alertTime = prayer.time.add(Duration(minutes: offset));
             title = isArabic ? '⏳ تذكير بعد أذان $prayerName' : '⏳ $prayerName Post-Adhan Reminder';
-            body = isArabic
-                ? 'مضى $offset دقائق على أذان صلاة $prayerName'
-                : '$offset minutes passed since $prayerName Adhan.';
+            body = isArabic ? 'مضى $offset دقائق على أذان صلاة $prayerName' : '$offset minutes passed since $prayerName Adhan.';
           }
 
-          if (alertTime.isAfter(now.add(const Duration(seconds: 2)))) {
-            await _scheduleSingleNotification(
-              id: notificationId,
-              title: title,
-              body: body,
-              scheduledDate: alertTime,
-              isSoundEnabled: isSoundEnabled,
+          if (alertTime.isAfter(now.add(const Duration(seconds: 5)))) {
+            final result = await _scheduleSingleNotification(
+              id: notifId, title: title, body: body,
+              scheduledDate: alertTime, isSoundEnabled: isSoundEnabled,
             );
-          }
-        }
-
-        // Periodic Iqamah window reminders if enabled
-        if (prayer.type.isActualPrayer && prayer.iqamahOffsetMinutes > 5) {
-          final totalIqamahMinutes = prayer.iqamahOffsetMinutes;
-          for (int m = 5; m < totalIqamahMinutes; m += 5) {
-            // If already explicitly scheduled as a user offset, skip duplicate
-            if (notificationOffsets.contains(m)) continue;
-
-            final reminderTime = prayer.time.add(Duration(minutes: m));
-            final remainingToIqamah = totalIqamahMinutes - m;
-
-            if (reminderTime.isAfter(now.add(const Duration(seconds: 2)))) {
-              final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
-              final reminderTitle = isArabic
-                  ? '⏳ تذكير إقامة صلاة $prayerName'
-                  : '⏳ $prayerName Iqamah Reminder';
-              final reminderBody = isArabic
-                  ? 'متبقي $remainingToIqamah دقائق على إقامة صلاة $prayerName'
-                  : '$remainingToIqamah minutes remaining to $prayerName Iqamah.';
-
-              await _scheduleSingleNotification(
-                id: 50000 + (dayOffset * 1000) + (prayerIndex * 100) + (m ~/ 5),
-                title: reminderTitle,
-                body: reminderBody,
-                scheduledDate: reminderTime,
-                isSoundEnabled: isSoundEnabled,
-              );
-            }
+            if (result.startsWith('failed')) { fail++; } else { ok++; }
+          } else {
+            skip++;
           }
         }
       }
     }
+
+    _log('Weekly done: $ok scheduled, $skip skipped, $fail failed');
+    final pending = await getPendingNotifications();
+    _log('System reports ${pending.length} pending notifications');
   }
 
   /// Single day schedule helper for backward compatibility
@@ -250,10 +580,9 @@ class NotificationService {
     required bool is24Hour,
   }) async {
     await cancelAllNotifications();
-
     if (!isEnabled) return;
 
-    final prayersToSchedule = [
+    final prayers = [
       MapEntry(101, prayerDay.fajr),
       MapEntry(102, prayerDay.dhuhr),
       MapEntry(103, prayerDay.asr),
@@ -262,53 +591,33 @@ class NotificationService {
     ];
 
     final now = DateTime.now();
-
-    for (final entry in prayersToSchedule) {
-      final baseId = entry.key;
+    for (final entry in prayers) {
       final prayer = entry.value;
-
-      final adhanNotificationTime = prayer.time.subtract(Duration(minutes: offsetMinutes));
-
-      if (adhanNotificationTime.isAfter(now.add(const Duration(seconds: 2)))) {
+      final alertTime = prayer.time.subtract(Duration(minutes: offsetMinutes));
+      if (alertTime.isAfter(now.add(const Duration(seconds: 5)))) {
         final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
-
-        String title;
-        String body;
-
+        String title, body;
         if (offsetMinutes == 0) {
           title = isArabic ? '🕌 الله أكبر — حان موعد صلاة $prayerName' : '🕌 $prayerName Prayer Time';
-          final iqamahInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0)
-              ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة'
-              : '';
-          body = isArabic
-              ? 'دخل الآن وقت صلاة $prayerName$iqamahInfo'
-              : '$prayerName time has started.';
+          final iqInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0) ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة' : '';
+          body = isArabic ? 'دخل الآن وقت صلاة $prayerName$iqInfo' : '$prayerName time has started.';
         } else {
-          title = isArabic ? '⏳ اقتراب موعد صلاة $prayerName' : '⏳ $prayerName Prayer Upcoming';
-          body = isArabic
-              ? 'متبقي $offsetMinutes دقائق على أذان صلاة $prayerName'
-              : '$prayerName is in $offsetMinutes minutes.';
+          title = isArabic ? '⏳ اقتراب موعد صلاة $prayerName' : '⏳ $prayerName Upcoming';
+          body = isArabic ? 'متبقي $offsetMinutes دقائق على أذان صلاة $prayerName' : '$prayerName in $offsetMinutes min.';
         }
-
-        await _scheduleSingleNotification(
-          id: baseId,
-          title: title,
-          body: body,
-          scheduledDate: adhanNotificationTime,
-          isSoundEnabled: isSoundEnabled,
-        );
+        await _scheduleSingleNotification(id: entry.key, title: title, body: body, scheduledDate: alertTime, isSoundEnabled: isSoundEnabled);
       }
     }
   }
 
-  Future<void> _scheduleSingleNotification({
+  Future<String> _scheduleSingleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
     required bool isSoundEnabled,
   }) async {
-    final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
+    final tzDate = _localDateTimeToTZ(scheduledDate);
 
     final androidDetails = AndroidNotificationDetails(
       AppConstants.notificationChannelId,
@@ -328,32 +637,10 @@ class NotificationService {
       visibility: NotificationVisibility.public,
     );
 
-    final notificationDetails = NotificationDetails(android: androidDetails);
+    final details = NotificationDetails(android: androidDetails);
 
-    try {
-      await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        tzScheduledDate,
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-    } catch (_) {
-      try {
-        await _notificationsPlugin.zonedSchedule(
-          id,
-          title,
-          body,
-          tzScheduledDate,
-          notificationDetails,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-        );
-      } catch (_) {}
-    }
+    return await _scheduleWithFallback(
+      id: id, title: title, body: body, tzDate: tzDate, details: details,
+    );
   }
 }

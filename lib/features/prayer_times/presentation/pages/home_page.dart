@@ -12,8 +12,35 @@ import '../widgets/header_widget.dart';
 import '../widgets/next_prayer_card.dart';
 import '../widgets/prayer_list.dart';
 
-class HomePage extends StatelessWidget {
+import '../../../../services/notification_service.dart';
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkNotificationPermissions();
+    });
+  }
+
+  void _checkNotificationPermissions() async {
+    if (!mounted) return;
+    final settingsState = context.read<SettingsBloc>().state;
+    if (settingsState.notificationsEnabled) {
+      final ns = NotificationService();
+      final enabled = await ns.areNotificationsEnabled();
+      if (!enabled) {
+        await ns.requestNotificationsPermission();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

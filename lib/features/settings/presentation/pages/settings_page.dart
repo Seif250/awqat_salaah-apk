@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/prayer_constants.dart';
 import '../../../../services/notification_service.dart';
@@ -108,8 +109,22 @@ class SettingsPage extends StatelessWidget {
                       title: const Text('تفعيل إشعارات الصلاة'),
                       subtitle: const Text('إرسال تنبيه على الشاشة عند دخول الوقت'),
                       value: state.notificationsEnabled,
-                      onChanged: (val) {
-                        context.read<SettingsBloc>().add(ToggleNotificationsEvent(val));
+                      onChanged: (val) async {
+                        if (val) {
+                          final ns = NotificationService();
+                          final granted = await ns.requestNotificationsPermission();
+                          if (!granted && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('⚠️ يرجى السماح بالإشعارات من إعدادات النظام ليعمل التنبيه'),
+                                duration: Duration(seconds: 4),
+                              ),
+                            );
+                          }
+                        }
+                        if (context.mounted) {
+                          context.read<SettingsBloc>().add(ToggleNotificationsEvent(val));
+                        }
                       },
                     ),
                     if (state.notificationsEnabled) ...[
@@ -136,23 +151,107 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
                       const Divider(height: 1),
+                      // ── TEST 1: Simplest possible notification (default sound) ──
                       ListTile(
-                        leading: const Icon(Icons.send_rounded, color: AppColors.accentGold),
-                        title: const Text('إرسال إشعار تجريبي الآن'),
-                        subtitle: const Text('لتجربة ظهور الإشعار على هاتفك'),
+                        leading: const Icon(Icons.notifications_active, color: Colors.blue),
+                        title: const Text('تجربة 1: إشعار بسيط (صوت النظام)'),
+                        subtitle: const Text('أبسط إشعار ممكن بالصوت الافتراضي للتأكد أن الإشعارات تعمل أصلاً'),
                         onTap: () async {
-                          await NotificationService().showTestNotification(
-                            isSoundEnabled: state.notificationSoundEnabled,
-                          );
+                          final result = await NotificationService().showSimpleTestNotification();
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('تم إرسال الإشعار التجريبي بنجاح! تفقد شريط الإشعارات أعلى الشاشة.'),
-                                duration: Duration(seconds: 3),
+                              SnackBar(
+                                content: Text(result == 'success'
+                                    ? '✅ تم إرسال الإشعار البسيط! تفقد شريط الإشعارات'
+                                    : '❌ فشل: $result'),
+                                duration: const Duration(seconds: 5),
+                                backgroundColor: result == 'success' ? Colors.green : Colors.red,
                               ),
                             );
                           }
                         },
+                      ),
+                      const Divider(height: 1),
+                      // ── TEST 2: Takbeer sound notification ──
+                      ListTile(
+                        leading: const Icon(Icons.volume_up_rounded, color: AppColors.accentGold),
+                        title: const Text('تجربة 2: إشعار بصوت التكبير'),
+                        subtitle: const Text('إشعار فوري مع صوت التكبير المخصص'),
+                        onTap: () async {
+                          final result = await NotificationService().showTakbeerTestNotification();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(result == 'success'
+                                    ? '✅ تم إرسال إشعار التكبير! تفقد شريط الإشعارات'
+                                    : '❌ فشل: $result'),
+                                duration: const Duration(seconds: 5),
+                                backgroundColor: result == 'success' ? Colors.green : Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      const Divider(height: 1),
+                      // ── TEST 3: Scheduled alarm (background) ──
+                      ListTile(
+                        leading: const Icon(Icons.alarm_on_rounded, color: Colors.deepPurple),
+                        title: const Text('تجربة 3: تنبيه مجدول (بعد 15 ثانية)'),
+                        subtitle: const Text('أغلق التطبيق تماماً واقفل الشاشة — سيصدح التكبير بعد 15 ثانية'),
+                        onTap: () async {
+                          final result = await NotificationService().scheduleTestAlarmInSeconds(
+                            seconds: 15,
+                            isSoundEnabled: state.notificationSoundEnabled,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(result.startsWith('failed')
+                                    ? '❌ فشل الجدولة: $result'
+                                    : '✅ تمت الجدولة بنجاح ($result)! أغلق التطبيق واقفل الشاشة'),
+                                duration: const Duration(seconds: 6),
+                                backgroundColor: result.startsWith('failed') ? Colors.red : Colors.green,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      const Divider(height: 1),
+                      // ── Battery Optimization Exemption ──
+                      ListTile(
+                        leading: const Icon(Icons.battery_saver_rounded, color: Colors.green),
+                        title: const Text('إيقاف تقييد البطارية'),
+                        subtitle: const Text('ضروري لضمان عمل الأذان والإشعارات في الخلفية — اضغط لإعفاء التطبيق من وضع توفير الطاقة'),
+                        onTap: () async {
+                          final ns = NotificationService();
+                          final granted = await ns.requestBatteryOptimizationExemption();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(granted
+                                    ? '✅ التطبيق معفى من تقييد البطارية — الأذان سيعمل في الخلفية بإذن الله'
+                                    : '⚠️ يرجى إعفاء التطبيق يدوياً من إعدادات البطارية'),
+                                duration: const Duration(seconds: 4),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      const Divider(height: 1),
+                      // ── AutoStart Guidance for Realme/Oppo/Xiaomi ──
+                      ListTile(
+                        leading: const Icon(Icons.rocket_launch_rounded, color: Colors.orange),
+                        title: const Text('تفعيل التشغيل التلقائي (AutoStart)'),
+                        subtitle: const Text('مهم لهواتف Realme/Oppo/Xiaomi — افتح الإعدادات وفعّل التشغيل التلقائي للتطبيق'),
+                        onTap: () => _showAutoStartGuide(context),
+                      ),
+                      const Divider(height: 1),
+                      // ── Diagnostic Check ──
+                      ListTile(
+                        leading: const Icon(Icons.bug_report_rounded, color: Colors.blueGrey),
+                        title: const Text('فحص حالة الإشعارات'),
+                        subtitle: const Text('عرض عدد التنبيهات المجدولة فعلياً وسجل التشخيص'),
+                        onTap: () => _showDiagnosticsDialog(context),
                       ),
                     ],
                   ],
@@ -720,6 +819,246 @@ class SettingsPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAutoStartGuide(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.rocket_launch_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Expanded(child: Text('تفعيل التشغيل التلقائي', style: TextStyle(fontSize: 18))),
+          ],
+        ),
+        content: const SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'هواتف Realme / Oppo / Xiaomi تمنع التطبيقات من العمل في الخلفية تلقائياً.\n\n'
+                'لتفعيل الأذان والإشعارات بشكل دائم، اتبع الخطوات التالية:',
+                style: TextStyle(height: 1.6),
+              ),
+              SizedBox(height: 16),
+              Text('📱 لهواتف Realme / Oppo:', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text(
+                '1. افتح الإعدادات → إدارة التطبيقات\n'
+                '2. ابحث عن "أوقات الصلاة"\n'
+                '3. فعّل "السماح بالتشغيل التلقائي" (Auto-launch)\n'
+                '4. في "استخدام البطارية" اختر "السماح بالعمل في الخلفية"\n'
+                '5. في التطبيقات الأخيرة (Recent Apps) اضغط مطولاً على التطبيق ثم اقفله 🔒',
+                style: TextStyle(height: 1.8),
+              ),
+              SizedBox(height: 16),
+              Text('📱 لهواتف Xiaomi:', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text(
+                '1. افتح الإعدادات → التطبيقات → إدارة التطبيقات\n'
+                '2. ابحث عن "أوقات الصلاة"\n'
+                '3. فعّل "التشغيل التلقائي" (AutoStart)\n'
+                '4. في "توفير البطارية" اختر "بلا قيود"',
+                style: TextStyle(height: 1.8),
+              ),
+              SizedBox(height: 16),
+              Text('📱 لهواتف Samsung:', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text(
+                '1. افتح الإعدادات → العناية بالجهاز → البطارية\n'
+                '2. اختر "تطبيقات لا تراقبها" وأضف "أوقات الصلاة"\n'
+                '3. أو اختر "التطبيقات غير النائمة"',
+                style: TextStyle(height: 1.8),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await openAppSettings();
+            },
+            child: const Text('فتح إعدادات التطبيق'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('تم'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDiagnosticsDialog(BuildContext context) async {
+    final ns = NotificationService();
+    final pending = await ns.getPendingNotifications();
+    final batteryExempt = await ns.isBatteryOptimizationExempted();
+    final notifsEnabled = await ns.areNotificationsEnabled();
+    final exactAllowed = await ns.canScheduleExactAlarms();
+    final log = ns.diagnosticLog;
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.bug_report_rounded, color: Colors.blueGrey),
+            SizedBox(width: 8),
+            Expanded(child: Text('تشخيص الإشعارات', style: TextStyle(fontSize: 18))),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Status Summary
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: pending.isNotEmpty ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            pending.isNotEmpty ? Icons.check_circle : Icons.error,
+                            color: pending.isNotEmpty ? Colors.green : Colors.red,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'التنبيهات المجدولة: ${pending.length}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            notifsEnabled ? Icons.check_circle : Icons.error,
+                            color: notifsEnabled ? Colors.green : Colors.red,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              notifsEnabled
+                                  ? 'إذن الإشعارات: مفعّل للنظام ✅'
+                                  : 'إذن الإشعارات: معطل بالنظام ❌',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: notifsEnabled ? Colors.green : Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            exactAllowed ? Icons.check_circle : Icons.warning,
+                            color: exactAllowed ? Colors.green : Colors.orange,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              exactAllowed
+                                  ? 'المنبهات الدقيقة: مسموحة ✅'
+                                  : 'المنبهات الدقيقة: مقيدة بالنظام ⚠️',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: exactAllowed ? Colors.green : Colors.orange,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            batteryExempt ? Icons.check_circle : Icons.info_outline,
+                            color: batteryExempt ? Colors.green : Colors.blueGrey,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              batteryExempt
+                                  ? 'إعفاء البطارية: معفى ✅'
+                                  : 'إعفاء البطارية: عادي (اختياري)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: batteryExempt ? Colors.green : Colors.blueGrey,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                if (pending.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text('أقرب 5 تنبيهات مجدولة:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ...pending.take(5).map((p) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '• [${p.id}] ${p.title ?? "—"}',
+                      style: const TextStyle(fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )),
+                ],
+                if (log.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text('سجل التشخيص (آخر 20 سطر):', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      log.reversed.take(20).join('\n'),
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 10,
+                        color: Colors.greenAccent,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إغلاق'),
+          ),
+        ],
       ),
     );
   }

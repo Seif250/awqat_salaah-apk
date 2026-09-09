@@ -49,9 +49,9 @@ class AppConstants {
   static const String keyWidgetMaghrib = 'widget_maghrib';
   static const String keyWidgetIsha = 'widget_isha';
 
-  // Notification Channel with Takbeer sound
-  static const String notificationChannelId = 'prayer_times_takbeer_channel_v4';
-  static const String notificationChannelName = 'تنبيهات الأذان والإقامة (تكبير)';
-  static const String notificationChannelDesc = 'إشعارات وتنبيهات أوقات الصلاة بصوت التكبير وتذكير الإقامة';
+  // Notification Channel with Takbeer sound (v7 for High Priority & Exact Alarms)
+  static const String notificationChannelId = 'prayer_times_takbeer_channel_v7';
+  static const String notificationChannelName = 'أذان الصلوات الخمس والتنبيهات (تكبير)';
+  static const String notificationChannelDesc = 'إشعارات وتنبيهات أوقات الصلاة بصوت التكبير بأعلى أولوية';
   static const String notificationSoundName = 'takbeer';
 }
