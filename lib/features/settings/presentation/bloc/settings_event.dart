@@ -116,3 +116,43 @@ class UpdateIqamahOffsetsEvent extends SettingsEvent {
   @override
   List<Object?> get props => [fajr, dhuhr, asr, maghrib, isha];
 }
+
+class ToggleAzkarMorningReminderEvent extends SettingsEvent {
+  final bool enabled;
+  const ToggleAzkarMorningReminderEvent(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+class ToggleAzkarEveningReminderEvent extends SettingsEvent {
+  final bool enabled;
+  const ToggleAzkarEveningReminderEvent(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+class ToggleAzkarSleepReminderEvent extends SettingsEvent {
+  final bool enabled;
+  const ToggleAzkarSleepReminderEvent(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+class ToggleAzkarQiyamReminderEvent extends SettingsEvent {
+  final bool enabled;
+  const ToggleAzkarQiyamReminderEvent(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+class UpdateAzkarQiyamMinutesEvent extends SettingsEvent {
+  final int minutes;
+  const UpdateAzkarQiyamMinutesEvent(this.minutes);
+
+  @override
+  List<Object?> get props => [minutes];
+}

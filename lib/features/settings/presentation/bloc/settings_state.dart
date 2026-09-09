@@ -27,6 +27,13 @@ class SettingsState extends Equatable {
   final int iqamahMaghrib;
   final int iqamahIsha;
 
+  // Azkar Reminders
+  final bool isAzkarMorningReminderEnabled;
+  final bool isAzkarEveningReminderEnabled;
+  final bool isAzkarSleepReminderEnabled;
+  final bool isAzkarQiyamReminderEnabled;
+  final int azkarQiyamMinutesBeforeFajr;
+
   const SettingsState({
     this.calculationMethod = AppCalculationMethod.muslimWorldLeague,
     this.madhab = AppMadhab.shafi,
@@ -47,6 +54,11 @@ class SettingsState extends Equatable {
     this.iqamahAsr = 15,
     this.iqamahMaghrib = 10,
     this.iqamahIsha = 15,
+    this.isAzkarMorningReminderEnabled = true,
+    this.isAzkarEveningReminderEnabled = true,
+    this.isAzkarSleepReminderEnabled = true,
+    this.isAzkarQiyamReminderEnabled = true,
+    this.azkarQiyamMinutesBeforeFajr = 60,
   });
 
   SettingsState copyWith({
@@ -69,6 +81,11 @@ class SettingsState extends Equatable {
     int? iqamahAsr,
     int? iqamahMaghrib,
     int? iqamahIsha,
+    bool? isAzkarMorningReminderEnabled,
+    bool? isAzkarEveningReminderEnabled,
+    bool? isAzkarSleepReminderEnabled,
+    bool? isAzkarQiyamReminderEnabled,
+    int? azkarQiyamMinutesBeforeFajr,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -92,6 +109,16 @@ class SettingsState extends Equatable {
       iqamahAsr: iqamahAsr ?? this.iqamahAsr,
       iqamahMaghrib: iqamahMaghrib ?? this.iqamahMaghrib,
       iqamahIsha: iqamahIsha ?? this.iqamahIsha,
+      isAzkarMorningReminderEnabled:
+          isAzkarMorningReminderEnabled ?? this.isAzkarMorningReminderEnabled,
+      isAzkarEveningReminderEnabled:
+          isAzkarEveningReminderEnabled ?? this.isAzkarEveningReminderEnabled,
+      isAzkarSleepReminderEnabled:
+          isAzkarSleepReminderEnabled ?? this.isAzkarSleepReminderEnabled,
+      isAzkarQiyamReminderEnabled:
+          isAzkarQiyamReminderEnabled ?? this.isAzkarQiyamReminderEnabled,
+      azkarQiyamMinutesBeforeFajr:
+          azkarQiyamMinutesBeforeFajr ?? this.azkarQiyamMinutesBeforeFajr,
     );
   }
 
@@ -116,5 +143,10 @@ class SettingsState extends Equatable {
         iqamahAsr,
         iqamahMaghrib,
         iqamahIsha,
+        isAzkarMorningReminderEnabled,
+        isAzkarEveningReminderEnabled,
+        isAzkarSleepReminderEnabled,
+        isAzkarQiyamReminderEnabled,
+        azkarQiyamMinutesBeforeFajr,
       ];
 }

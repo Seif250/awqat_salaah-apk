@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'features/azkar/data/repositories/azkar_repository.dart';
+import 'features/azkar/presentation/bloc/azkar_bloc.dart';
+import 'features/azkar/presentation/bloc/azkar_event.dart';
 import 'features/location/data/repositories/location_repository_impl.dart';
 import 'features/location/presentation/bloc/location_bloc.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/prayer_times/presentation/bloc/prayer_bloc.dart';
 import 'features/prayer_times/presentation/bloc/prayer_event.dart';
 import 'features/prayer_times/presentation/pages/home_page.dart';
+import 'features/prayer_times/presentation/pages/main_navigation_screen.dart';
 import 'features/settings/presentation/bloc/settings_bloc.dart';
 import 'features/settings/presentation/bloc/settings_event.dart';
 import 'features/settings/presentation/bloc/settings_state.dart';
@@ -51,11 +55,16 @@ class AwqatSalaahApp extends StatelessWidget {
             notificationService: notificationService,
           )..add(const LoadPrayerTimesEvent()),
         ),
+        BlocProvider<AzkarBloc>(
+          create: (_) => AzkarBloc(
+            repository: AzkarRepository(storageService.prefs),
+          )..add(const LoadAzkarEvent()),
+        ),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, settingsState) {
           return MaterialApp(
-            title: 'أوقات الصلاة',
+            title: 'أوقات الصلاة والأذكار',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
@@ -72,7 +81,7 @@ class AwqatSalaahApp extends StatelessWidget {
             ],
             home: storageService.isFirstLaunch
                 ? OnboardingPage(storageService: storageService)
-                : const HomePage(),
+                : const MainNavigationScreen(),
           );
         },
       ),

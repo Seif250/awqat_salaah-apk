@@ -54,4 +54,15 @@ class AppConstants {
   static const String notificationChannelName = 'أذان الصلوات الخمس والتنبيهات (تكبير)';
   static const String notificationChannelDesc = 'إشعارات وتنبيهات أوقات الصلاة بصوت التكبير بأعلى أولوية';
   static const String notificationSoundName = 'takbeer';
+
+  // Azkar Notification Channel & Keys
+  static const String azkarChannelId = 'azkar_reminders_channel_v1';
+  static const String azkarChannelName = 'تذكير الأذكار والورد اليومي';
+  static const String azkarChannelDesc = 'تذكيرات لطيفة بأذكار الصباح والمساء وقيام الليل وأذكار النوم';
+
+  static const String keyAzkarMorningReminderEnabled = 'azkar_morning_reminder_enabled';
+  static const String keyAzkarEveningReminderEnabled = 'azkar_evening_reminder_enabled';
+  static const String keyAzkarSleepReminderEnabled = 'azkar_sleep_reminder_enabled';
+  static const String keyAzkarQiyamReminderEnabled = 'azkar_qiyam_reminder_enabled';
+  static const String keyAzkarQiyamMinutesBeforeFajr = 'azkar_qiyam_minutes_before_fajr';
 }

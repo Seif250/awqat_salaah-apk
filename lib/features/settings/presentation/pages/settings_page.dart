@@ -285,6 +285,56 @@ class SettingsPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
+              // Section: Azkar & Qiyam Reminders
+              _buildSectionHeader(context, 'تنبيهات الأذكار وقيام الليل', Icons.auto_stories_outlined),
+              _buildCard(
+                context,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: const Text('أذكار الصباح'),
+                      subtitle: const Text('تنبيه بعد الفجر + تذكير إضافي قبل الظهر إذا لم تقرأ'),
+                      value: state.isAzkarMorningReminderEnabled,
+                      onChanged: (val) {
+                        context.read<SettingsBloc>().add(ToggleAzkarMorningReminderEvent(val));
+                      },
+                    ),
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      title: const Text('أذكار المساء'),
+                      subtitle: const Text('تنبيه وقت العصر + تذكير قبل العشاء إذا لم تقرأ'),
+                      value: state.isAzkarEveningReminderEnabled,
+                      onChanged: (val) {
+                        context.read<SettingsBloc>().add(ToggleAzkarEveningReminderEvent(val));
+                      },
+                    ),
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      title: const Text('أذكار النوم'),
+                      subtitle: const Text('تنبيه لطيف قبل النوم في الساعة 10:30 مساءً'),
+                      value: state.isAzkarSleepReminderEnabled,
+                      onChanged: (val) {
+                        context.read<SettingsBloc>().add(ToggleAzkarSleepReminderEvent(val));
+                      },
+                    ),
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      title: const Text('قيام الليل والأسحار'),
+                      subtitle: Text(
+                        state.isAzkarQiyamReminderEnabled
+                            ? 'تنبيه لطيف قبل أذان الفجر بـ ${state.azkarQiyamMinutesBeforeFajr} دقيقة'
+                            : 'تنبيه للاستغفار بالأسحار وقيام الليل',
+                      ),
+                      value: state.isAzkarQiyamReminderEnabled,
+                      onChanged: (val) {
+                        context.read<SettingsBloc>().add(ToggleAzkarQiyamReminderEvent(val));
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // Section: Prayer Adjustments
               _buildSectionHeader(context, 'تعديل يدوي بالدقائق (Adjustments)', Icons.tune_rounded),
               _buildCard(

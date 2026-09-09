@@ -13,6 +13,10 @@ import '../widgets/next_prayer_card.dart';
 import '../widgets/prayer_list.dart';
 
 import '../../../../services/notification_service.dart';
+import '../../../azkar/data/models/azkar_item_model.dart';
+import '../../../azkar/presentation/bloc/azkar_bloc.dart';
+import '../../../azkar/presentation/bloc/azkar_state.dart';
+import 'main_navigation_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -120,7 +124,95 @@ class _HomePageState extends State<HomePage> {
                           remainingDuration: state.remainingDuration,
                           is24Hour: settingsState.is24HourFormat,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 18),
+
+                        // Quick Azkar Ward Card
+                        BlocBuilder<AzkarBloc, AzkarState>(
+                          builder: (context, azkarState) {
+                            if (azkarState is! AzkarLoaded) return const SizedBox.shrink();
+                            final isAllDone = azkarState.totalCategoryCount > 0 &&
+                                azkarState.completedCategoryCount >= azkarState.totalCategoryCount;
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: isDark
+                                      ? [
+                                          AppColors.darkCard,
+                                          AppColors.primaryDark.withValues(alpha: 0.5),
+                                        ]
+                                      : [
+                                          AppColors.lightCard,
+                                          AppColors.primaryContainer.withValues(alpha: 0.3),
+                                        ],
+                                ),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: isAllDone
+                                      ? AppColors.primaryLight.withValues(alpha: 0.5)
+                                      : AppColors.accentGold.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(18),
+                                  onTap: () {
+                                    MainNavigationScreen.of(context)?.navigateToPage(1);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          azkarState.selectedCategory.iconAssetOrEmoji,
+                                          style: const TextStyle(fontSize: 24),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    'الورد الحالي: ${azkarState.selectedCategory.titleArabic}',
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                  if (isAllDone) ...[
+                                                    const SizedBox(width: 6),
+                                                    const Icon(Icons.check_circle_rounded,
+                                                        color: AppColors.primaryLight, size: 16),
+                                                  ],
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                isAllDone
+                                                    ? 'اكتمل الورد بحمد الله 🌿'
+                                                    : 'أنجزت ${azkarState.completedCategoryCount} من ${azkarState.totalCategoryCount} أذكار • اضغط للمتابعة',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: isDark ? Colors.white60 : Colors.black54,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(Icons.arrow_forward_ios_rounded,
+                                            size: 16, color: AppColors.accentGold),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
 
                         // Prayer Times List (Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha)
                         PrayerList(

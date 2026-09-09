@@ -160,6 +160,20 @@ class NotificationService {
 
       await androidImpl.createNotificationChannel(fallbackChannel);
       _log('Fallback channel created: prayer_times_default_sound');
+
+      // Azkar channel with gentle notification sound
+      const azkarChannel = AndroidNotificationChannel(
+        AppConstants.azkarChannelId,
+        AppConstants.azkarChannelName,
+        description: AppConstants.azkarChannelDesc,
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+
+      await androidImpl.createNotificationChannel(azkarChannel);
+      _log('Azkar channel created: ${AppConstants.azkarChannelId}');
     } catch (e) {
       _log('Channel creation error: $e');
     }
@@ -260,6 +274,14 @@ class NotificationService {
   Future<void> cancelAllNotifications() async {
     await _notificationsPlugin.cancelAll();
     _log('All notifications cancelled');
+  }
+
+  Future<void> cancelNotification(int id) async {
+    try {
+      await _notificationsPlugin.cancel(id);
+    } catch (e) {
+      _log('cancelNotification $id error: $e');
+    }
   }
 
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
@@ -651,5 +673,148 @@ class NotificationService {
     return await _scheduleWithFallback(
       id: id, title: title, body: body, tzDate: tzDate, details: details,
     );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // AZKAR SCHEDULING (Morning, Evening, Sleep, Qiyam)
+  // ═══════════════════════════════════════════════════════════
+
+  static const int idMorningAzkar = 20001;
+  static const int idMorningLateReminder = 20002;
+  static const int idEveningAzkar = 20003;
+  static const int idEveningLateReminder = 20004;
+  static const int idSleepAzkar = 20005;
+  static const int idQiyamReminder = 20006;
+
+  Future<void> scheduleAzkarNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+  }) async {
+    final now = DateTime.now();
+    if (!scheduledDate.isAfter(now.add(const Duration(seconds: 5)))) {
+      return;
+    }
+
+    final tzDate = _localDateTimeToTZ(scheduledDate);
+
+    final androidDetails = const AndroidNotificationDetails(
+      AppConstants.azkarChannelId,
+      AppConstants.azkarChannelName,
+      channelDescription: AppConstants.azkarChannelDesc,
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      autoCancel: true,
+      icon: '@mipmap/ic_launcher',
+      category: AndroidNotificationCategory.reminder,
+      visibility: NotificationVisibility.public,
+    );
+
+    final details = NotificationDetails(android: androidDetails);
+
+    await _scheduleWithFallback(
+      id: id,
+      title: title,
+      body: body,
+      tzDate: tzDate,
+      details: details,
+    );
+  }
+
+  Future<void> scheduleDailyAzkarReminders({
+    required DateTime fajrTime,
+    required DateTime dhuhrTime,
+    required DateTime asrTime,
+    required DateTime ishaTime,
+    required bool morningEnabled,
+    required bool eveningEnabled,
+    required bool qiyamEnabled,
+    required bool sleepEnabled,
+    int qiyamMinutesBeforeFajr = 60,
+    bool isMorningCompleted = false,
+    bool isEveningCompleted = false,
+  }) async {
+    // 1. Morning Azkar (30 min after Fajr)
+    if (morningEnabled && !isMorningCompleted) {
+      final morningTime = fajrTime.add(const Duration(minutes: 30));
+      await scheduleAzkarNotification(
+        id: idMorningAzkar,
+        title: '☀️ أذكار الصباح',
+        body: 'ابدأ يومك بنور الأذكار.. حصّن نفسك في حفظ الله ورعايته.',
+        scheduledDate: morningTime,
+      );
+
+      // Morning late reminder (45 min before Dhuhr)
+      final lateMorningTime = dhuhrTime.subtract(const Duration(minutes: 45));
+      await scheduleAzkarNotification(
+        id: idMorningLateReminder,
+        title: '⏳ تذكير بأذكار الصباح',
+        body: 'متبقي القليل على صلاة الظهر.. لا يفوتك ورد الصباح وبركته.',
+        scheduledDate: lateMorningTime,
+      );
+    } else {
+      await cancelNotification(idMorningAzkar);
+      await cancelNotification(idMorningLateReminder);
+    }
+
+    // 2. Evening Azkar (at Asr)
+    if (eveningEnabled && !isEveningCompleted) {
+      final eveningTime = asrTime;
+      await scheduleAzkarNotification(
+        id: idEveningAzkar,
+        title: '🌙 أذكار المساء',
+        body: 'حان وقت أذكار المساء.. حصنك وأمانك لليلتك.',
+        scheduledDate: eveningTime,
+      );
+
+      // Evening late reminder (45 min before Isha)
+      final lateEveningTime = ishaTime.subtract(const Duration(minutes: 45));
+      await scheduleAzkarNotification(
+        id: idEveningLateReminder,
+        title: '⏳ تذكير بأذكار المساء',
+        body: 'متبقي القليل على صلاة العشاء.. تذكير بقراءة ورد المساء.',
+        scheduledDate: lateEveningTime,
+      );
+    } else {
+      await cancelNotification(idEveningAzkar);
+      await cancelNotification(idEveningLateReminder);
+    }
+
+    // 3. Sleep Azkar (at 10:30 PM)
+    if (sleepEnabled) {
+      final now = DateTime.now();
+      var sleepTime = DateTime(now.year, now.month, now.day, 22, 30);
+      if (sleepTime.isBefore(now)) {
+        sleepTime = sleepTime.add(const Duration(days: 1));
+      }
+      await scheduleAzkarNotification(
+        id: idSleepAzkar,
+        title: '🛏️ أذكار النوم',
+        body: 'آية الكرسي وخواتيم البقرة وأذكار النوم راحة وطمأنينة لقلبك.',
+        scheduledDate: sleepTime,
+      );
+    } else {
+      await cancelNotification(idSleepAzkar);
+    }
+
+    // 4. Qiyam Al-Layl Reminder
+    if (qiyamEnabled) {
+      final qiyamTime = fajrTime.subtract(Duration(minutes: qiyamMinutesBeforeFajr));
+      await scheduleAzkarNotification(
+        id: idQiyamReminder,
+        title: '🌌 قيام الليل والأسحار',
+        body: 'ركعة في جوف الليل واستغفار بالأسحار.. وقت النزول الإلهي وإجابة الدعاء.',
+        scheduledDate: qiyamTime,
+      );
+    } else {
+      await cancelNotification(idQiyamReminder);
+    }
+  }
+
+  Future<void> cancelAzkarNotification(int id) async {
+    await cancelNotification(id);
   }
 }

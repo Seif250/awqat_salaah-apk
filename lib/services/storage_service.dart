@@ -8,6 +8,8 @@ class StorageService {
 
   StorageService(this._prefs);
 
+  SharedPreferences get prefs => _prefs;
+
   static Future<StorageService> init() async {
     final prefs = await SharedPreferences.getInstance();
     return StorageService(prefs);
@@ -167,4 +169,35 @@ class StorageService {
     if (maghrib != null) await _prefs.setInt(AppConstants.keyIqamahMaghrib, maghrib);
     if (isha != null) await _prefs.setInt(AppConstants.keyIqamahIsha, isha);
   }
+
+  // Azkar Reminders Settings
+  bool get isAzkarMorningReminderEnabled =>
+      _prefs.getBool(AppConstants.keyAzkarMorningReminderEnabled) ?? true;
+
+  Future<void> setAzkarMorningReminderEnabled(bool enabled) =>
+      _prefs.setBool(AppConstants.keyAzkarMorningReminderEnabled, enabled);
+
+  bool get isAzkarEveningReminderEnabled =>
+      _prefs.getBool(AppConstants.keyAzkarEveningReminderEnabled) ?? true;
+
+  Future<void> setAzkarEveningReminderEnabled(bool enabled) =>
+      _prefs.setBool(AppConstants.keyAzkarEveningReminderEnabled, enabled);
+
+  bool get isAzkarSleepReminderEnabled =>
+      _prefs.getBool(AppConstants.keyAzkarSleepReminderEnabled) ?? true;
+
+  Future<void> setAzkarSleepReminderEnabled(bool enabled) =>
+      _prefs.setBool(AppConstants.keyAzkarSleepReminderEnabled, enabled);
+
+  bool get isAzkarQiyamReminderEnabled =>
+      _prefs.getBool(AppConstants.keyAzkarQiyamReminderEnabled) ?? true;
+
+  Future<void> setAzkarQiyamReminderEnabled(bool enabled) =>
+      _prefs.setBool(AppConstants.keyAzkarQiyamReminderEnabled, enabled);
+
+  int get azkarQiyamMinutesBeforeFajr =>
+      _prefs.getInt(AppConstants.keyAzkarQiyamMinutesBeforeFajr) ?? 60;
+
+  Future<void> setAzkarQiyamMinutesBeforeFajr(int minutes) =>
+      _prefs.setInt(AppConstants.keyAzkarQiyamMinutesBeforeFajr, minutes);
 }

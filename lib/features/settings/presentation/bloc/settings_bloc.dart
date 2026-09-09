@@ -20,6 +20,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<Toggle24HourFormatEvent>(_onToggle24HourFormat);
     on<UpdateAdjustmentsEvent>(_onUpdateAdjustments);
     on<UpdateIqamahOffsetsEvent>(_onUpdateIqamahOffsets);
+    on<ToggleAzkarMorningReminderEvent>(_onToggleAzkarMorningReminder);
+    on<ToggleAzkarEveningReminderEvent>(_onToggleAzkarEveningReminder);
+    on<ToggleAzkarSleepReminderEvent>(_onToggleAzkarSleepReminder);
+    on<ToggleAzkarQiyamReminderEvent>(_onToggleAzkarQiyamReminder);
+    on<UpdateAzkarQiyamMinutesEvent>(_onUpdateAzkarQiyamMinutes);
   }
 
   void _onLoadSettings(
@@ -46,6 +51,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       iqamahAsr: _storageService.iqamahAsr,
       iqamahMaghrib: _storageService.iqamahMaghrib,
       iqamahIsha: _storageService.iqamahIsha,
+      isAzkarMorningReminderEnabled: _storageService.isAzkarMorningReminderEnabled,
+      isAzkarEveningReminderEnabled: _storageService.isAzkarEveningReminderEnabled,
+      isAzkarSleepReminderEnabled: _storageService.isAzkarSleepReminderEnabled,
+      isAzkarQiyamReminderEnabled: _storageService.isAzkarQiyamReminderEnabled,
+      azkarQiyamMinutesBeforeFajr: _storageService.azkarQiyamMinutesBeforeFajr,
     ));
   }
 
@@ -153,5 +163,45 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       iqamahMaghrib: event.maghrib,
       iqamahIsha: event.isha,
     ));
+  }
+
+  Future<void> _onToggleAzkarMorningReminder(
+    ToggleAzkarMorningReminderEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setAzkarMorningReminderEnabled(event.enabled);
+    emit(state.copyWith(isAzkarMorningReminderEnabled: event.enabled));
+  }
+
+  Future<void> _onToggleAzkarEveningReminder(
+    ToggleAzkarEveningReminderEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setAzkarEveningReminderEnabled(event.enabled);
+    emit(state.copyWith(isAzkarEveningReminderEnabled: event.enabled));
+  }
+
+  Future<void> _onToggleAzkarSleepReminder(
+    ToggleAzkarSleepReminderEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setAzkarSleepReminderEnabled(event.enabled);
+    emit(state.copyWith(isAzkarSleepReminderEnabled: event.enabled));
+  }
+
+  Future<void> _onToggleAzkarQiyamReminder(
+    ToggleAzkarQiyamReminderEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setAzkarQiyamReminderEnabled(event.enabled);
+    emit(state.copyWith(isAzkarQiyamReminderEnabled: event.enabled));
+  }
+
+  Future<void> _onUpdateAzkarQiyamMinutes(
+    UpdateAzkarQiyamMinutesEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setAzkarQiyamMinutesBeforeFajr(event.minutes);
+    emit(state.copyWith(azkarQiyamMinutesBeforeFajr: event.minutes));
   }
 }

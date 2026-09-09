@@ -130,6 +130,35 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
       isArabic: true,
       is24Hour: _storageService.is24HourFormat,
     );
+
+    // Schedule Azkar & Qiyam reminders for today
+    try {
+      final todayPrayerDay = _calculationService.calculatePrayerTimes(
+        latitude: _storageService.latitude,
+        longitude: _storageService.longitude,
+        date: DateTime.now(),
+        method: _storageService.calculationMethod,
+        madhab: _storageService.madhab,
+        adjustFajr: _storageService.adjustFajr,
+        adjustSunrise: _storageService.adjustSunrise,
+        adjustDhuhr: _storageService.adjustDhuhr,
+        adjustAsr: _storageService.adjustAsr,
+        adjustMaghrib: _storageService.adjustMaghrib,
+        adjustIsha: _storageService.adjustIsha,
+      );
+
+      _notificationService.scheduleDailyAzkarReminders(
+        fajrTime: todayPrayerDay.fajr.time,
+        dhuhrTime: todayPrayerDay.dhuhr.time,
+        asrTime: todayPrayerDay.asr.time,
+        ishaTime: todayPrayerDay.isha.time,
+        morningEnabled: _storageService.isAzkarMorningReminderEnabled,
+        eveningEnabled: _storageService.isAzkarEveningReminderEnabled,
+        qiyamEnabled: _storageService.isAzkarQiyamReminderEnabled,
+        sleepEnabled: _storageService.isAzkarSleepReminderEnabled,
+        qiyamMinutesBeforeFajr: _storageService.azkarQiyamMinutesBeforeFajr,
+      );
+    } catch (_) {}
   }
 
   void _onTimerTick(
