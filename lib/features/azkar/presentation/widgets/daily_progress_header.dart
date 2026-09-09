@@ -25,93 +25,95 @@ class DailyProgressHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isAllDone = totalCount > 0 && completedCount >= totalCount;
+    final percent = (completionRate * 100).toInt();
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [
-                  AppColors.darkCard,
-                  AppColors.primaryDark.withValues(alpha: 0.5),
-                ]
-              : [
-                  AppColors.primary.withValues(alpha: 0.08),
-                  AppColors.accentGold.withValues(alpha: 0.12),
-                ],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
-        borderRadius: BorderRadius.circular(22),
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isAllDone
               ? AppColors.primaryLight.withValues(alpha: 0.4)
-              : AppColors.accentGold.withValues(alpha: 0.25),
+              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Header row: Category Title & Reset / Tasbih
           Row(
             children: [
               // Emoji / Icon
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkCardElevated : Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    category.iconAssetOrEmoji,
-                    style: const TextStyle(fontSize: 22),
-                  ),
-                ),
+              Text(
+                category.iconAssetOrEmoji,
+                style: const TextStyle(fontSize: 18),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 8),
 
-              // Title & timing
+              // Title & Time subtitle
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
                     Text(
                       category.titleArabic,
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: isDark ? Colors.white : AppColors.primaryDark,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(width: 6),
                     Text(
-                      category.timeDescription,
+                      '• ${category.timeDescription}',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondaryLight,
+                        fontSize: 11,
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
 
-              // Actions
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                tooltip: 'إعادة تعيين الورد اليومي',
-                color: isDark ? Colors.white70 : Colors.black54,
-                onPressed: () {
+              // Progress badge (e.g. 3/10 • 30%)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: isAllDone
+                      ? AppColors.primaryLight.withValues(alpha: 0.15)
+                      : (isDark ? AppColors.darkCardElevated : AppColors.lightCardElevated),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  isAllDone
+                      ? 'مكتمل بحمد الله 🌿'
+                      : '$completedCount من $totalCount ($percent%)',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    color: isAllDone ? AppColors.primaryLight : AppColors.accentGold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+
+              // Reset mini button
+              InkWell(
+                onTap: () {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       title: const Text('إعادة تعيين الورد'),
                       content: Text('هل تريد تصفير عدادات ${category.titleArabic} لليوم؟'),
                       actions: [
@@ -120,92 +122,47 @@ class DailyProgressHeader extends StatelessWidget {
                           child: const Text('إلغاء'),
                         ),
                         ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
                           onPressed: () {
                             Navigator.pop(ctx);
                             onResetCategory();
                           },
-                          child: const Text('نعم، تصفير'),
+                          child: const Text('تصفير'),
                         ),
                       ],
                     ),
                   );
                 },
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Completion Progress Bar & Metric
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: completionRate,
-                    minHeight: 10,
-                    backgroundColor: isDark
-                        ? AppColors.darkCardElevated
-                        : Colors.black.withValues(alpha: 0.06),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isAllDone ? AppColors.primaryLight : AppColors.accentGold,
-                    ),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.restart_alt_rounded,
+                    size: 18,
+                    color: isDark ? Colors.white54 : Colors.black45,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                '$completedCount / $totalCount',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: isAllDone ? AppColors.primaryLight : AppColors.accentGold,
-                ),
-              ),
             ],
           ),
-
           const SizedBox(height: 8),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                isAllDone
-                    ? 'هنيئاً لك! أتممت الورد بنجاح 🌿'
-                    : 'أنجزت ${(completionRate * 100).toInt()}% من الورد',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isAllDone
-                      ? AppColors.primaryLight
-                      : (isDark ? Colors.white70 : Colors.black54),
-                ),
+          // Slim progress line
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: completionRate,
+              minHeight: 4,
+              backgroundColor: isDark
+                  ? AppColors.darkCardElevated
+                  : AppColors.lightCardElevated,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isAllDone ? AppColors.primaryLight : AppColors.accentGold,
               ),
-              // Open Tasbih
-              InkWell(
-                onTap: onOpenTasbih,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.touch_app_rounded, size: 16, color: AppColors.accentGold),
-                      const SizedBox(width: 4),
-                      Text(
-                        'المسبحة الإلكترونية',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.accentGold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

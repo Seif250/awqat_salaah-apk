@@ -179,40 +179,45 @@ class AzkarPage extends StatelessWidget {
               children: [
                 // Category Chips Selector Bar
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
                     border: Border(
                       bottom: BorderSide(
-                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                        color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.6),
+                        width: 0.8,
                       ),
                     ),
                   ),
                   child: SizedBox(
-                    height: 44,
+                    height: 40,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       children: AzkarCategory.values.map((category) {
                         final isSelected = state.selectedCategory == category;
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
                           child: FilterChip(
-                            avatar: Text(category.iconAssetOrEmoji, style: const TextStyle(fontSize: 14)),
+                            showCheckmark: false,
+                            avatar: Text(category.iconAssetOrEmoji, style: const TextStyle(fontSize: 13)),
                             label: Text(category.titleArabic),
                             selected: isSelected,
-                            selectedColor: AppColors.primaryLight.withValues(alpha: 0.2),
-                            checkmarkColor: AppColors.primaryLight,
+                            selectedColor: AppColors.primaryLight.withValues(alpha: 0.16),
                             backgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
                             side: BorderSide(
                               color: isSelected
-                                  ? AppColors.primaryLight
+                                  ? AppColors.primaryLight.withValues(alpha: 0.6)
                                   : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                              width: isSelected ? 1.2 : 0.8,
                             ),
                             labelStyle: TextStyle(
                               fontFamily: 'Cairo',
-                              fontSize: 12.5,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               color: isSelected
                                   ? AppColors.primaryLight
                                   : (isDark ? Colors.white70 : Colors.black87),
@@ -309,7 +314,7 @@ class AzkarPage extends StatelessWidget {
                           ),
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
                           itemCount: state.currentItems.length,
                           itemBuilder: (context, index) {
                             final item = state.currentItems[index];
@@ -353,29 +358,6 @@ class AzkarPage extends StatelessWidget {
           }
 
           return const SizedBox.shrink();
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.touch_app_rounded, color: AppColors.accentGold),
-        label: const Text(
-          'مسبحة إلكترونية',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        onPressed: () {
-          final state = context.read<AzkarBloc>().state;
-          final currentTotal = state is AzkarLoaded ? state.dailyProgress.freeTasbihCount : 0;
-          DigitalTasbihSheet.show(
-            context,
-            initialCount: currentTotal,
-            onCountChanged: (delta) {
-              context.read<AzkarBloc>().add(UpdateFreeTasbihEvent(delta));
-            },
-            onReset: () {
-              context.read<AzkarBloc>().add(const ResetFreeTasbihEvent());
-            },
-          );
         },
       ),
     );

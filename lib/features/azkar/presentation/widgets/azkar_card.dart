@@ -28,28 +28,28 @@ class AzkarCard extends StatelessWidget {
         : 0.0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isCompleted
-              ? AppColors.primaryLight.withValues(alpha: 0.6)
+              ? AppColors.primaryLight.withValues(alpha: 0.5)
               : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-          width: isCompleted ? 1.8 : 1.0,
+          width: isCompleted ? 1.4 : 0.8,
         ),
         boxShadow: [
           BoxShadow(
             color: isCompleted
-                ? AppColors.primaryLight.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+                ? AppColors.primaryLight.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -57,9 +57,9 @@ class AzkarCard extends StatelessWidget {
               HapticFeedback.selectionClick();
               onIncrement();
             },
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
             child: Padding(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -72,15 +72,15 @@ class AzkarCard extends StatelessWidget {
                           children: [
                             if (isCompleted)
                               Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.all(4),
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.all(3),
                                 decoration: BoxDecoration(
                                   color: AppColors.primaryLight.withValues(alpha: 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
                                   Icons.check_rounded,
-                                  size: 18,
+                                  size: 16,
                                   color: AppColors.primaryLight,
                                 ),
                               ),
@@ -89,6 +89,7 @@ class AzkarCard extends StatelessWidget {
                                 item.title,
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 15,
                                   color: isCompleted
                                       ? AppColors.primaryLight
                                       : (isDark ? Colors.white : AppColors.primaryDark),
@@ -101,24 +102,25 @@ class AzkarCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
+
                       // Target badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                         decoration: BoxDecoration(
                           color: isCompleted
-                              ? AppColors.primaryLight.withValues(alpha: 0.15)
+                              ? AppColors.primaryLight.withValues(alpha: 0.12)
                               : (isDark ? AppColors.darkCardElevated : AppColors.lightCardElevated),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isCompleted
                                 ? AppColors.primaryLight.withValues(alpha: 0.3)
-                                : AppColors.accentGold.withValues(alpha: 0.3),
+                                : AppColors.accentGold.withValues(alpha: 0.25),
                           ),
                         ),
                         child: Text(
                           '${item.targetCount} ${item.targetCount == 1 ? "مرة" : "مرات"}',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.bold,
                             color: isCompleted ? AppColors.primaryLight : AppColors.accentGold,
                           ),
@@ -130,7 +132,7 @@ class AzkarCard extends StatelessWidget {
                           icon: Icon(
                             Icons.edit_note_rounded,
                             size: 22,
-                            color: isDark ? Colors.white60 : Colors.black45,
+                            color: isDark ? Colors.white54 : Colors.black45,
                           ),
                           tooltip: 'تعديل أو حذف الذكر',
                           padding: const EdgeInsets.all(4),
@@ -140,34 +142,34 @@ class AzkarCard extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // Arabic Text
                   Text(
                     item.arabicText,
                     style: TextStyle(
                       fontFamily: 'Cairo',
-                      fontSize: 17.5,
-                      height: 1.85,
+                      fontSize: 16.5,
+                      height: 1.8,
                       fontWeight: FontWeight.w500,
                       color: isDark ? const Color(0xFFECEFF1) : const Color(0xFF263238),
                     ),
-                    textAlign: TextAlign.justify,
+                    textAlign: TextAlign.start,
                     textDirection: TextDirection.rtl,
                   ),
 
                   // Reference & Reward (if present)
                   if (item.reward != null || item.reference != null) ...[
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? AppColors.darkBackground.withValues(alpha: 0.6)
+                            ? AppColors.darkBackground.withValues(alpha: 0.5)
                             : AppColors.lightBackground,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.accentGold.withValues(alpha: 0.2),
+                          color: AppColors.accentGold.withValues(alpha: 0.15),
                         ),
                       ),
                       child: Column(
@@ -177,13 +179,13 @@ class AzkarCard extends StatelessWidget {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('✨ ', style: TextStyle(fontSize: 14)),
+                                const Text('✨ ', style: TextStyle(fontSize: 13)),
                                 Expanded(
                                   child: Text(
                                     item.reward!,
                                     style: TextStyle(
-                                      fontSize: 13,
-                                      height: 1.45,
+                                      fontSize: 12.5,
+                                      height: 1.4,
                                       color: isDark
                                           ? AppColors.textSecondaryDark
                                           : AppColors.textSecondaryLight,
@@ -194,14 +196,14 @@ class AzkarCard extends StatelessWidget {
                               ],
                             ),
                           if (item.reference != null) ...[
-                            if (item.reward != null) const SizedBox(height: 6),
+                            if (item.reward != null) const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Text('📖 ', style: TextStyle(fontSize: 12)),
+                                const Text('📖 ', style: TextStyle(fontSize: 11)),
                                 Text(
                                   item.reference!,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11.5,
                                     color: AppColors.accentGold.withValues(alpha: 0.85),
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -214,7 +216,7 @@ class AzkarCard extends StatelessWidget {
                     ),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // Progress Bar & Counter Action
                   Row(
@@ -225,10 +227,10 @@ class AzkarCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
                                 value: progress,
-                                minHeight: 8,
+                                minHeight: 6,
                                 backgroundColor: isDark
                                     ? AppColors.darkCardElevated
                                     : AppColors.lightCardElevated,
@@ -237,13 +239,13 @@ class AzkarCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
                               isCompleted
                                   ? 'اكتمل الذكر بحمد الله'
                                   : 'تم: ${item.currentCount} من أصل ${item.targetCount}',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11.5,
                                 color: isCompleted
                                     ? AppColors.primaryLight
                                     : (isDark ? Colors.white60 : Colors.black54),
@@ -253,7 +255,7 @@ class AzkarCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
 
                       // Increment Tap Counter Button
                       GestureDetector(
@@ -262,28 +264,28 @@ class AzkarCard extends StatelessWidget {
                           onIncrement();
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
                             gradient: isCompleted
-                                ? LinearGradient(
+                                ? const LinearGradient(
                                     colors: [
                                       AppColors.primaryLight,
                                       AppColors.primary,
                                     ],
                                   )
-                                : LinearGradient(
+                                : const LinearGradient(
                                     colors: [
                                       AppColors.accentGold,
                                       AppColors.accentAmber,
                                     ],
                                   ),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
                                 color: (isCompleted ? AppColors.primary : AppColors.accentGold)
-                                    .withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
+                                    .withValues(alpha: 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
@@ -292,15 +294,15 @@ class AzkarCard extends StatelessWidget {
                             children: [
                               Icon(
                                 isCompleted ? Icons.check_circle_rounded : Icons.fingerprint_rounded,
-                                size: 18,
+                                size: 16,
                                 color: isCompleted ? Colors.white : Colors.black87,
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 5),
                               Text(
                                 '${item.currentCount}/${item.targetCount}',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 13,
                                   color: isCompleted ? Colors.white : Colors.black87,
                                 ),
                               ),
@@ -309,15 +311,18 @@ class AzkarCard extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
 
                       // Direct Complete Toggle Icon
                       IconButton(
                         icon: Icon(
                           isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
                           color: isCompleted ? AppColors.primaryLight : Colors.grey,
+                          size: 22,
                         ),
                         tooltip: isCompleted ? 'إلغاء التحديد' : 'تحديد كمقروء',
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(),
                         onPressed: () {
                           HapticFeedback.selectionClick();
                           onToggleComplete();
