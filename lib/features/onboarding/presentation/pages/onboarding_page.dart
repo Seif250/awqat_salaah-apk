@@ -8,7 +8,7 @@ import '../../../location/presentation/bloc/location_state.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
-import '../../../prayer_times/presentation/pages/home_page.dart';
+import '../../../prayer_times/presentation/pages/main_navigation_screen.dart';
 
 class OnboardingPage extends StatelessWidget {
   final StorageService storageService;
@@ -20,7 +20,7 @@ class OnboardingPage extends StatelessWidget {
     if (context.mounted) {
       context.read<PrayerBloc>().add(const LoadPrayerTimesEvent());
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
       );
     }
   }

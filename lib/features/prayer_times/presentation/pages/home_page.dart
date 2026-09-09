@@ -16,6 +16,7 @@ import '../../../../services/notification_service.dart';
 import '../../../azkar/data/models/azkar_item_model.dart';
 import '../../../azkar/presentation/bloc/azkar_bloc.dart';
 import '../../../azkar/presentation/bloc/azkar_state.dart';
+import '../../../azkar/presentation/pages/azkar_page.dart';
 import 'main_navigation_screen.dart';
 
 class HomePage extends StatefulWidget {
@@ -46,6 +47,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _navigateToAzkar(BuildContext context) {
+    final mainNav = MainNavigationScreen.of(context);
+    if (mainNav != null) {
+      mainNav.navigateToPage(1);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const AzkarPage()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -60,6 +72,11 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_stories_rounded, color: AppColors.accentGold),
+            tooltip: 'الأذكار والورد اليومي',
+            onPressed: () => _navigateToAzkar(context),
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'الإعدادات',
@@ -157,9 +174,7 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.transparent,
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(18),
-                                  onTap: () {
-                                    MainNavigationScreen.of(context)?.navigateToPage(1);
-                                  },
+                                  onTap: () => _navigateToAzkar(context),
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                     child: Row(

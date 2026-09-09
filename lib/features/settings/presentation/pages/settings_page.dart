@@ -7,6 +7,7 @@ import '../../../../services/notification_service.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
+import '../../../azkar/presentation/pages/azkar_page.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
@@ -328,6 +329,18 @@ class SettingsPage extends StatelessWidget {
                       value: state.isAzkarQiyamReminderEnabled,
                       onChanged: (val) {
                         context.read<SettingsBloc>().add(ToggleAzkarQiyamReminderEvent(val));
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.auto_stories_rounded, color: AppColors.accentGold),
+                      title: const Text('فتح صفحة الأذكار والورد اليومي', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('تصفح وقراءة أذكار الصباح، المساء، والنوم وقيام الليل'),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const AzkarPage()),
+                        );
                       },
                     ),
                   ],

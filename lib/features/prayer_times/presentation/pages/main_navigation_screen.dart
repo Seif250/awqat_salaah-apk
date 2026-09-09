@@ -6,15 +6,15 @@ import 'home_page.dart';
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
-  static _MainNavigationScreenState? of(BuildContext context) {
-    return context.findAncestorStateOfType<_MainNavigationScreenState>();
+  static MainNavigationScreenState? of(BuildContext context) {
+    return context.findAncestorStateOfType<MainNavigationScreenState>();
   }
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class MainNavigationScreenState extends State<MainNavigationScreen> {
   late final PageController _pageController;
   int _currentIndex = 0;
 
@@ -33,17 +33,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void navigateToPage(int index) {
     if (_currentIndex == index) return;
     setState(() => _currentIndex = index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOutCubic,
-    );
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOutCubic,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: PageView(
@@ -74,10 +75,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ],
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SizedBox(
+            height: 64,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(
                   index: 0,
@@ -110,49 +110,54 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }) {
     final isSelected = _currentIndex == index;
 
-    return InkWell(
-      onTap: () => navigateToPage(index),
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.12)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: isSelected
-              ? Border.all(
-                  color: AppColors.primaryLight.withValues(alpha: 0.35),
-                  width: 1,
-                )
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? selectedIcon : icon,
-              color: isSelected
-                  ? AppColors.primaryLight
-                  : (isDark ? Colors.white60 : Colors.black54),
-              size: 22,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: isSelected
-                      ? AppColors.primaryLight
-                      : (isDark ? Colors.white70 : Colors.black87),
-                ),
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => navigateToPage(index),
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.12)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                border: isSelected
+                    ? Border.all(
+                        color: AppColors.primaryLight.withValues(alpha: 0.35),
+                        width: 1,
+                      )
+                    : null,
               ),
-            ],
-          ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isSelected ? selectedIcon : icon,
+                    color: isSelected
+                        ? AppColors.primaryLight
+                        : (isDark ? Colors.white60 : Colors.black54),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontSize: 13,
+                      color: isSelected
+                          ? AppColors.primaryLight
+                          : (isDark ? Colors.white60 : Colors.black54),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
