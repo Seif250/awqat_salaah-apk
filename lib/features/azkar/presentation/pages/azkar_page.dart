@@ -5,13 +5,58 @@ import '../../data/models/azkar_item_model.dart';
 import '../bloc/azkar_bloc.dart';
 import '../bloc/azkar_event.dart';
 import '../bloc/azkar_state.dart';
-import '../widgets/add_custom_zikr_dialog.dart';
 import '../widgets/azkar_card.dart';
 import '../widgets/daily_progress_header.dart';
 import '../widgets/digital_tasbih_sheet.dart';
+import '../widgets/edit_zikr_dialog.dart';
 
 class AzkarPage extends StatelessWidget {
   const AzkarPage({super.key});
+
+  void _confirmRestoreDefaults(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.restore_rounded, color: AppColors.accentGold),
+            SizedBox(width: 8),
+            Text('استعادة الأذكار الأصلية'),
+          ],
+        ),
+        content: const Text(
+          'هل تريد استعادة جميع أذكار السنة النبوية الافتراضية؟\n\n'
+          'سيتم استرجاع جميع الأذكار الأصلية مع الاحتفاظ بالأذكار التي قمت بإضافتها بنفسك.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<AzkarBloc>().add(const RestoreDefaultAzkarEvent());
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('تمت استعادة الأذكار الافتراضية بنجاح 🌿'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('استعادة'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,15 +97,54 @@ class AzkarPage extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded),
-            tooltip: 'إضافة ذكر مخصص',
+            tooltip: 'إضافة ذكر جديد',
             onPressed: () {
-              AddCustomZikrDialog.show(
+              final state = context.read<AzkarBloc>().state;
+              final cat = state is AzkarLoaded ? state.selectedCategory : AzkarCategory.morning;
+              EditZikrDialog.showAdd(
                 context,
-                onAdd: (zikr) {
-                  context.read<AzkarBloc>().add(AddCustomZikrEvent(zikr));
+                initialCategory: cat,
+                onAdd: (item) {
+                  context.read<AzkarBloc>().add(AddNewZikrItemEvent(item));
                 },
               );
             },
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'خيارات إضافية',
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            onSelected: (value) {
+              if (value == 'restore') {
+                _confirmRestoreDefaults(context);
+              } else if (value == 'reset_cat') {
+                final state = context.read<AzkarBloc>().state;
+                if (state is AzkarLoaded) {
+                  context.read<AzkarBloc>().add(ResetCategoryProgressEvent(state.selectedCategory));
+                }
+              }
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'restore',
+                child: Row(
+                  children: [
+                    Icon(Icons.restore_rounded, size: 20, color: AppColors.accentGold),
+                    SizedBox(width: 8),
+                    Text('استعادة الأذكار الافتراضية'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'reset_cat',
+                child: Row(
+                  children: [
+                    Icon(Icons.restart_alt_rounded, size: 20, color: Colors.blueGrey),
+                    SizedBox(width: 8),
+                    Text('تصفير عدادات هذا القسم'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -172,36 +256,56 @@ class AzkarPage extends StatelessWidget {
                 Expanded(
                   child: state.currentItems.isEmpty
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.bookmark_add_outlined, size: 54, color: AppColors.accentGold),
-                              const SizedBox(height: 16),
-                              Text(
-                                state.selectedCategory == AzkarCategory.custom
-                                    ? 'لم تضف أذكاراً مخصصة بعد'
-                                    : 'لا توجد أذكار مسجلة',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              if (state.selectedCategory == AzkarCategory.custom)
-                                ElevatedButton.icon(
-                                  icon: const Icon(Icons.add_rounded),
-                                  label: const Text('إضافة ذكرك الأول'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  onPressed: () {
-                                    AddCustomZikrDialog.show(
-                                      context,
-                                      onAdd: (zikr) {
-                                        context.read<AzkarBloc>().add(AddCustomZikrEvent(zikr));
-                                      },
-                                    );
-                                  },
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.menu_book_outlined, size: 54, color: AppColors.accentGold),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'لا توجد أذكار في قسم "${state.selectedCategory.titleArabic}" حالياً',
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
                                 ),
-                            ],
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'يمكنك إضافة ذكر جديد إلى هذا القسم أو استعادة الأذكار الافتراضية الأصلية',
+                                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 20),
+                                Wrap(
+                                  spacing: 12,
+                                  runSpacing: 10,
+                                  alignment: WrapAlignment.center,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      icon: const Icon(Icons.add_rounded),
+                                      label: const Text('إضافة ذكر هنا'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      onPressed: () {
+                                        EditZikrDialog.showAdd(
+                                          context,
+                                          initialCategory: state.selectedCategory,
+                                          onAdd: (item) {
+                                            context.read<AzkarBloc>().add(AddNewZikrItemEvent(item));
+                                          },
+                                        );
+                                      },
+                                    ),
+                                    OutlinedButton.icon(
+                                      icon: const Icon(Icons.restore_rounded),
+                                      label: const Text('استعادة الأذكار الافتراضية'),
+                                      onPressed: () => _confirmRestoreDefaults(context),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         )
                       : ListView.builder(
@@ -227,6 +331,18 @@ class AzkarPage extends StatelessWidget {
                                         targetCount: item.targetCount,
                                       ),
                                     );
+                              },
+                              onEdit: () {
+                                EditZikrDialog.show(
+                                  context,
+                                  item: item,
+                                  onSave: (updated) {
+                                    context.read<AzkarBloc>().add(UpdateZikrItemEvent(updated));
+                                  },
+                                  onDelete: () {
+                                    context.read<AzkarBloc>().add(DeleteZikrItemEvent(item.id));
+                                  },
+                                );
                               },
                             );
                           },

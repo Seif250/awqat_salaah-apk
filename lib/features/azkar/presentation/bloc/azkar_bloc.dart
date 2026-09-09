@@ -19,6 +19,10 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     on<DeleteCustomZikrEvent>(_onDeleteCustomZikr);
     on<UpdateFreeTasbihEvent>(_onUpdateFreeTasbih);
     on<ResetFreeTasbihEvent>(_onResetFreeTasbih);
+    on<UpdateZikrItemEvent>(_onUpdateZikrItem);
+    on<DeleteZikrItemEvent>(_onDeleteZikrItem);
+    on<RestoreDefaultAzkarEvent>(_onRestoreDefaultAzkar);
+    on<AddNewZikrItemEvent>(_onAddNewZikrItem);
   }
 
   AzkarCategory _defaultCategoryForCurrentTime() {
@@ -160,6 +164,72 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     final updatedProgress = repository.resetFreeTasbih();
 
     emit(current.copyWith(dailyProgress: updatedProgress));
+  }
+
+  Future<void> _onUpdateZikrItem(UpdateZikrItemEvent event, Emitter<AzkarState> emit) async {
+    await repository.updateZikrItem(event.item);
+    final progress = repository.getDailyProgress();
+    final customAzkar = repository.getCustomAzkar();
+    final currentCategory = state is AzkarLoaded
+        ? (state as AzkarLoaded).selectedCategory
+        : event.item.category;
+    final items = repository.getCategoryItems(currentCategory, progress);
+
+    emit(_buildLoadedState(
+      selectedCategory: currentCategory,
+      items: items,
+      progress: progress,
+      customAzkar: customAzkar,
+    ));
+  }
+
+  Future<void> _onDeleteZikrItem(DeleteZikrItemEvent event, Emitter<AzkarState> emit) async {
+    await repository.deleteZikrItem(event.id);
+    final progress = repository.getDailyProgress();
+    final customAzkar = repository.getCustomAzkar();
+    final currentCategory = state is AzkarLoaded
+        ? (state as AzkarLoaded).selectedCategory
+        : AzkarCategory.morning;
+    final items = repository.getCategoryItems(currentCategory, progress);
+
+    emit(_buildLoadedState(
+      selectedCategory: currentCategory,
+      items: items,
+      progress: progress,
+      customAzkar: customAzkar,
+    ));
+  }
+
+  Future<void> _onRestoreDefaultAzkar(RestoreDefaultAzkarEvent event, Emitter<AzkarState> emit) async {
+    await repository.restoreDefaultAzkar();
+    final progress = repository.getDailyProgress();
+    final customAzkar = repository.getCustomAzkar();
+    final currentCategory = state is AzkarLoaded
+        ? (state as AzkarLoaded).selectedCategory
+        : AzkarCategory.morning;
+    final items = repository.getCategoryItems(currentCategory, progress);
+
+    emit(_buildLoadedState(
+      selectedCategory: currentCategory,
+      items: items,
+      progress: progress,
+      customAzkar: customAzkar,
+    ));
+  }
+
+  Future<void> _onAddNewZikrItem(AddNewZikrItemEvent event, Emitter<AzkarState> emit) async {
+    await repository.addZikrItem(event.item);
+    final progress = repository.getDailyProgress();
+    final customAzkar = repository.getCustomAzkar();
+    final currentCategory = event.item.category;
+    final items = repository.getCategoryItems(currentCategory, progress);
+
+    emit(_buildLoadedState(
+      selectedCategory: currentCategory,
+      items: items,
+      progress: progress,
+      customAzkar: customAzkar,
+    ));
   }
 
   AzkarLoaded _buildLoadedState({

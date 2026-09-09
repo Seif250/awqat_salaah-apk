@@ -806,7 +806,7 @@ class NotificationService {
       await scheduleAzkarNotification(
         id: idQiyamReminder,
         title: '🌌 قيام الليل والأسحار',
-        body: 'ركعة في جوف الليل واستغفار بالأسحار.. وقت النزول الإلهي وإجابة الدعاء.',
+        body: '«لا إله إلا الله وحده لا شريك له.. سبحان الله والحمد لله.. اللهم اغفر لي» ركعة بالليل ودعاء مستجاب.',
         scheduledDate: qiyamTime,
       );
     } else {

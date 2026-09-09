@@ -7,12 +7,14 @@ class AzkarCard extends StatelessWidget {
   final AzkarItem item;
   final VoidCallback onIncrement;
   final VoidCallback onToggleComplete;
+  final VoidCallback? onEdit;
 
   const AzkarCard({
     super.key,
     required this.item,
     required this.onIncrement,
     required this.onToggleComplete,
+    this.onEdit,
   });
 
   @override
@@ -98,6 +100,7 @@ class AzkarCard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
                       // Target badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -121,6 +124,20 @@ class AzkarCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (onEdit != null) ...[
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: Icon(
+                            Icons.edit_note_rounded,
+                            size: 22,
+                            color: isDark ? Colors.white60 : Colors.black45,
+                          ),
+                          tooltip: 'تعديل أو حذف الذكر',
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(),
+                          onPressed: onEdit,
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 12),

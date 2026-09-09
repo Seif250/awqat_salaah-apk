@@ -6,6 +6,7 @@ enum AzkarCategory {
   postPrayer,
   sleep,
   qiyam,
+  supplications,
   general,
   custom,
 }
@@ -20,9 +21,11 @@ extension AzkarCategoryExtension on AzkarCategory {
       case AzkarCategory.postPrayer:
         return 'بعد الصلاة';
       case AzkarCategory.sleep:
-        return 'أذكار النوم';
+        return 'النوم والاستيقاظ';
       case AzkarCategory.qiyam:
         return 'قيام الليل';
+      case AzkarCategory.supplications:
+        return 'مفاتيح وأوقات الإجابة';
       case AzkarCategory.general:
         return 'أذكار عامة وتسبيح';
       case AzkarCategory.custom:
@@ -42,6 +45,8 @@ extension AzkarCategoryExtension on AzkarCategory {
         return '🛏️';
       case AzkarCategory.qiyam:
         return '🌌';
+      case AzkarCategory.supplications:
+        return '🤲';
       case AzkarCategory.general:
         return '📿';
       case AzkarCategory.custom:
@@ -58,9 +63,11 @@ extension AzkarCategoryExtension on AzkarCategory {
       case AzkarCategory.postPrayer:
         return 'دبر كل صلاة مكتوبة';
       case AzkarCategory.sleep:
-        return 'قبل النوم ليلاً';
+        return 'قبل النوم وليلاً وعند الاستيقاظ';
       case AzkarCategory.qiyam:
         return 'في الثلث الأخير من الليل قبل الفجر';
+      case AzkarCategory.supplications:
+        return 'أوقات وأدعية مستجابة لا تُرد بإذن الله';
       case AzkarCategory.general:
         return 'طوال اليوم في كل وقت';
       case AzkarCategory.custom:
@@ -79,6 +86,7 @@ class AzkarItem extends Equatable {
   final int targetCount; // عدد المرات المطلوب (1، 3، 33، 100...)
   final int currentCount; // عدد المرات المنجزة اليوم
   final bool isCompleted;
+  final bool isCustom;
 
   const AzkarItem({
     required this.id,
@@ -90,6 +98,7 @@ class AzkarItem extends Equatable {
     required this.targetCount,
     this.currentCount = 0,
     this.isCompleted = false,
+    this.isCustom = false,
   });
 
   AzkarItem copyWith({
@@ -102,6 +111,7 @@ class AzkarItem extends Equatable {
     int? targetCount,
     int? currentCount,
     bool? isCompleted,
+    bool? isCustom,
   }) {
     return AzkarItem(
       id: id ?? this.id,
@@ -113,6 +123,7 @@ class AzkarItem extends Equatable {
       targetCount: targetCount ?? this.targetCount,
       currentCount: currentCount ?? this.currentCount,
       isCompleted: isCompleted ?? this.isCompleted,
+      isCustom: isCustom ?? this.isCustom,
     );
   }
 
@@ -127,6 +138,7 @@ class AzkarItem extends Equatable {
       'targetCount': targetCount,
       'currentCount': currentCount,
       'isCompleted': isCompleted,
+      'isCustom': isCustom,
     };
   }
 
@@ -144,6 +156,7 @@ class AzkarItem extends Equatable {
       targetCount: json['targetCount'] as int? ?? 1,
       currentCount: json['currentCount'] as int? ?? 0,
       isCompleted: json['isCompleted'] as bool? ?? false,
+      isCustom: json['isCustom'] as bool? ?? false,
     );
   }
 
@@ -158,5 +171,6 @@ class AzkarItem extends Equatable {
         targetCount,
         currentCount,
         isCompleted,
+        isCustom,
       ];
 }

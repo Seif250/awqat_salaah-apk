@@ -78,3 +78,31 @@ class UpdateFreeTasbihEvent extends AzkarEvent {
 class ResetFreeTasbihEvent extends AzkarEvent {
   const ResetFreeTasbihEvent();
 }
+
+class UpdateZikrItemEvent extends AzkarEvent {
+  final AzkarItem item;
+  const UpdateZikrItemEvent(this.item);
+
+  @override
+  List<Object?> get props => [item];
+}
+
+class DeleteZikrItemEvent extends AzkarEvent {
+  final String id;
+  const DeleteZikrItemEvent(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class RestoreDefaultAzkarEvent extends AzkarEvent {
+  const RestoreDefaultAzkarEvent();
+}
+
+class AddNewZikrItemEvent extends AzkarEvent {
+  final AzkarItem item;
+  const AddNewZikrItemEvent(this.item);
+
+  @override
+  List<Object?> get props => [item];
+}
