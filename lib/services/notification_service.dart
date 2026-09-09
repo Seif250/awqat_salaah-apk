@@ -263,7 +263,12 @@ class NotificationService {
   }
 
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
-    return await _notificationsPlugin.pendingNotificationRequests();
+    try {
+      return await _notificationsPlugin.pendingNotificationRequests();
+    } catch (e) {
+      _log('getPendingNotifications caught error: $e');
+      return [];
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -380,9 +385,13 @@ class NotificationService {
       );
 
       // Verify
-      final pending = await getPendingNotifications();
-      final found = pending.any((p) => p.id == 8888);
-      _log('Test alarm verify: registered=$found, totalPending=${pending.length}');
+      try {
+        final pending = await getPendingNotifications();
+        final found = pending.any((p) => p.id == 8888);
+        _log('Test alarm verify: registered=$found, totalPending=${pending.length}');
+      } catch (e) {
+        _log('Test alarm verify error: $e');
+      }
 
       return result;
     } catch (e) {
