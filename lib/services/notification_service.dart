@@ -128,11 +128,12 @@ class NotificationService {
 
       // Clean up previous channel versions to prevent cached stale channel configs
       try {
+        await androidImpl.deleteNotificationChannel('prayer_times_takbeer_channel_v7');
         await androidImpl.deleteNotificationChannel('prayer_times_takbeer_channel_v6');
         await androidImpl.deleteNotificationChannel('prayer_times_takbeer_channel_v5');
       } catch (_) {}
 
-      // Channel WITH custom takbeer sound & alarm stream
+      // Channel WITH custom Azan sound & alarm stream
       const channelWithSound = AndroidNotificationChannel(
         AppConstants.notificationChannelId,
         AppConstants.notificationChannelName,
