@@ -33,26 +33,6 @@ extension AzkarCategoryExtension on AzkarCategory {
     }
   }
 
-  String get iconAssetOrEmoji {
-    switch (this) {
-      case AzkarCategory.morning:
-        return '☀️';
-      case AzkarCategory.evening:
-        return '🌙';
-      case AzkarCategory.postPrayer:
-        return '🕌';
-      case AzkarCategory.sleep:
-        return '🛏️';
-      case AzkarCategory.qiyam:
-        return '🌌';
-      case AzkarCategory.supplications:
-        return '🤲';
-      case AzkarCategory.general:
-        return '📿';
-      case AzkarCategory.custom:
-        return '⭐';
-    }
-  }
 
   String get timeDescription {
     switch (this) {

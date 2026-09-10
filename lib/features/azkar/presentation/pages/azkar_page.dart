@@ -9,6 +9,7 @@ import '../widgets/azkar_card.dart';
 import '../widgets/daily_progress_header.dart';
 import '../widgets/digital_tasbih_sheet.dart';
 import '../widgets/edit_zikr_dialog.dart';
+import '../utils/azkar_ui_helpers.dart';
 
 class AzkarPage extends StatelessWidget {
   const AzkarPage({super.key});
@@ -46,7 +47,7 @@ class AzkarPage extends StatelessWidget {
               context.read<AzkarBloc>().add(const RestoreDefaultAzkarEvent());
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('تمت استعادة الأذكار الافتراضية بنجاح 🌿'),
+                  content: Text('تمت استعادة الأذكار الافتراضية بنجاح'),
                   duration: Duration(seconds: 2),
                 ),
               );
@@ -65,20 +66,15 @@ class AzkarPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('📿 ', style: TextStyle(fontSize: 20)),
-            Text(
-              'الأذكار والورد اليومي',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        title: Text(
+          'الأذكار والورد اليومي',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.touch_app_rounded, color: AppColors.accentGold),
+            icon: const Icon(Icons.fingerprint_rounded, color: AppColors.accentGold),
             tooltip: 'المسبحة الإلكترونية',
             onPressed: () {
               final state = context.read<AzkarBloc>().state;
@@ -200,7 +196,7 @@ class AzkarPage extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 3),
                           child: FilterChip(
                             showCheckmark: false,
-                            avatar: Text(category.iconAssetOrEmoji, style: const TextStyle(fontSize: 13)),
+                            avatar: Icon(category.categoryIcon, size: 16, color: isSelected ? AppColors.primaryLight : Colors.grey),
                             label: Text(category.titleArabic),
                             selected: isSelected,
                             selectedColor: AppColors.primaryLight.withValues(alpha: 0.16),

@@ -120,7 +120,8 @@ class _DigitalTasbihSheetState extends State<DigitalTasbihSheet> {
             children: [
               Row(
                 children: [
-                  const Text('📿 ', style: TextStyle(fontSize: 22)),
+                  const Icon(Icons.fingerprint_rounded, size: 22, color: AppColors.accentGold),
+                  const SizedBox(width: 8),
                   Text(
                     'المسبحة الإلكترونية',
                     style: theme.textTheme.titleLarge?.copyWith(

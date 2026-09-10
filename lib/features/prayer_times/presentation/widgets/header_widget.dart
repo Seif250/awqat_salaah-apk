@@ -34,7 +34,7 @@ class HeaderWidget extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: (isDark ? AppColors.darkCard : Colors.white).withOpacity(0.8),
+                color: (isDark ? AppColors.darkCard : Colors.white).withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -44,7 +44,7 @@ class HeaderWidget extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
-                    Icons.location_on_rounded,
+                    Icons.location_on_outlined,
                     color: AppColors.accentGold,
                     size: 18,
                   ),

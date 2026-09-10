@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/azkar_item_model.dart';
+import '../utils/azkar_ui_helpers.dart';
 
 class EditZikrDialog extends StatefulWidget {
   final AzkarItem? item;
@@ -242,7 +243,7 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                     value: cat,
                     child: Row(
                       children: [
-                        Text(cat.iconAssetOrEmoji),
+                        Icon(cat.categoryIcon, size: 18, color: AppColors.accentGold),
                         const SizedBox(width: 8),
                         Text(cat.titleArabic),
                       ],

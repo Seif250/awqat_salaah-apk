@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/prayer_constants.dart';
@@ -18,19 +17,19 @@ class PrayerRow extends StatelessWidget {
   IconData _getPrayerIcon(PrayerType type) {
     switch (type) {
       case PrayerType.fajr:
-        return Icons.nights_stay_rounded;
+        return Icons.nights_stay_outlined;
       case PrayerType.sunrise:
-        return Icons.wb_sunny_rounded;
+        return Icons.wb_sunny_outlined;
       case PrayerType.dhuhr:
-        return Icons.light_mode_rounded;
+        return Icons.light_mode_outlined;
       case PrayerType.asr:
-        return Icons.wb_twilight_rounded;
+        return Icons.wb_twilight_outlined;
       case PrayerType.maghrib:
-        return Icons.nightlight_round;
+        return Icons.nightlight_outlined;
       case PrayerType.isha:
-        return Icons.bedtime_rounded;
+        return Icons.bedtime_outlined;
       case PrayerType.none:
-        return Icons.access_time_rounded;
+        return Icons.access_time_outlined;
     }
   }
 
@@ -64,14 +63,14 @@ class PrayerRow extends StatelessWidget {
                 ? AppColors.darkCardElevated
                 : AppColors.lightCardElevated)
             : (isDark ? AppColors.darkCard : AppColors.lightCard),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isInIqamahWindow
               ? const Color(0xFF48CAE4)
               : (prayer.isNext
                   ? AppColors.accentGold
                   : (isHighlighted
-                      ? AppColors.primaryLight.withOpacity(0.4)
+                      ? AppColors.primaryLight.withValues(alpha: 0.4)
                       : (isDark ? AppColors.darkBorder : AppColors.lightBorder))),
           width: (prayer.isNext || isInIqamahWindow) ? 1.5 : 1,
         ),
@@ -79,7 +78,7 @@ class PrayerRow extends StatelessWidget {
             ? [
                 BoxShadow(
                   color: (isInIqamahWindow ? const Color(0xFF48CAE4) : AppColors.accentGold)
-                      .withOpacity(0.15),
+                      .withValues(alpha: 0.15),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -94,11 +93,11 @@ class PrayerRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: isHighlighted
                   ? (isInIqamahWindow
-                      ? const Color(0xFF48CAE4).withOpacity(0.2)
+                      ? const Color(0xFF48CAE4).withValues(alpha: 0.2)
                       : (prayer.isNext
-                          ? AppColors.accentGold.withOpacity(0.2)
-                          : AppColors.primary.withOpacity(0.15)))
-                  : (isDark ? Colors.white10 : Colors.black.withOpacity(0.04)),
+                          ? AppColors.accentGold.withValues(alpha: 0.2)
+                          : AppColors.primary.withValues(alpha: 0.15)))
+                  : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.04)),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -139,10 +138,10 @@ class PrayerRow extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF48CAE4).withOpacity(0.2),
+                          color: const Color(0xFF48CAE4).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: const Color(0xFF48CAE4).withOpacity(0.6),
+                            color: const Color(0xFF48CAE4).withValues(alpha: 0.6),
                             width: 1,
                           ),
                         ),
@@ -160,10 +159,10 @@ class PrayerRow extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.accentGold.withOpacity(0.2),
+                          color: AppColors.accentGold.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: AppColors.accentGold.withOpacity(0.5),
+                            color: AppColors.accentGold.withValues(alpha: 0.5),
                             width: 1,
                           ),
                         ),
@@ -223,8 +222,8 @@ class PrayerRow extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? AppColors.accentGold.withOpacity(0.12)
-                            : AppColors.accentGold.withOpacity(0.15),
+                            ? AppColors.accentGold.withValues(alpha: 0.12)
+                            : AppColors.accentGold.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(

@@ -199,7 +199,8 @@ class AzkarCard extends StatelessWidget {
                             if (item.reward != null) const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Text('📖 ', style: TextStyle(fontSize: 11)),
+                                const Icon(Icons.menu_book_outlined, size: 13, color: AppColors.accentGold),
+                                const SizedBox(width: 4),
                                 Text(
                                   item.reference!,
                                   style: TextStyle(

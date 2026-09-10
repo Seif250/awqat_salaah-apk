@@ -97,7 +97,8 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                 children: [
                   Row(
                     children: [
-                      const Text('⭐ ', style: TextStyle(fontSize: 22)),
+                      const Icon(Icons.star_outline_rounded, size: 22, color: AppColors.accentGold),
+                      const SizedBox(width: 8),
                       Text(
                         'إضافة ذكر مخصص',
                         style: theme.textTheme.titleLarge?.copyWith(

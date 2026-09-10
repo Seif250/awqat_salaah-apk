@@ -14,6 +14,7 @@ import '../widgets/prayer_list.dart';
 
 import '../../../../services/notification_service.dart';
 import '../../../azkar/data/models/azkar_item_model.dart';
+import '../../../azkar/presentation/utils/azkar_ui_helpers.dart';
 import '../../../azkar/presentation/bloc/azkar_bloc.dart';
 import '../../../azkar/presentation/bloc/azkar_state.dart';
 import '../../../azkar/presentation/pages/azkar_page.dart';
@@ -179,9 +180,10 @@ class _HomePageState extends State<HomePage> {
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                     child: Row(
                                       children: [
-                                        Text(
-                                          azkarState.selectedCategory.iconAssetOrEmoji,
-                                          style: const TextStyle(fontSize: 24),
+                                        Icon(
+                                          azkarState.selectedCategory.categoryIcon,
+                                          size: 24,
+                                          color: AppColors.accentGold,
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
@@ -207,18 +209,33 @@ class _HomePageState extends State<HomePage> {
                                               const SizedBox(height: 2),
                                               Text(
                                                 isAllDone
-                                                    ? 'اكتمل الورد بحمد الله 🌿'
+                                                    ? 'اكتمل الورد بحمد الله'
                                                     : 'أنجزت ${azkarState.completedCategoryCount} من ${azkarState.totalCategoryCount} أذكار • اضغط للمتابعة',
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   color: isDark ? Colors.white60 : Colors.black54,
                                                 ),
                                               ),
+                                              const SizedBox(height: 6),
+                                              ClipRRect(
+                                                borderRadius: BorderRadius.circular(4),
+                                                child: LinearProgressIndicator(
+                                                  value: azkarState.totalCategoryCount > 0
+                                                      ? (azkarState.completedCategoryCount / azkarState.totalCategoryCount).clamp(0.0, 1.0)
+                                                      : 0.0,
+                                                  backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
+                                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                                    isAllDone ? AppColors.primaryLight : AppColors.accentGold,
+                                                  ),
+                                                  minHeight: 4,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
-                                        const Icon(Icons.arrow_forward_ios_rounded,
-                                            size: 16, color: AppColors.accentGold),
+                                        const SizedBox(width: 8),
+                                        Icon(Icons.chevron_left_rounded,
+                                            size: 20, color: isDark ? Colors.white54 : Colors.black45),
                                       ],
                                     ),
                                   ),

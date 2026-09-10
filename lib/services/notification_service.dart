@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -237,7 +236,7 @@ class NotificationService {
 
   /// Check if exact alarms are permitted
   Future<bool> canScheduleExactAlarms() async {
-    if (!Platform.isAndroid) return true;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return true;
     try {
       return await Permission.scheduleExactAlarm.isGranted;
     } catch (_) {
@@ -247,7 +246,7 @@ class NotificationService {
 
   /// Request the system to exempt this app from battery optimization (Manual only).
   Future<bool> requestBatteryOptimizationExemption() async {
-    if (!Platform.isAndroid) return true;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return true;
     try {
       final status = await Permission.ignoreBatteryOptimizations.status;
       _log('Battery opt status: $status');
@@ -264,7 +263,7 @@ class NotificationService {
   }
 
   Future<bool> isBatteryOptimizationExempted() async {
-    if (!Platform.isAndroid) return true;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return true;
     try {
       return (await Permission.ignoreBatteryOptimizations.status).isGranted;
     } catch (_) {
@@ -317,7 +316,7 @@ class NotificationService {
 
       await _notificationsPlugin.show(
         777,
-        '✅ تجربة ناجحة — الإشعارات تعمل!',
+        'تجربة ناجحة — الإشعارات تعمل!',
         'هذا إشعار تجريبي بالصوت الافتراضي للنظام',
         details,
       );
@@ -352,7 +351,7 @@ class NotificationService {
 
       await _notificationsPlugin.show(
         888,
-        '🕌 الله أكبر الله أكبر — تجربة صوت التكبير',
+        'الله أكبر الله أكبر — تجربة صوت التكبير',
         'التنبيه يعمل بصوت التكبير والحمد لله',
         details,
       );
@@ -401,8 +400,8 @@ class NotificationService {
 
       final result = await _scheduleWithFallback(
         id: 8888,
-        title: '🕌 الله أكبر — تجربة الأذان المجدول',
-        body: 'نجحت تجربة الأذان المجدول والحمد لله! ⏰',
+        title: 'الله أكبر — تجربة الأذان المجدول',
+        body: 'نجحت تجربة الأذان المجدول والحمد لله!',
         tzDate: tzDate,
         details: details,
       );
@@ -570,17 +569,17 @@ class NotificationService {
             alertTime = prayer.time.subtract(Duration(minutes: minutesBefore));
 
             if (offset == 0) {
-              title = isArabic ? '🕌 الله أكبر — حان موعد صلاة $prayerName' : '🕌 $prayerName Prayer Time';
+              title = isArabic ? 'الله أكبر — حان موعد صلاة $prayerName' : '$prayerName Prayer Time';
               final iqamahInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0)
                   ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة' : '';
               body = isArabic ? 'دخل الآن وقت صلاة $prayerName$iqamahInfo' : '$prayerName time has started.';
             } else {
-              title = isArabic ? '⏳ اقتراب موعد صلاة $prayerName' : '⏳ $prayerName Prayer Upcoming';
+              title = isArabic ? 'اقتراب موعد صلاة $prayerName' : '$prayerName Prayer Upcoming';
               body = isArabic ? 'متبقي $minutesBefore دقائق على أذان صلاة $prayerName' : '$prayerName is in $minutesBefore minutes.';
             }
           } else {
             alertTime = prayer.time.add(Duration(minutes: offset));
-            title = isArabic ? '⏳ تذكير بعد أذان $prayerName' : '⏳ $prayerName Post-Adhan Reminder';
+            title = isArabic ? 'تذكير بعد أذان $prayerName' : '$prayerName Post-Adhan Reminder';
             body = isArabic ? 'مضى $offset دقائق على أذان صلاة $prayerName' : '$offset minutes passed since $prayerName Adhan.';
           }
 
@@ -630,11 +629,11 @@ class NotificationService {
         final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
         String title, body;
         if (offsetMinutes == 0) {
-          title = isArabic ? '🕌 الله أكبر — حان موعد صلاة $prayerName' : '🕌 $prayerName Prayer Time';
+          title = isArabic ? 'الله أكبر — حان موعد صلاة $prayerName' : '$prayerName Prayer Time';
           final iqInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0) ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة' : '';
           body = isArabic ? 'دخل الآن وقت صلاة $prayerName$iqInfo' : '$prayerName time has started.';
         } else {
-          title = isArabic ? '⏳ اقتراب موعد صلاة $prayerName' : '⏳ $prayerName Upcoming';
+          title = isArabic ? 'اقتراب موعد صلاة $prayerName' : '$prayerName Upcoming';
           body = isArabic ? 'متبقي $offsetMinutes دقائق على أذان صلاة $prayerName' : '$prayerName in $offsetMinutes min.';
         }
         await _scheduleSingleNotification(id: entry.key, title: title, body: body, scheduledDate: alertTime, isSoundEnabled: isSoundEnabled);
@@ -743,7 +742,7 @@ class NotificationService {
       final morningTime = fajrTime.add(const Duration(minutes: 30));
       await scheduleAzkarNotification(
         id: idMorningAzkar,
-        title: '☀️ أذكار الصباح',
+        title: 'أذكار الصباح',
         body: 'ابدأ يومك بنور الأذكار.. حصّن نفسك في حفظ الله ورعايته.',
         scheduledDate: morningTime,
       );
@@ -752,7 +751,7 @@ class NotificationService {
       final lateMorningTime = dhuhrTime.subtract(const Duration(minutes: 45));
       await scheduleAzkarNotification(
         id: idMorningLateReminder,
-        title: '⏳ تذكير بأذكار الصباح',
+        title: 'تذكير بأذكار الصباح',
         body: 'متبقي القليل على صلاة الظهر.. لا يفوتك ورد الصباح وبركته.',
         scheduledDate: lateMorningTime,
       );
@@ -766,7 +765,7 @@ class NotificationService {
       final eveningTime = asrTime;
       await scheduleAzkarNotification(
         id: idEveningAzkar,
-        title: '🌙 أذكار المساء',
+        title: 'أذكار المساء',
         body: 'حان وقت أذكار المساء.. حصنك وأمانك لليلتك.',
         scheduledDate: eveningTime,
       );
@@ -775,7 +774,7 @@ class NotificationService {
       final lateEveningTime = ishaTime.subtract(const Duration(minutes: 45));
       await scheduleAzkarNotification(
         id: idEveningLateReminder,
-        title: '⏳ تذكير بأذكار المساء',
+        title: 'تذكير بأذكار المساء',
         body: 'متبقي القليل على صلاة العشاء.. تذكير بقراءة ورد المساء.',
         scheduledDate: lateEveningTime,
       );
@@ -793,7 +792,7 @@ class NotificationService {
       }
       await scheduleAzkarNotification(
         id: idSleepAzkar,
-        title: '🛏️ أذكار النوم',
+        title: 'أذكار النوم',
         body: 'آية الكرسي وخواتيم البقرة وأذكار النوم راحة وطمأنينة لقلبك.',
         scheduledDate: sleepTime,
       );
@@ -806,7 +805,7 @@ class NotificationService {
       final qiyamTime = fajrTime.subtract(Duration(minutes: qiyamMinutesBeforeFajr));
       await scheduleAzkarNotification(
         id: idQiyamReminder,
-        title: '🌌 قيام الليل والأسحار',
+        title: 'قيام الليل والأسحار',
         body: '«لا إله إلا الله وحده لا شريك له.. سبحان الله والحمد لله.. اللهم اغفر لي» ركعة بالليل ودعاء مستجاب.',
         scheduledDate: qiyamTime,
       );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/azkar_item_model.dart';
+import '../utils/azkar_ui_helpers.dart';
 
 class DailyProgressHeader extends StatelessWidget {
   final AzkarCategory category;
@@ -49,41 +50,30 @@ class DailyProgressHeader extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header row: Category Title & Reset / Tasbih
+          // Header row: Category Title & Progress Badge & Reset
           Row(
             children: [
-              // Emoji / Icon
-              Text(
-                category.iconAssetOrEmoji,
-                style: const TextStyle(fontSize: 18),
+              Icon(
+                category.categoryIcon,
+                size: 20,
+                color: AppColors.accentGold,
               ),
               const SizedBox(width: 8),
 
-              // Title & Time subtitle
+              // Category Title
               Expanded(
-                child: Row(
-                  children: [
-                    Text(
-                      category.titleArabic,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: isDark ? Colors.white : AppColors.primaryDark,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '• ${category.timeDescription}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                child: Text(
+                  category.titleArabic,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: isDark ? Colors.white : AppColors.primaryDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
 
               // Progress badge (e.g. 3/10 • 30%)
               Container(
@@ -96,7 +86,7 @@ class DailyProgressHeader extends StatelessWidget {
                 ),
                 child: Text(
                   isAllDone
-                      ? 'مكتمل بحمد الله 🌿'
+                      ? 'مكتمل بحمد الله'
                       : '$completedCount من $totalCount ($percent%)',
                   style: TextStyle(
                     fontSize: 11.5,
@@ -140,7 +130,7 @@ class DailyProgressHeader extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(4),
                   child: Icon(
-                    Icons.restart_alt_rounded,
+                    Icons.refresh_rounded,
                     size: 18,
                     color: isDark ? Colors.white54 : Colors.black45,
                   ),
@@ -148,6 +138,26 @@ class DailyProgressHeader extends StatelessWidget {
               ),
             ],
           ),
+
+          // Time Description on a clean separate line
+          if (category.timeDescription.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(start: 28),
+                child: Text(
+                  category.timeDescription,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
 
           // Slim progress line
