@@ -51,6 +51,15 @@
                 android:resource="@xml/prayer_widget_info" />
         </receiver>
 
+        <!-- AlarmManager Receiver for auto-updating widget at each prayer time -->
+        <receiver
+            android:name=".widget.WidgetAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.awqatsalaah.WIDGET_PRAYER_ALARM" />
+            </intent-filter>
+        </receiver>
+
         <!-- Boot Completed Receiver for Rescheduling & Widget Refresh -->
         <receiver
             android:name=".boot.BootReceiver"

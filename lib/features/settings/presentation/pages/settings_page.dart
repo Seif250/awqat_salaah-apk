@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/prayer_constants.dart';
 import '../../../../services/notification_service.dart';
+import '../../../../services/widget_service.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
@@ -373,6 +374,19 @@ class SettingsPage extends StatelessWidget {
                       context.read<SettingsBloc>().add(UpdateAdjustmentsEvent(isha: val));
                     }),
                   ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Section: Widget Diagnostics
+              _buildSectionHeader(context, 'تشخيص الـ Widget', Icons.bug_report_outlined),
+              _buildCard(
+                context,
+                child: ListTile(
+                  title: const Text('عرض سجل تشخيص الـ Widget'),
+                  subtitle: const Text('لمعرفة حالة التحديث التلقائي والأخطاء'),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                  onTap: () => _showWidgetDiagnosticsDialog(context),
                 ),
               ),
               const SizedBox(height: 32),
@@ -1114,6 +1128,96 @@ class SettingsPage extends StatelessWidget {
                 ],
               ],
             ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWidgetDiagnosticsDialog(BuildContext context) async {
+    // Show loading indicator while fetching diagnostics
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final diagnostics = await WidgetService.getWidgetDiagnostics();
+
+    if (!context.mounted) return;
+    Navigator.pop(context); // dismiss loading
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A2E23),
+        title: Row(
+          children: [
+            const Icon(Icons.bug_report, color: AppColors.accentGold, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              'تشخيص الـ Widget',
+              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: Column(
+            children: [
+              // Force refresh button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await WidgetService.forceRefreshWidget();
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text('تم تحديث الـ Widget بنجاح ✅'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('تحديث الـ Widget الآن'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accentGold,
+                    side: const BorderSide(color: AppColors.accentGold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(color: Colors.white24),
+              const SizedBox(height: 8),
+              // Diagnostic log
+              Expanded(
+                child: SingleChildScrollView(
+                  reverse: true, // scroll to bottom (latest entries)
+                  child: SelectableText(
+                    diagnostics,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 10,
+                      color: Colors.greenAccent,
+                      height: 1.5,
+                    ),
+                    textDirection: TextDirection.ltr,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [

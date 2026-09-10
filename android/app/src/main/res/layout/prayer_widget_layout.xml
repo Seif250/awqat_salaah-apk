@@ -78,6 +78,17 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- Live Chronometer Countdown -->
+        <Chronometer
+            android:id="@+id/widget_chronometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="visible" />
+
         <!-- Iqamah and Remaining Subtitle -->
         <LinearLayout
             android:layout_width="wrap_content"

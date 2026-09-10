@@ -90,11 +90,32 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
       ));
 
       // Sync with Native Home Screen Widget
+      // Calculate tomorrow's fajr for overnight widget rollover
+      int tomorrowFajrTs = 0;
+      try {
+        final tomorrow = now.add(const Duration(days: 1));
+        final tomorrowPrayerDay = _calculationService.calculatePrayerTimes(
+          latitude: lat,
+          longitude: lng,
+          date: tomorrow,
+          method: method,
+          madhab: madhab,
+          adjustFajr: _storageService.adjustFajr,
+          adjustSunrise: _storageService.adjustSunrise,
+          adjustDhuhr: _storageService.adjustDhuhr,
+          adjustAsr: _storageService.adjustAsr,
+          adjustMaghrib: _storageService.adjustMaghrib,
+          adjustIsha: _storageService.adjustIsha,
+        );
+        tomorrowFajrTs = tomorrowPrayerDay.fajr.time.millisecondsSinceEpoch;
+      } catch (_) {}
+
       WidgetService.updateHomeWidget(
         prayerDay: prayerDay,
         cityName: city,
         isArabic: true,
         is24Hour: _storageService.is24HourFormat,
+        tomorrowFajrTimestamp: tomorrowFajrTs,
       );
 
       // Schedule 7-day advance notifications when requested (e.g. app start, settings update, midnight)
