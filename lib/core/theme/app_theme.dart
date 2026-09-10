@@ -5,10 +5,11 @@ import 'app_colors.dart';
 class AppTheme {
   static ThemeData get lightTheme {
     final baseTextTheme = ThemeData.light().textTheme;
-    final textTheme = GoogleFonts.tajawalTextTheme(baseTextTheme);
+    final textTheme = GoogleFonts.cairoTextTheme(baseTextTheme);
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'Cairo',
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
@@ -60,10 +61,11 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     final baseTextTheme = ThemeData.dark().textTheme;
-    final textTheme = GoogleFonts.tajawalTextTheme(baseTextTheme);
+    final textTheme = GoogleFonts.cairoTextTheme(baseTextTheme);
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'Cairo',
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryLight,

@@ -14,6 +14,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<ChangeMadhabEvent>(_onChangeMadhab);
     on<ToggleNotificationsEvent>(_onToggleNotifications);
     on<ToggleNotificationSoundEvent>(_onToggleNotificationSound);
+    on<ChangeNotificationSoundTypeEvent>(_onChangeNotificationSoundType);
     on<ChangeNotificationOffsetEvent>(_onChangeNotificationOffset);
     on<ChangeNotificationOffsetsEvent>(_onChangeNotificationOffsets);
     on<ChangeThemeModeEvent>(_onChangeThemeMode);
@@ -36,6 +37,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       madhab: _storageService.madhab,
       notificationsEnabled: _storageService.notificationsEnabled,
       notificationSoundEnabled: _storageService.notificationSoundEnabled,
+      notificationSoundType: _storageService.notificationSoundType,
       notificationOffsetMinutes: _storageService.notificationOffsetMinutes,
       notificationOffsets: _storageService.notificationOffsets,
       themeMode: _storageService.themeMode,
@@ -89,6 +91,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     await _storageService.setNotificationSoundEnabled(event.soundEnabled);
     emit(state.copyWith(notificationSoundEnabled: event.soundEnabled));
+  }
+
+  Future<void> _onChangeNotificationSoundType(
+    ChangeNotificationSoundTypeEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setNotificationSoundType(event.soundType);
+    emit(state.copyWith(notificationSoundType: event.soundType));
   }
 
   Future<void> _onChangeNotificationOffset(

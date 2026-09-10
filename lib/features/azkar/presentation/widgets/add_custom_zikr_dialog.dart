@@ -7,7 +7,8 @@ class AddCustomZikrDialog extends StatefulWidget {
 
   const AddCustomZikrDialog({super.key, required this.onAdd});
 
-  static Future<void> show(BuildContext context, {required Function(CustomZikr zikr) onAdd}) {
+  static Future<void> show(BuildContext context,
+      {required Function(CustomZikr zikr) onAdd}) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -97,7 +98,8 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.star_outline_rounded, size: 22, color: AppColors.accentGold),
+                      const Icon(Icons.star_outline_rounded,
+                          size: 22, color: AppColors.accentGold),
                       const SizedBox(width: 8),
                       Text(
                         'إضافة ذكر مخصص',
@@ -121,11 +123,13 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                 decoration: InputDecoration(
                   labelText: 'عنوان الذكر أو اسم الورد',
                   hintText: 'مثال: ذكر قيام الليل، استغفار خاص...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
                   prefixIcon: const Icon(Icons.bookmark_border_rounded),
                 ),
-                validator: (val) =>
-                    (val == null || val.trim().isEmpty) ? 'يرجى كتابة عنوان الذكر' : null,
+                validator: (val) => (val == null || val.trim().isEmpty)
+                    ? 'يرجى كتابة عنوان الذكر'
+                    : null,
               ),
               const SizedBox(height: 14),
 
@@ -136,7 +140,8 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                 decoration: InputDecoration(
                   labelText: 'نص الذكر (اختياري)',
                   hintText: 'اكتب نص الذكر أو الدعاء المأثور...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
                   prefixIcon: const Icon(Icons.format_quote_rounded),
                 ),
               ),
@@ -146,7 +151,8 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
               Row(
                 children: [
                   const Text('العدد المطلوب: ',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const Spacer(),
                   ...[1, 3, 33, 70, 100].map((count) {
                     final isSelected = _targetCount == count;
@@ -155,10 +161,12 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                       child: ChoiceChip(
                         label: Text('$count'),
                         selected: isSelected,
-                        selectedColor: AppColors.accentGold.withValues(alpha: 0.3),
+                        selectedColor:
+                            AppColors.accentGold.withValues(alpha: 0.3),
                         labelStyle: TextStyle(
                           fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                           color: isSelected ? AppColors.accentGold : null,
                         ),
                         onSelected: (selected) {
@@ -175,10 +183,12 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkCard : AppColors.lightCardElevated,
+                  color:
+                      isDark ? AppColors.darkCard : AppColors.lightCardElevated,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                   ),
                 ),
                 child: Column(
@@ -186,7 +196,8 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('تفعيل تذكير يومي للذكر',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold)),
                       subtitle: Text(
                         _reminderTime != null
                             ? 'موعد التذكير: ${_reminderTime!.format(context)}'
@@ -194,7 +205,7 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                         style: const TextStyle(fontSize: 12),
                       ),
                       value: _enableReminder,
-                      activeColor: AppColors.primaryLight,
+                      activeThumbColor: AppColors.primaryLight,
                       onChanged: (val) {
                         setState(() => _enableReminder = val);
                         if (val && _reminderTime == null) {
@@ -229,7 +240,8 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: _save,
               ),

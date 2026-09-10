@@ -103,18 +103,27 @@ class AppearanceSettingsPage extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                        color: AppColors.accentGold
+                            .withValues(alpha: isDark ? 0.12 : 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.access_time_outlined, size: 20, color: AppColors.accentGold),
+                      child: const Icon(Icons.access_time_outlined,
+                          size: 20, color: AppColors.accentGold),
                     ),
-                    title: const Text('نظام 24 ساعة', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(state.is24HourFormat ? 'مفعّل (مثال: 18:30)' : 'معطّل (مثال: 06:30 م)'),
+                    title: const Text('نظام 24 ساعة',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(state.is24HourFormat
+                        ? 'مفعّل (مثال: 18:30)'
+                        : 'معطّل (مثال: 06:30 م)'),
                     value: state.is24HourFormat,
-                    activeColor: AppColors.accentGold,
+                    activeThumbColor: AppColors.accentGold,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(Toggle24HourFormatEvent(val));
-                      context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+                      context
+                          .read<SettingsBloc>()
+                          .add(Toggle24HourFormatEvent(val));
+                      context
+                          .read<PrayerBloc>()
+                          .add(const RefreshPrayerTimesEvent());
                     },
                   ),
                 ],

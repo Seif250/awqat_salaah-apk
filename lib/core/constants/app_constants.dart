@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'أوقات الصلاة';
-  static const String appVersion = '1.3.0';
+  static const String appVersion = '1.3.1';
 
   // Storage Keys - Location
   static const String keyIsFirstLaunch = 'is_first_launch';
@@ -49,8 +49,29 @@ class AppConstants {
   static const String keyWidgetMaghrib = 'widget_maghrib';
   static const String keyWidgetIsha = 'widget_isha';
 
-  // Notification Channel with Azan sound (v8 for High Priority & Exact Alarms)
-  static const String notificationChannelId = 'prayer_times_azan_channel_v8';
+  // Storage Key - Adhan Sound Selection
+  static const String keyNotificationSoundType = 'notification_sound_type';
+
+  // Adhan Sound Options
+  static const String soundTypeFull = 'full';
+  static const String soundTypeHayya = 'hayya';
+  static const String soundTypeTakbeer = 'takbeer';
+
+  // Dedicated Notification Channels for each sound
+  static const String channelIdAzanFull = 'prayer_channel_azan_full_v1';
+  static const String channelNameAzanFull = 'أذان الصلوات (الأذان كامل)';
+  static const String soundResourceAzanFull = 'azan_full';
+
+  static const String channelIdAzanHayya = 'prayer_channel_azan_hayya_v1';
+  static const String channelNameAzanHayya = 'أذان الصلوات (حي على الصلاة)';
+  static const String soundResourceAzanHayya = 'azan';
+
+  static const String channelIdTakbeer = 'prayer_channel_takbeer_v1';
+  static const String channelNameTakbeer = 'أذان الصلوات (الله أكبر الله أكبر)';
+  static const String soundResourceTakbeer = 'takbeer';
+
+  // Default Legacy Notification Channel (Backward Compatibility)
+  static const String notificationChannelId = 'prayer_times_azan_channel_v9';
   static const String notificationChannelName = 'أذان الصلوات الخمس والتنبيهات';
   static const String notificationChannelDesc = 'إشعارات وتنبيهات أوقات الصلاة بصوت الأذان بأعلى أولوية';
   static const String notificationSoundName = 'azan';

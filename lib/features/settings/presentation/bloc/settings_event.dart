@@ -45,6 +45,14 @@ class ToggleNotificationSoundEvent extends SettingsEvent {
   List<Object?> get props => [soundEnabled];
 }
 
+class ChangeNotificationSoundTypeEvent extends SettingsEvent {
+  final String soundType;
+  const ChangeNotificationSoundTypeEvent(this.soundType);
+
+  @override
+  List<Object?> get props => [soundType];
+}
+
 class ChangeNotificationOffsetEvent extends SettingsEvent {
   final int offsetMinutes;
   const ChangeNotificationOffsetEvent(this.offsetMinutes);

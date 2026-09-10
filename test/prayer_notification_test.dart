@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:awqat_salaah/core/constants/app_constants.dart';
 import 'package:awqat_salaah/core/constants/prayer_constants.dart';
+import 'package:awqat_salaah/services/notification_service.dart';
 import 'package:awqat_salaah/services/prayer_calculation_service.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -91,6 +93,30 @@ void main() {
       expect(tzPrayerTime.hour, equals(12));
       expect(tzPrayerTime.minute, equals(30));
       expect(tzPrayerTime.location.name, equals('Africa/Cairo'));
+    });
+
+    test('getSoundConfig maps sound types to correct dedicated notification channels and sounds', () {
+      final notifService = NotificationService();
+
+      final fullCfg = notifService.getSoundConfig(AppConstants.soundTypeFull);
+      expect(fullCfg['channelId'], equals(AppConstants.channelIdAzanFull));
+      expect(fullCfg['soundResource'], equals('azan_full'));
+      expect(fullCfg['displayName'], equals('الأذان كامل'));
+
+      final hayyaCfg = notifService.getSoundConfig(AppConstants.soundTypeHayya);
+      expect(hayyaCfg['channelId'], equals(AppConstants.channelIdAzanHayya));
+      expect(hayyaCfg['soundResource'], equals('azan'));
+      expect(hayyaCfg['displayName'], equals('حي على الصلاة'));
+
+      final takbeerCfg = notifService.getSoundConfig(AppConstants.soundTypeTakbeer);
+      expect(takbeerCfg['channelId'], equals(AppConstants.channelIdTakbeer));
+      expect(takbeerCfg['soundResource'], equals('takbeer'));
+      expect(takbeerCfg['displayName'], equals('الله أكبر الله أكبر'));
+
+      // Unknown fallback defaults to hayya
+      final fallbackCfg = notifService.getSoundConfig('unknown_custom_key');
+      expect(fallbackCfg['channelId'], equals(AppConstants.channelIdAzanHayya));
+      expect(fallbackCfg['soundResource'], equals('azan'));
     });
   });
 }

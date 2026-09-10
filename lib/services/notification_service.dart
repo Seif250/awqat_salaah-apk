@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -127,12 +128,55 @@ class NotificationService {
 
       // Clean up previous channel versions to prevent cached stale channel configs
       try {
+        await androidImpl.deleteNotificationChannel('prayer_times_azan_channel_v8');
         await androidImpl.deleteNotificationChannel('prayer_times_takbeer_channel_v7');
         await androidImpl.deleteNotificationChannel('prayer_times_takbeer_channel_v6');
         await androidImpl.deleteNotificationChannel('prayer_times_takbeer_channel_v5');
       } catch (_) {}
 
-      // Channel WITH custom Azan sound & alarm stream
+      // 1. Channel for FULL Adhan (الأذان كامل)
+      const channelFull = AndroidNotificationChannel(
+        AppConstants.channelIdAzanFull,
+        AppConstants.channelNameAzanFull,
+        description: 'إشعارات وتنبيهات أوقات الصلاة بالأذان كاملاً بأعلى أولوية',
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(AppConstants.soundResourceAzanFull),
+        enableVibration: true,
+        showBadge: true,
+      );
+      await androidImpl.createNotificationChannel(channelFull);
+      _log('Channel created: ${AppConstants.channelIdAzanFull}');
+
+      // 2. Channel for Short Adhan (حي على الصلاة)
+      const channelHayya = AndroidNotificationChannel(
+        AppConstants.channelIdAzanHayya,
+        AppConstants.channelNameAzanHayya,
+        description: 'إشعارات وتنبيهات أوقات الصلاة بصوت الأذان المختصر بأعلى أولوية',
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(AppConstants.soundResourceAzanHayya),
+        enableVibration: true,
+        showBadge: true,
+      );
+      await androidImpl.createNotificationChannel(channelHayya);
+      _log('Channel created: ${AppConstants.channelIdAzanHayya}');
+
+      // 3. Channel for Takbeer (الله أكبر الله أكبر)
+      const channelTakbeer = AndroidNotificationChannel(
+        AppConstants.channelIdTakbeer,
+        AppConstants.channelNameTakbeer,
+        description: 'إشعارات وتنبيهات أوقات الصلاة بتكبيرات الأذان بأعلى أولوية',
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(AppConstants.soundResourceTakbeer),
+        enableVibration: true,
+        showBadge: true,
+      );
+      await androidImpl.createNotificationChannel(channelTakbeer);
+      _log('Channel created: ${AppConstants.channelIdTakbeer}');
+
+      // 4. Legacy channel for backward compatibility
       const channelWithSound = AndroidNotificationChannel(
         AppConstants.notificationChannelId,
         AppConstants.notificationChannelName,
@@ -143,11 +187,9 @@ class NotificationService {
         enableVibration: true,
         showBadge: true,
       );
-
       await androidImpl.createNotificationChannel(channelWithSound);
-      _log('Channel created: ${AppConstants.notificationChannelId}');
 
-      // Fallback channel with DEFAULT sound
+      // 5. Fallback channel with DEFAULT sound
       const fallbackChannel = AndroidNotificationChannel(
         'prayer_times_default_sound',
         'تنبيهات الصلاة (صوت افتراضي)',
@@ -157,11 +199,10 @@ class NotificationService {
         enableVibration: true,
         showBadge: true,
       );
-
       await androidImpl.createNotificationChannel(fallbackChannel);
       _log('Fallback channel created: prayer_times_default_sound');
 
-      // Azkar channel with gentle notification sound
+      // 6. Azkar channel with gentle notification sound
       const azkarChannel = AndroidNotificationChannel(
         AppConstants.azkarChannelId,
         AppConstants.azkarChannelName,
@@ -171,7 +212,6 @@ class NotificationService {
         enableVibration: true,
         showBadge: true,
       );
-
       await androidImpl.createNotificationChannel(azkarChannel);
       _log('Azkar channel created: ${AppConstants.azkarChannelId}');
     } catch (e) {
@@ -328,17 +368,68 @@ class NotificationService {
     }
   }
 
-  /// Test with TAKBEER custom sound
-  Future<String> showTakbeerTestNotification() async {
+  static const MethodChannel _nativeChannel = MethodChannel('com.awqatsalaah/widget');
+
+  /// Play native audio preview using MediaPlayer (from res/raw)
+  Future<void> playAudioPreview(String soundType) async {
     try {
-      const androidDetails = AndroidNotificationDetails(
-        AppConstants.notificationChannelId,
-        AppConstants.notificationChannelName,
-        channelDescription: AppConstants.notificationChannelDesc,
+      await _nativeChannel.invokeMethod('playAudioPreview', {'soundType': soundType});
+      _log('Audio preview started: $soundType');
+    } catch (e) {
+      _log('Audio preview error: $e');
+    }
+  }
+
+  /// Stop native audio preview
+  Future<void> stopAudioPreview() async {
+    try {
+      await _nativeChannel.invokeMethod('stopAudioPreview');
+      _log('Audio preview stopped');
+    } catch (e) {
+      _log('Audio stop error: $e');
+    }
+  }
+
+  /// Map sound type key to channel ID, channel name, and sound raw resource name
+  Map<String, String> getSoundConfig(String soundType) {
+    switch (soundType) {
+      case AppConstants.soundTypeFull:
+        return {
+          'channelId': AppConstants.channelIdAzanFull,
+          'channelName': AppConstants.channelNameAzanFull,
+          'soundResource': AppConstants.soundResourceAzanFull,
+          'displayName': 'الأذان كامل',
+        };
+      case AppConstants.soundTypeTakbeer:
+        return {
+          'channelId': AppConstants.channelIdTakbeer,
+          'channelName': AppConstants.channelNameTakbeer,
+          'soundResource': AppConstants.soundResourceTakbeer,
+          'displayName': 'الله أكبر الله أكبر',
+        };
+      case AppConstants.soundTypeHayya:
+      default:
+        return {
+          'channelId': AppConstants.channelIdAzanHayya,
+          'channelName': AppConstants.channelNameAzanHayya,
+          'soundResource': AppConstants.soundResourceAzanHayya,
+          'displayName': 'حي على الصلاة',
+        };
+    }
+  }
+
+  /// Show test notification for any chosen sound
+  Future<String> showSoundTestNotification(String soundType) async {
+    try {
+      final soundCfg = getSoundConfig(soundType);
+      final androidDetails = AndroidNotificationDetails(
+        soundCfg['channelId']!,
+        soundCfg['channelName']!,
+        channelDescription: 'إشعارات وتنبيهات أوقات الصلاة بصوت المؤذن بأعلى أولوية',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound(AppConstants.notificationSoundName),
+        sound: RawResourceAndroidNotificationSound(soundCfg['soundResource']!),
         enableVibration: true,
         autoCancel: true,
         icon: '@mipmap/ic_launcher',
@@ -347,25 +438,30 @@ class NotificationService {
         visibility: NotificationVisibility.public,
       );
 
-      const details = NotificationDetails(android: androidDetails);
+      final details = NotificationDetails(android: androidDetails);
 
       await _notificationsPlugin.show(
         888,
-        'الله أكبر الله أكبر — تجربة صوت التكبير',
-        'التنبيه يعمل بصوت التكبير والحمد لله',
+        'تجربة صوت الأذان — ${soundCfg["displayName"]}',
+        'التنبيه يعمل بصوت (${soundCfg["displayName"]}) بنجاح والحمد لله',
         details,
       );
-      _log('Takbeer test notification shown (id=888) ✅');
+      _log('Test notification shown for $soundType (id=888) ✅');
       return 'success';
     } catch (e) {
-      _log('Takbeer test FAILED: $e');
+      _log('Test notification FAILED: $e');
       return 'error: $e';
     }
   }
 
+  /// Test with TAKBEER custom sound
+  Future<String> showTakbeerTestNotification() async {
+    return await showSoundTestNotification(AppConstants.soundTypeTakbeer);
+  }
+
   /// Show an immediate test notification (legacy method)
   Future<void> showTestNotification({required bool isSoundEnabled}) async {
-    await showTakbeerTestNotification();
+    await showSoundTestNotification(AppConstants.soundTypeHayya);
   }
 
   /// Schedule a test alarm N seconds from now
@@ -505,6 +601,7 @@ class NotificationService {
     required int iqamahIsha,
     required bool isEnabled,
     required bool isSoundEnabled,
+    String soundType = AppConstants.soundTypeHayya,
     required List<int> notificationOffsets,
     required bool isArabic,
     required bool is24Hour,
@@ -517,7 +614,7 @@ class NotificationService {
       return;
     }
 
-    _log('Weekly scheduling: offsets=$notificationOffsets, days=$daysToSchedule, tz=${tz.local.name}');
+    _log('Weekly scheduling: soundType=$soundType, offsets=$notificationOffsets, days=$daysToSchedule, tz=${tz.local.name}');
 
     final now = DateTime.now();
     int ok = 0, skip = 0, fail = 0;
@@ -587,6 +684,7 @@ class NotificationService {
             final result = await _scheduleSingleNotification(
               id: notifId, title: title, body: body,
               scheduledDate: alertTime, isSoundEnabled: isSoundEnabled,
+              soundType: soundType,
             );
             if (result.startsWith('failed')) { fail++; } else { ok++; }
           } else {
@@ -606,6 +704,7 @@ class NotificationService {
     required PrayerDayModel prayerDay,
     required bool isEnabled,
     required bool isSoundEnabled,
+    String soundType = AppConstants.soundTypeHayya,
     required int offsetMinutes,
     required bool isArabic,
     required bool is24Hour,
@@ -636,7 +735,11 @@ class NotificationService {
           title = isArabic ? 'اقتراب موعد صلاة $prayerName' : '$prayerName Upcoming';
           body = isArabic ? 'متبقي $offsetMinutes دقائق على أذان صلاة $prayerName' : '$prayerName in $offsetMinutes min.';
         }
-        await _scheduleSingleNotification(id: entry.key, title: title, body: body, scheduledDate: alertTime, isSoundEnabled: isSoundEnabled);
+        await _scheduleSingleNotification(
+          id: entry.key, title: title, body: body,
+          scheduledDate: alertTime, isSoundEnabled: isSoundEnabled,
+          soundType: soundType,
+        );
       }
     }
   }
@@ -647,18 +750,20 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
     required bool isSoundEnabled,
+    String soundType = AppConstants.soundTypeHayya,
   }) async {
     final tzDate = _localDateTimeToTZ(scheduledDate);
+    final soundCfg = getSoundConfig(soundType);
 
     final androidDetails = AndroidNotificationDetails(
-      AppConstants.notificationChannelId,
-      AppConstants.notificationChannelName,
-      channelDescription: AppConstants.notificationChannelDesc,
+      soundCfg['channelId']!,
+      soundCfg['channelName']!,
+      channelDescription: 'إشعارات وتنبيهات أوقات الصلاة بأعلى أولوية',
       importance: Importance.max,
       priority: Priority.max,
       playSound: isSoundEnabled,
       sound: isSoundEnabled
-          ? const RawResourceAndroidNotificationSound(AppConstants.notificationSoundName)
+          ? RawResourceAndroidNotificationSound(soundCfg['soundResource']!)
           : null,
       enableVibration: isSoundEnabled,
       autoCancel: true,

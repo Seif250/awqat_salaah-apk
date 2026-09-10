@@ -7,6 +7,7 @@ class SettingsState extends Equatable {
   final AppMadhab madhab;
   final bool notificationsEnabled;
   final bool notificationSoundEnabled;
+  final String notificationSoundType;
   final int notificationOffsetMinutes;
   final List<int> notificationOffsets;
   final ThemeMode themeMode;
@@ -39,6 +40,7 @@ class SettingsState extends Equatable {
     this.madhab = AppMadhab.shafi,
     this.notificationsEnabled = true,
     this.notificationSoundEnabled = true,
+    this.notificationSoundType = 'hayya',
     this.notificationOffsetMinutes = 0,
     this.notificationOffsets = const [0],
     this.themeMode = ThemeMode.system,
@@ -66,6 +68,7 @@ class SettingsState extends Equatable {
     AppMadhab? madhab,
     bool? notificationsEnabled,
     bool? notificationSoundEnabled,
+    String? notificationSoundType,
     int? notificationOffsetMinutes,
     List<int>? notificationOffsets,
     ThemeMode? themeMode,
@@ -93,6 +96,8 @@ class SettingsState extends Equatable {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       notificationSoundEnabled:
           notificationSoundEnabled ?? this.notificationSoundEnabled,
+      notificationSoundType:
+          notificationSoundType ?? this.notificationSoundType,
       notificationOffsetMinutes:
           notificationOffsetMinutes ?? this.notificationOffsetMinutes,
       notificationOffsets: notificationOffsets ?? this.notificationOffsets,
@@ -128,6 +133,7 @@ class SettingsState extends Equatable {
         madhab,
         notificationsEnabled,
         notificationSoundEnabled,
+        notificationSoundType,
         notificationOffsetMinutes,
         notificationOffsets,
         themeMode,

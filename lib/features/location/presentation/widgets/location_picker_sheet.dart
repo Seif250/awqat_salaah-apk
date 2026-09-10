@@ -52,7 +52,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.4),
+              color: Colors.grey.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -72,13 +72,16 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: ElevatedButton.icon(
               onPressed: () {
-                context.read<LocationBloc>().add(const RequestCurrentLocationEvent());
+                context
+                    .read<LocationBloc>()
+                    .add(const RequestCurrentLocationEvent());
                 Navigator.pop(context);
               },
               icon: const Icon(Icons.my_location_rounded, color: Colors.white),
               label: const Text(
                 'استخدام الموقع الحالي (GPS)',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -103,12 +106,14 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                 hintText: 'ابحث عن محافظة أو مدينة...',
                 prefixIcon: const Icon(Icons.search_rounded),
                 filled: true,
-                fillColor: isDark ? AppColors.darkCard : AppColors.lightCardElevated,
+                fillColor:
+                    isDark ? AppColors.darkCard : AppColors.lightCardElevated,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
@@ -121,7 +126,8 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                 if (state is LocationSuccess) {
                   final cities = state.searchResults;
                   return ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     itemCount: cities.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, index) {
@@ -130,26 +136,33 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
 
                       return ListTile(
                         onTap: () {
-                          context.read<LocationBloc>().add(SelectCityEvent(city));
+                          context
+                              .read<LocationBloc>()
+                              .add(SelectCityEvent(city));
                           Navigator.pop(context);
                         },
                         leading: Icon(
                           isSelected
                               ? Icons.radio_button_checked_rounded
                               : Icons.radio_button_off_rounded,
-                          color: isSelected ? AppColors.accentGold : Colors.grey,
+                          color:
+                              isSelected ? AppColors.accentGold : Colors.grey,
                         ),
                         title: Text(
                           city.nameArabic,
                           style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             color: isSelected ? AppColors.accentGold : null,
                           ),
                         ),
-                        subtitle: Text('${city.countryArabic} (${city.nameEnglish})'),
+                        subtitle:
+                            Text('${city.countryArabic} (${city.nameEnglish})'),
                         trailing: Text(
                           '${city.latitude.toStringAsFixed(2)}°, ${city.longitude.toStringAsFixed(2)}°',
-                          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey),
                         ),
                       );
                     },

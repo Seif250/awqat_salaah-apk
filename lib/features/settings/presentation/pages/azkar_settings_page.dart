@@ -30,7 +30,9 @@ class AzkarSettingsPage extends StatelessWidget {
               activeColor: AppColors.accentGold,
               onChanged: (val) {
                 if (val != null) {
-                  context.read<SettingsBloc>().add(UpdateAzkarQiyamMinutesEvent(val));
+                  context
+                      .read<SettingsBloc>()
+                      .add(UpdateAzkarQiyamMinutesEvent(val));
                   Navigator.pop(dialogCtx);
                 }
               },
@@ -63,12 +65,14 @@ class AzkarSettingsPage extends StatelessWidget {
             child: const Text('إلغاء'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.accentGold),
+            style:
+                FilledButton.styleFrom(backgroundColor: AppColors.accentGold),
             onPressed: () {
               context.read<AzkarBloc>().add(const RestoreDefaultAzkarEvent());
               Navigator.pop(dialogCtx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تمت استعادة الأذكار الافتراضية بنجاح')),
+                const SnackBar(
+                    content: Text('تمت استعادة الأذكار الافتراضية بنجاح')),
               );
             },
             child: const Text('استعادة'),
@@ -102,89 +106,116 @@ class AzkarSettingsPage extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                        color: AppColors.accentGold
+                            .withValues(alpha: isDark ? 0.12 : 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.wb_sunny_outlined, size: 20, color: AppColors.accentGold),
+                      child: const Icon(Icons.wb_sunny_outlined,
+                          size: 20, color: AppColors.accentGold),
                     ),
-                    title: const Text('أذكار الصباح', style: TextStyle(fontWeight: FontWeight.w600)),
+                    title: const Text('أذكار الصباح',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: const Text('تنبيه صباحي بعد شروق الشمس'),
                     value: state.isAzkarMorningReminderEnabled,
-                    activeColor: AppColors.accentGold,
+                    activeThumbColor: AppColors.accentGold,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(ToggleAzkarMorningReminderEvent(val));
+                      context
+                          .read<SettingsBloc>()
+                          .add(ToggleAzkarMorningReminderEvent(val));
                     },
                   ),
                   Divider(
                     height: 1,
                     indent: 66,
                     endIndent: 16,
-                    color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.05),
                   ),
                   SwitchListTile(
                     secondary: Container(
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                        color: AppColors.accentGold
+                            .withValues(alpha: isDark ? 0.12 : 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.nightlight_outlined, size: 20, color: AppColors.accentGold),
+                      child: const Icon(Icons.nightlight_outlined,
+                          size: 20, color: AppColors.accentGold),
                     ),
-                    title: const Text('أذكار المساء', style: TextStyle(fontWeight: FontWeight.w600)),
+                    title: const Text('أذكار المساء',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: const Text('تنبيه مسائي بعد صلاة العصر والمغرب'),
                     value: state.isAzkarEveningReminderEnabled,
-                    activeColor: AppColors.accentGold,
+                    activeThumbColor: AppColors.accentGold,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(ToggleAzkarEveningReminderEvent(val));
+                      context
+                          .read<SettingsBloc>()
+                          .add(ToggleAzkarEveningReminderEvent(val));
                     },
                   ),
                   Divider(
                     height: 1,
                     indent: 66,
                     endIndent: 16,
-                    color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.05),
                   ),
                   SwitchListTile(
                     secondary: Container(
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                        color: AppColors.accentGold
+                            .withValues(alpha: isDark ? 0.12 : 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.bedtime_outlined, size: 20, color: AppColors.accentGold),
+                      child: const Icon(Icons.bedtime_outlined,
+                          size: 20, color: AppColors.accentGold),
                     ),
-                    title: const Text('أذكار النوم', style: TextStyle(fontWeight: FontWeight.w600)),
+                    title: const Text('أذكار النوم',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: const Text('تذكير ليلي قبل النوم'),
                     value: state.isAzkarSleepReminderEnabled,
-                    activeColor: AppColors.accentGold,
+                    activeThumbColor: AppColors.accentGold,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(ToggleAzkarSleepReminderEvent(val));
+                      context
+                          .read<SettingsBloc>()
+                          .add(ToggleAzkarSleepReminderEvent(val));
                     },
                   ),
                   Divider(
                     height: 1,
                     indent: 66,
                     endIndent: 16,
-                    color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.05),
                   ),
                   SwitchListTile(
                     secondary: Container(
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                        color: AppColors.accentGold
+                            .withValues(alpha: isDark ? 0.12 : 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.dark_mode_outlined, size: 20, color: AppColors.accentGold),
+                      child: const Icon(Icons.dark_mode_outlined,
+                          size: 20, color: AppColors.accentGold),
                     ),
-                    title: const Text('قيام الليل والأسحار', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('تنبيه قبل الفجر بـ ${state.azkarQiyamMinutesBeforeFajr} دقيقة'),
+                    title: const Text('قيام الليل والأسحار',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(
+                        'تنبيه قبل الفجر بـ ${state.azkarQiyamMinutesBeforeFajr} دقيقة'),
                     value: state.isAzkarQiyamReminderEnabled,
-                    activeColor: AppColors.accentGold,
+                    activeThumbColor: AppColors.accentGold,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(ToggleAzkarQiyamReminderEvent(val));
+                      context
+                          .read<SettingsBloc>()
+                          .add(ToggleAzkarQiyamReminderEvent(val));
                     },
                   ),
                   if (state.isAzkarQiyamReminderEnabled) ...[
@@ -192,14 +223,18 @@ class AzkarSettingsPage extends StatelessWidget {
                       height: 1,
                       indent: 66,
                       endIndent: 16,
-                      color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.05),
                     ),
                     SettingsTile(
                       icon: Icons.access_time_rounded,
                       title: 'وقت الاستيقاظ لقيام الليل',
-                      subtitle: 'قبل أذان الفجر بـ ${state.azkarQiyamMinutesBeforeFajr} دقيقة',
+                      subtitle:
+                          'قبل أذان الفجر بـ ${state.azkarQiyamMinutesBeforeFajr} دقيقة',
                       showDivider: false,
-                      onTap: () => _showQiyamMinutesDialog(context, state.azkarQiyamMinutesBeforeFajr),
+                      onTap: () => _showQiyamMinutesDialog(
+                          context, state.azkarQiyamMinutesBeforeFajr),
                     ),
                   ],
                 ],
@@ -213,7 +248,8 @@ class AzkarSettingsPage extends StatelessWidget {
                   SettingsTile(
                     icon: Icons.auto_stories_outlined,
                     title: 'فتح صفحة الأذكار والورد',
-                    subtitle: 'استعراض الأذكار، متابعة الورد، والتسبيح الإلكتروني',
+                    subtitle:
+                        'استعراض الأذكار، متابعة الورد، والتسبيح الإلكتروني',
                     showDivider: true,
                     onTap: () {
                       Navigator.push(
@@ -231,9 +267,12 @@ class AzkarSettingsPage extends StatelessWidget {
                       AddCustomZikrDialog.show(
                         context,
                         onAdd: (zikr) {
-                          context.read<AzkarBloc>().add(AddCustomZikrEvent(zikr));
+                          context
+                              .read<AzkarBloc>()
+                              .add(AddCustomZikrEvent(zikr));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('تمت إضافة الذكر بنجاح')),
+                            const SnackBar(
+                                content: Text('تمت إضافة الذكر بنجاح')),
                           );
                         },
                       );
@@ -242,7 +281,8 @@ class AzkarSettingsPage extends StatelessWidget {
                   SettingsTile(
                     icon: Icons.restore_rounded,
                     title: 'استعادة الأذكار الافتراضية',
-                    subtitle: 'استرجاع أذكار السنة النبوية إذا قمت بحذف أي منها',
+                    subtitle:
+                        'استرجاع أذكار السنة النبوية إذا قمت بحذف أي منها',
                     showDivider: false,
                     onTap: () => _confirmRestoreDefaults(context),
                   ),
@@ -259,16 +299,20 @@ class AzkarSettingsPage extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                        color: AppColors.accentGold
+                            .withValues(alpha: isDark ? 0.12 : 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.refresh_rounded, size: 20, color: AppColors.accentGold),
+                      child: const Icon(Icons.refresh_rounded,
+                          size: 20, color: AppColors.accentGold),
                     ),
-                    title: const Text('إعادة ضبط الورد اليومي', style: TextStyle(fontWeight: FontWeight.w600)),
+                    title: const Text('إعادة ضبط الورد اليومي',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: const Text(
                       'يتم تصفير عداد إنجاز اليوم تلقائياً مع مطلع كل يوم جديد مع الحفاظ على إجمالي التسبيحات مدى الحياة.',
                     ),
-                    trailing: const Icon(Icons.check_circle_outline_rounded, color: Colors.green),
+                    trailing: const Icon(Icons.check_circle_outline_rounded,
+                        color: Colors.green),
                   ),
                 ],
               ),

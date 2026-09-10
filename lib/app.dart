@@ -10,7 +10,6 @@ import 'features/location/presentation/bloc/location_bloc.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/prayer_times/presentation/bloc/prayer_bloc.dart';
 import 'features/prayer_times/presentation/bloc/prayer_event.dart';
-import 'features/prayer_times/presentation/pages/home_page.dart';
 import 'features/prayer_times/presentation/pages/main_navigation_screen.dart';
 import 'features/settings/presentation/bloc/settings_bloc.dart';
 import 'features/settings/presentation/bloc/settings_event.dart';

@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_background_solid">#102019</color>
-    <color name="widget_card_solid">#183126</color>
-    <color name="widget_border_subtle">#1AFFFFFF</color>
-    <color name="widget_card_border">#26FFFFFF</color>
-    <color name="widget_border_gold">#D4AF37</color>
-    <color name="widget_text_gold">#D4AF37</color>
+    <!-- Widget Dark Theme Palette (Premium Islamic Slate & Gold) -->
+    <color name="widget_background_solid">#12161A</color>
+    <color name="widget_card_solid">#182028</color>
+    <color name="widget_border_subtle">#2E3C4A</color>
+    <color name="widget_card_border">#24303D</color>
+    <color name="widget_border_gold">#E5A93C</color>
+    <color name="widget_text_gold">#E5A93C</color>
     <color name="widget_text_primary">#FFFFFF</color>
-    <color name="widget_text_secondary">#9EBFB0</color>
+    <color name="widget_text_secondary">#94A3B8</color>
+    <color name="widget_icon_muted">#7E8B9B</color>
+    <color name="widget_active_pill">#282012</color>
+    <color name="widget_active_border">#55E5A93C</color>
     <color name="widget_divider">#1AFFFFFF</color>
 </resources>

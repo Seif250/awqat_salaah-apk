@@ -57,10 +57,10 @@ class OnboardingPage extends StatelessWidget {
                   width: 110,
                   height: 110,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: AppColors.primary.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.accentGold.withOpacity(0.5),
+                      color: AppColors.accentGold.withValues(alpha: 0.5),
                       width: 2,
                     ),
                   ),
@@ -79,7 +79,9 @@ class OnboardingPage extends StatelessWidget {
                   'أوقات الصلاة',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -89,7 +91,9 @@ class OnboardingPage extends StatelessWidget {
                   'حساب فلكي دقيق لمواقيت الصلاة الخمس مع ودجت أنيقة للشاشة الرئيسية وتنبيهات صامتة.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                     height: 1.5,
                   ),
                 ),
@@ -99,10 +103,13 @@ class OnboardingPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : AppColors.lightCardElevated,
+                    color: isDark
+                        ? AppColors.darkCard
+                        : AppColors.lightCardElevated,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     ),
                   ),
                   child: Row(
@@ -130,12 +137,18 @@ class OnboardingPage extends StatelessWidget {
                 // Button 1: Current Location (GPS)
                 ElevatedButton.icon(
                   onPressed: () {
-                    context.read<LocationBloc>().add(const RequestCurrentLocationEvent());
+                    context
+                        .read<LocationBloc>()
+                        .add(const RequestCurrentLocationEvent());
                   },
-                  icon: const Icon(Icons.my_location_rounded, color: Colors.white),
+                  icon: const Icon(Icons.my_location_rounded,
+                      color: Colors.white),
                   label: const Text(
                     'استخدام الموقع الحالي (تلقائي)',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -156,14 +169,16 @@ class OnboardingPage extends StatelessWidget {
                       _navigateToHome(context);
                     }
                   },
-                  icon: const Icon(Icons.location_city_rounded, color: AppColors.accentGold),
+                  icon: const Icon(Icons.location_city_rounded,
+                      color: AppColors.accentGold),
                   label: const Text(
                     'اختيار المدينة يدوياً',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 54),
-                    side: const BorderSide(color: AppColors.accentGold, width: 1.5),
+                    side: const BorderSide(
+                        color: AppColors.accentGold, width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),

@@ -78,6 +78,12 @@ class StorageService {
   Future<void> setNotificationSoundEnabled(bool enabled) =>
       _prefs.setBool(AppConstants.keyNotificationSoundEnabled, enabled);
 
+  String get notificationSoundType =>
+      _prefs.getString(AppConstants.keyNotificationSoundType) ?? AppConstants.soundTypeHayya;
+
+  Future<void> setNotificationSoundType(String type) =>
+      _prefs.setString(AppConstants.keyNotificationSoundType, type);
+
   int get notificationOffsetMinutes =>
       _prefs.getInt(AppConstants.keyNotificationOffset) ?? 0; // 0 = at prayer time
 

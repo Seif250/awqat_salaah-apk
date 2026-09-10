@@ -310,7 +310,7 @@ class AzkarPage extends StatelessWidget {
                           ),
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                           itemCount: state.currentItems.length,
                           itemBuilder: (context, index) {
                             final item = state.currentItems[index];

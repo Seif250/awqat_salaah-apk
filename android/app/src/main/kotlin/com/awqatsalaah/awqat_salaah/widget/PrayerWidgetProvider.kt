@@ -4,12 +4,12 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.SystemClock
 import android.widget.RemoteViews
+import androidx.core.content.ContextCompat
 import com.awqatsalaah.awqat_salaah.MainActivity
 import com.awqatsalaah.awqat_salaah.R
 import java.text.SimpleDateFormat
@@ -84,22 +84,17 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 var targetTimestamp: Long = 0
                 var phase = "beforeAdhan" // or "duringIqamah"
 
-                // Walk through each prayer in order:
-                // Check: are we before this prayer's adhan? → focus on it
-                // Check: are we between adhan and iqamah? → focus on iqamah
                 for (prayer in PRAYER_ORDER) {
                     val adhanTs = timestamps[prayer] ?: 0
                     if (adhanTs <= 0) continue
 
                     if (now < adhanTs) {
-                        // Before this prayer's adhan
                         focusPrayer = prayer
                         targetTimestamp = adhanTs
                         phase = "beforeAdhan"
                         break
                     }
 
-                    // Check iqamah window (skip sunrise — no iqamah)
                     if (prayer != "sunrise") {
                         val iqamahTs = iqamahTimestamps[prayer] ?: 0
                         if (iqamahTs > 0 && now < iqamahTs) {
@@ -119,94 +114,148 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                     WidgetDiagnostics.log(context, "All prayers passed, targeting tomorrow fajr: ${WidgetDiagnostics.formatTs(tomorrowFajr)}")
                 }
 
-                // Save current focus for diagnostics
                 val prayerDisplayName = prefs.getString("widget_name_$focusPrayer", focusPrayer) ?: focusPrayer
                 prefs.edit().putString("widget_current_focus_prayer", "$prayerDisplayName ($phase)").apply()
 
                 WidgetDiagnostics.log(context, "Focus: $focusPrayer ($phase), target: ${WidgetDiagnostics.formatTs(targetTimestamp)}")
 
-                // ── Read display strings ──
+                // ── Header: Location & App Title ──
                 val cityName = prefs.getString("widget_city_name", "القاهرة") ?: "القاهرة"
+                val appTitle = prefs.getString("widget_app_title", "فُرقان") ?: "فُرقان"
+                views.setTextViewText(R.id.widget_city_name, cityName)
+                views.setTextViewText(R.id.widget_title, appTitle)
 
-                // Build next prayer display name
-                val nextPrayerName = if (phase == "duringIqamah") {
+                // ── Middle: Next Prayer Highlight (Left) ──
+                val nextPrayerDisplay = if (phase == "duringIqamah") {
                     "$prayerDisplayName (أُذِّن الآن)"
                 } else {
                     prayerDisplayName
                 }
+                views.setTextViewText(R.id.widget_next_prayer_name, nextPrayerDisplay)
 
-                // Format time for display
                 val nextPrayerTimeFormatted = if (targetTimestamp > 0) {
-                    formatTime(targetTimestamp, is24Hour)
+                    formatWidgetTime(targetTimestamp, is24Hour)
                 } else {
                     prefs.getString("widget_next_prayer_time", "--:--") ?: "--:--"
                 }
-
-                // Build subtitle
-                val countdownText = if (phase == "duringIqamah") {
-                    "متبقي للإقامة"
-                } else {
-                    // Show iqamah info if available
-                    val iqTs = iqamahTimestamps[focusPrayer] ?: 0
-                    if (iqTs > 0 && focusPrayer != "sunrise") {
-                        val adhanTs = timestamps[focusPrayer] ?: 0
-                        val offsetMin = if (adhanTs > 0) ((iqTs - adhanTs) / 60000).toInt() else 0
-                        if (offsetMin > 0) {
-                            "الإقامة: ${formatTime(iqTs, is24Hour)} (+${offsetMin}د)"
-                        } else {
-                            "أوقات الصلاة اليومية"
-                        }
-                    } else {
-                        "أوقات الصلاة اليومية"
-                    }
-                }
-
-                // ── Bind views ──
-                views.setTextViewText(R.id.widget_city_name, cityName)
-                views.setTextViewText(R.id.widget_next_prayer_name, nextPrayerName)
                 views.setTextViewText(R.id.widget_next_prayer_time, nextPrayerTimeFormatted)
-                views.setTextViewText(R.id.widget_countdown_text, countdownText)
 
-                // ── Live Chronometer countdown ──
+                // ── Middle: Live Chronometer Countdown (Right) ──
                 if (targetTimestamp > 0 && targetTimestamp > now) {
                     val elapsedDiff = targetTimestamp - now
                     val chronometerBase = SystemClock.elapsedRealtime() + elapsedDiff
                     views.setChronometer(R.id.widget_chronometer, chronometerBase, null, true)
 
-                    // CountDown mode (API 24+)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         views.setChronometerCountDown(R.id.widget_chronometer, true)
                     }
-
                     views.setViewVisibility(R.id.widget_chronometer, android.view.View.VISIBLE)
                 } else {
                     views.setViewVisibility(R.id.widget_chronometer, android.view.View.GONE)
                 }
 
-                // ── Prayer times grid ──
-                val fajrStr = prefs.getString("widget_fajr", "--:--") ?: "--:--"
-                val dhuhrStr = prefs.getString("widget_dhuhr", "--:--") ?: "--:--"
-                val asrStr = prefs.getString("widget_asr", "--:--") ?: "--:--"
-                val maghribStr = prefs.getString("widget_maghrib", "--:--") ?: "--:--"
-                val ishaStr = prefs.getString("widget_isha", "--:--") ?: "--:--"
+                // ── Bottom: 5 Prayers with Dynamic Highlight & Matching Icons ──
+                val goldColor = ContextCompat.getColor(context, R.color.widget_text_gold)
+                val primaryColor = ContextCompat.getColor(context, R.color.widget_text_primary)
+                val secondaryColor = ContextCompat.getColor(context, R.color.widget_text_secondary)
 
-                views.setTextViewText(R.id.widget_time_fajr, fajrStr)
-                views.setTextViewText(R.id.widget_time_dhuhr, dhuhrStr)
-                views.setTextViewText(R.id.widget_time_asr, asrStr)
-                views.setTextViewText(R.id.widget_time_maghrib, maghribStr)
-                views.setTextViewText(R.id.widget_time_isha, ishaStr)
+                // Map sunrise to dhuhr as the next obligatory prayer
+                val activePrayerKey = if (focusPrayer == "sunrise") "dhuhr" else focusPrayer
 
-                // ── Tap to open app ──
-                val intent = Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                // Helper to format clean prayer time without AM/PM
+                fun cleanPrayerTime(key: String, rawFallback: String?): String {
+                    val ts = timestamps[key]
+                    if (ts != null && ts > 0) {
+                        return formatWidgetTime(ts, is24Hour)
+                    }
+                    if (rawFallback == null || rawFallback.isEmpty()) return "--:--"
+                    return rawFallback.replace(" AM", "").replace(" PM", "").replace(" ص", "").replace(" م", "").trim()
+                }
+
+                val fajrTimeStr = cleanPrayerTime("fajr", prefs.getString("widget_fajr", "--:--"))
+                val dhuhrTimeStr = cleanPrayerTime("dhuhr", prefs.getString("widget_dhuhr", "--:--"))
+                val asrTimeStr = cleanPrayerTime("asr", prefs.getString("widget_asr", "--:--"))
+                val maghribTimeStr = cleanPrayerTime("maghrib", prefs.getString("widget_maghrib", "--:--"))
+                val ishaTimeStr = cleanPrayerTime("isha", prefs.getString("widget_isha", "--:--"))
+
+                views.setTextViewText(R.id.widget_time_fajr, fajrTimeStr)
+                views.setTextViewText(R.id.widget_time_dhuhr, dhuhrTimeStr)
+                views.setTextViewText(R.id.widget_time_asr, asrTimeStr)
+                views.setTextViewText(R.id.widget_time_maghrib, maghribTimeStr)
+                views.setTextViewText(R.id.widget_time_isha, ishaTimeStr)
+
+                // List of prayers with their view ids and column container id
+                data class PrayerItemConfig(
+                    val key: String,
+                    val colId: Int,
+                    val iconId: Int,
+                    val labelId: Int,
+                    val timeId: Int
+                )
+
+                val prayersConfig = listOf(
+                    PrayerItemConfig("fajr", R.id.widget_col_fajr, R.id.widget_icon_fajr, R.id.widget_label_fajr, R.id.widget_time_fajr),
+                    PrayerItemConfig("dhuhr", R.id.widget_col_dhuhr, R.id.widget_icon_dhuhr, R.id.widget_label_dhuhr, R.id.widget_time_dhuhr),
+                    PrayerItemConfig("asr", R.id.widget_col_asr, R.id.widget_icon_asr, R.id.widget_label_asr, R.id.widget_time_asr),
+                    PrayerItemConfig("maghrib", R.id.widget_col_maghrib, R.id.widget_icon_maghrib, R.id.widget_label_maghrib, R.id.widget_time_maghrib),
+                    PrayerItemConfig("isha", R.id.widget_col_isha, R.id.widget_icon_isha, R.id.widget_label_isha, R.id.widget_time_isha)
+                )
+
+                for (config in prayersConfig) {
+                    val isActive = (config.key == activePrayerKey)
+
+                    if (isActive) {
+                        views.setTextColor(config.labelId, goldColor)
+                        views.setTextColor(config.timeId, goldColor)
+                        views.setInt(config.colId, "setBackgroundResource", R.drawable.widget_active_prayer_bg)
+                        val activeIcon = when (config.key) {
+                            "fajr" -> R.drawable.ic_widget_fajr_active
+                            "dhuhr" -> R.drawable.ic_widget_dhuhr_active
+                            "asr" -> R.drawable.ic_widget_asr_active
+                            "maghrib" -> R.drawable.ic_widget_maghrib_active
+                            "isha" -> R.drawable.ic_widget_isha_active
+                            else -> R.drawable.ic_widget_dhuhr_active
+                        }
+                        views.setImageViewResource(config.iconId, activeIcon)
+                    } else {
+                        views.setTextColor(config.labelId, secondaryColor)
+                        views.setTextColor(config.timeId, primaryColor)
+                        views.setInt(config.colId, "setBackgroundResource", R.drawable.widget_inactive_prayer_bg)
+                        val normalIcon = when (config.key) {
+                            "fajr" -> R.drawable.ic_widget_fajr
+                            "dhuhr" -> R.drawable.ic_widget_dhuhr
+                            "asr" -> R.drawable.ic_widget_asr
+                            "maghrib" -> R.drawable.ic_widget_maghrib
+                            "isha" -> R.drawable.ic_widget_isha
+                            else -> R.drawable.ic_widget_dhuhr
+                        }
+                        views.setImageViewResource(config.iconId, normalIcon)
+                    }
+                }
+
+                // ── Tap to open app: Direct, reliable launch from anywhere on the widget ──
+                val launchIntent = Intent(context, MainActivity::class.java).apply {
+                    action = Intent.ACTION_MAIN
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 }
                 val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 } else {
                     PendingIntent.FLAG_UPDATE_CURRENT
                 }
-                val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
+                val pendingIntent = PendingIntent.getActivity(context, 0, launchIntent, flags)
+
+                // Attach click listener to root and all major section containers for 100% responsiveness
                 views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_header, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_middle_card, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_bottom_row, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_col_fajr, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_col_dhuhr, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_col_asr, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_col_maghrib, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_col_isha, pendingIntent)
 
                 // ── Push update ──
                 appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -222,7 +271,6 @@ class PrayerWidgetProvider : AppWidgetProvider() {
 
         /**
          * Schedule an exact alarm for the next prayer transition point.
-         * We schedule at each adhan and each iqamah end to auto-advance the widget.
          */
         private fun scheduleNextAlarm(
             context: Context,
@@ -232,7 +280,6 @@ class PrayerWidgetProvider : AppWidgetProvider() {
             tomorrowFajr: Long
         ) {
             try {
-                // Collect all future transition points
                 val futurePoints = mutableListOf<Long>()
                 for (prayer in PRAYER_ORDER) {
                     val adhanTs = timestamps[prayer] ?: 0
@@ -251,7 +298,6 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 }
 
                 val nextAlarmTs = futurePoints.min()
-                // Add 2 seconds buffer so we fire slightly after the transition
                 val alarmTs = nextAlarmTs + 2000
 
                 val prefs = context.getSharedPreferences("PrayerWidgetPrefs", Context.MODE_PRIVATE)
@@ -312,11 +358,11 @@ class PrayerWidgetProvider : AppWidgetProvider() {
         }
 
         /**
-         * Format a timestamp to a human-readable time string.
+         * Format a timestamp to a clean widget time string (e.g. 12:53 or 5:09).
          */
-        private fun formatTime(timestampMs: Long, is24Hour: Boolean): String {
+        private fun formatWidgetTime(timestampMs: Long, is24Hour: Boolean): String {
             return try {
-                val pattern = if (is24Hour) "HH:mm" else "hh:mm a"
+                val pattern = if (is24Hour) "HH:mm" else "h:mm"
                 val sdf = SimpleDateFormat(pattern, Locale("ar"))
                 sdf.format(Date(timestampMs))
             } catch (e: Throwable) {

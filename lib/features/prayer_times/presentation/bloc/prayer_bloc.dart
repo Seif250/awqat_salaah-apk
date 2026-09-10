@@ -147,6 +147,7 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
       iqamahIsha: _storageService.iqamahIsha,
       isEnabled: _storageService.notificationsEnabled,
       isSoundEnabled: _storageService.notificationSoundEnabled,
+      soundType: _storageService.notificationSoundType,
       notificationOffsets: _storageService.notificationOffsets,
       isArabic: true,
       is24Hour: _storageService.is24HourFormat,
