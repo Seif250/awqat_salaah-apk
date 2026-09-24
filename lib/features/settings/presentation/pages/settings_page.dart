@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/utils/page_transitions.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/prayer_constants.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -96,7 +97,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const LocationSettingsPage()),
+                            FadeSlidePageRoute(page: const LocationSettingsPage()),
                           );
                         },
                       ),
@@ -108,7 +109,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CalculationSettingsPage()),
+                            FadeSlidePageRoute(page: const CalculationSettingsPage()),
                           );
                         },
                       ),
@@ -120,7 +121,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
+                            FadeSlidePageRoute(page: const NotificationSettingsPage()),
                           );
                         },
                       ),
@@ -132,7 +133,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const AzkarSettingsPage()),
+                            FadeSlidePageRoute(page: const AzkarSettingsPage()),
                           );
                         },
                       ),
@@ -151,7 +152,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const AppearanceSettingsPage()),
+                            FadeSlidePageRoute(page: const AppearanceSettingsPage()),
                           );
                         },
                       ),
@@ -163,7 +164,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const AdjustmentsSettingsPage()),
+                            FadeSlidePageRoute(page: const AdjustmentsSettingsPage()),
                           );
                         },
                       ),
@@ -182,7 +183,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const WidgetSettingsPage()),
+                            FadeSlidePageRoute(page: const WidgetSettingsPage()),
                           );
                         },
                       ),
@@ -194,7 +195,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const BatterySettingsPage()),
+                            FadeSlidePageRoute(page: const BatterySettingsPage()),
                           );
                         },
                       ),
@@ -213,7 +214,7 @@ class SettingsPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const AdvancedSettingsPage()),
+                            FadeSlidePageRoute(page: const AdvancedSettingsPage()),
                           );
                         },
                       ),

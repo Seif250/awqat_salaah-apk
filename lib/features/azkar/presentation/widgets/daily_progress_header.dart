@@ -9,7 +9,6 @@ class DailyProgressHeader extends StatelessWidget {
   final int totalCount;
   final double completionRate;
   final VoidCallback onResetCategory;
-  final VoidCallback onOpenTasbih;
 
   const DailyProgressHeader({
     super.key,
@@ -18,7 +17,6 @@ class DailyProgressHeader extends StatelessWidget {
     required this.totalCount,
     required this.completionRate,
     required this.onResetCategory,
-    required this.onOpenTasbih,
   });
 
   @override

@@ -4,7 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../data/models/prayer_day_model.dart';
 
-class NextPrayerCard extends StatelessWidget {
+class NextPrayerCard extends StatefulWidget {
   final PrayerDayModel prayerDay;
   final Duration remainingDuration;
   final bool is24Hour;
@@ -15,6 +15,54 @@ class NextPrayerCard extends StatelessWidget {
     required this.remainingDuration,
     required this.is24Hour,
   });
+
+  @override
+  State<NextPrayerCard> createState() => _NextPrayerCardState();
+}
+
+class _NextPrayerCardState extends State<NextPrayerCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.06).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _updatePulse();
+  }
+
+  @override
+  void didUpdateWidget(NextPrayerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _updatePulse();
+  }
+
+  void _updatePulse() {
+    // Pulse when less than 5 minutes remaining
+    if (widget.remainingDuration.inMinutes < 5 && widget.remainingDuration.inSeconds > 0) {
+      if (!_pulseController.isAnimating) {
+        _pulseController.repeat(reverse: true);
+      }
+    } else {
+      if (_pulseController.isAnimating) {
+        _pulseController.stop();
+        _pulseController.value = 0;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   IconData _getPrayerIcon(PrayerType type) {
     switch (type) {
@@ -39,26 +87,27 @@ class NextPrayerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isDuringIqamah = prayerDay.phase == PrayerPhase.duringIqamah;
+    final isDuringIqamah = widget.prayerDay.phase == PrayerPhase.duringIqamah;
+    final isUrgent = widget.remainingDuration.inMinutes < 5 && widget.remainingDuration.inSeconds > 0;
 
-    final focusedPrayerModel = prayerDay.getPrayer(prayerDay.focusPrayerType);
-    final focusedPrayerName = prayerDay.focusPrayerType.nameArabic;
+    final focusedPrayerModel = widget.prayerDay.getPrayer(widget.prayerDay.focusPrayerType);
+    final focusedPrayerName = widget.prayerDay.focusPrayerType.nameArabic;
 
     final focusedPrayerTimeFormatted = focusedPrayerModel != null
         ? DateUtilsHelper.formatPrayerTime(
             focusedPrayerModel.time,
-            is24Hour: is24Hour,
+            is24Hour: widget.is24Hour,
           )
         : '--:--';
 
     final focusedPrayerIqamahFormatted = focusedPrayerModel?.iqamahTime != null
         ? DateUtilsHelper.formatPrayerTime(
             focusedPrayerModel!.iqamahTime!,
-            is24Hour: is24Hour,
+            is24Hour: widget.is24Hour,
           )
         : null;
 
-    final countdownFormatted = DateUtilsHelper.formatCountdown(remainingDuration);
+    final countdownFormatted = DateUtilsHelper.formatCountdown(widget.remainingDuration);
 
     final nextPrayerAnnouncement = isDuringIqamah
         ? 'أُذّن الآن لصلاة $focusedPrayerName، متبقي للإقامة $countdownFormatted${focusedPrayerIqamahFormatted != null ? "، وقت الإقامة $focusedPrayerIqamahFormatted" : ""}'
@@ -88,6 +137,14 @@ class NextPrayerCard extends StatelessWidget {
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
+            // Subtle glow when urgent
+            if (isUrgent)
+              BoxShadow(
+                color: (isDuringIqamah ? AppColors.iqamahActive : AppColors.accentGold)
+                    .withValues(alpha: 0.2),
+                blurRadius: 24,
+                spreadRadius: 2,
+              ),
           ],
           border: Border.all(
             color: isDuringIqamah
@@ -111,7 +168,7 @@ class NextPrayerCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    _getPrayerIcon(prayerDay.focusPrayerType),
+                    _getPrayerIcon(widget.prayerDay.focusPrayerType),
                     color: isDuringIqamah ? AppColors.iqamahActiveLight : AppColors.accentGold,
                     size: 16,
                   ),
@@ -141,40 +198,47 @@ class NextPrayerCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            // Countdown - Clean, Large & Prominent
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isDuringIqamah
-                      ? AppColors.iqamahActive.withValues(alpha: 0.3)
-                      : Colors.white.withValues(alpha: 0.08),
+            // Countdown - with pulse animation when close to adhan
+            ScaleTransition(
+              scale: _pulseAnimation,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isUrgent
+                        ? (isDuringIqamah
+                            ? AppColors.iqamahActive.withValues(alpha: 0.5)
+                            : AppColors.accentGold.withValues(alpha: 0.4))
+                        : (isDuringIqamah
+                            ? AppColors.iqamahActive.withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.08)),
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    isDuringIqamah ? 'متبقي للإقامة  ' : 'متبقي للأذان  ',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.75),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isDuringIqamah ? 'متبقي للإقامة  ' : 'متبقي للأذان  ',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  Text(
-                    countdownFormatted,
-                    style: TextStyle(
-                      color: isDuringIqamah ? AppColors.iqamahActiveLight : AppColors.accentGold,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      letterSpacing: 1.2,
+                    Text(
+                      countdownFormatted,
+                      style: TextStyle(
+                        color: isDuringIqamah ? AppColors.iqamahActiveLight : AppColors.accentGold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        letterSpacing: 1.2,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 14),

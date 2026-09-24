@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:awqat_salaah/features/azkar/data/datasources/azkar_local_data.dart';
@@ -433,6 +434,50 @@ void main() {
       expect(fileName, startsWith('awqat_salaah_azkar_backup_'));
       expect(fileName, endsWith('.json'));
     });
+
+    test('getSavedBackupDirectory and setSavedBackupDirectory save and retrieve path', () async {
+      SharedPreferences.setMockInitialValues({});
+      expect(await AzkarBackupService.getSavedBackupDirectory(), isNull);
+
+      final tempDir = Directory.systemTemp.createTempSync('backup_test_dir');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      await AzkarBackupService.setSavedBackupDirectory(tempDir.path);
+      final retrieved = await AzkarBackupService.getSavedBackupDirectory();
+      expect(retrieved, equals(tempDir.path));
+
+      await AzkarBackupService.resetSavedBackupDirectory();
+      expect(await AzkarBackupService.getSavedBackupDirectory(), isNull);
+    });
+
+    test('exportBackupToFile writes valid JSON to custom directory', () async {
+      final tempDir = Directory.systemTemp.createTempSync('backup_export_test');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      const items = [
+        AzkarItem(
+          id: 'test_export_1',
+          category: AzkarCategory.custom,
+          title: 'تسبيح تجريبي',
+          arabicText: 'سبحان الله',
+          targetCount: 33,
+          isCustom: true,
+        ),
+      ];
+
+      final filePath = await AzkarBackupService.exportBackupToFile(
+        items,
+        customDirectory: tempDir.path,
+      );
+
+      final file = File(filePath);
+      expect(await file.exists(), isTrue);
+
+      final content = await file.readAsString();
+      final parsed = AzkarBackupService.parseBackupJson(content);
+      expect(parsed.length, equals(1));
+      expect(parsed[0].title, equals('تسبيح تجريبي'));
+    });
   });
 
   group('AzkarRepository Backup & Restore Tests', () {
@@ -643,6 +688,70 @@ void main() {
       ]));
       expect(fromJson.matchesCategory(AzkarCategory.evening), isTrue);
       expect(fromJson.matchesCategory(AzkarCategory.sleep), isTrue);
+    });
+
+    test('multi-category zikr isolates progress so morning completion does NOT complete evening', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final repo = AzkarRepository(prefs);
+
+      const multiItem = AzkarItem(
+        id: 'isolated_multi_1',
+        category: AzkarCategory.morning,
+        categories: [AzkarCategory.morning, AzkarCategory.evening],
+        title: 'ذكر مشترك',
+        arabicText: 'سبحان الله وبحمده',
+        targetCount: 3,
+      );
+
+      await repo.addZikrItem(multiItem);
+
+      // Increment 3 times in morning to complete it
+      repo.incrementCount(multiItem.id, multiItem.targetCount, category: AzkarCategory.morning);
+      repo.incrementCount(multiItem.id, multiItem.targetCount, category: AzkarCategory.morning);
+      repo.incrementCount(multiItem.id, multiItem.targetCount, category: AzkarCategory.morning);
+
+      final progress = repo.getDailyProgress();
+
+      // Check morning items: should be completed (3/3)
+      final morningItems = repo.getCategoryItems(AzkarCategory.morning, progress);
+      final morningMatch = morningItems.firstWhere((i) => i.id == multiItem.id);
+      expect(morningMatch.currentCount, equals(3));
+      expect(morningMatch.isCompleted, isTrue);
+
+      // Check evening items: MUST NOT be completed (0/3)
+      final eveningItems = repo.getCategoryItems(AzkarCategory.evening, progress);
+      final eveningMatch = eveningItems.firstWhere((i) => i.id == multiItem.id);
+      expect(eveningMatch.currentCount, equals(0));
+      expect(eveningMatch.isCompleted, isFalse);
+    });
+
+    test('MoveZikrItemEvent moves item from fromIndex to toIndex directly', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final repo = AzkarRepository(prefs);
+      final bloc = AzkarBloc(repository: repo);
+
+      bloc.add(const LoadAzkarEvent(category: AzkarCategory.morning));
+      final initial = await bloc.stream.firstWhere((s) => s is AzkarLoaded) as AzkarLoaded;
+
+      final firstId = initial.currentItems[0].id;
+      final secondId = initial.currentItems[1].id;
+
+      // Move index 0 to index 1
+      bloc.add(const MoveZikrItemEvent(
+        category: AzkarCategory.morning,
+        fromIndex: 0,
+        toIndex: 1,
+      ));
+
+      final moved = await bloc.stream.firstWhere(
+        (s) => s is AzkarLoaded && s.currentItems[0].id == secondId,
+      ) as AzkarLoaded;
+
+      expect(moved.currentItems[0].id, equals(secondId));
+      expect(moved.currentItems[1].id, equals(firstId));
+      await bloc.close();
     });
   });
 }

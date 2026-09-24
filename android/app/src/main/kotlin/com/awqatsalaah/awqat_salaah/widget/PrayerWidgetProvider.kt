@@ -6,6 +6,8 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Build
 import android.os.SystemClock
 import android.widget.RemoteViews
@@ -49,6 +51,30 @@ class PrayerWidgetProvider : AppWidgetProvider() {
          */
         private val PRAYER_ORDER = listOf("fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha")
         private val IQAMAH_PRAYERS = listOf("fajr", "dhuhr", "asr", "maghrib", "isha")
+
+        private val bitmapCache = mutableMapOf<Int, Bitmap>()
+
+        private fun getVectorBitmap(context: Context, drawableId: Int, widthDp: Int, heightDp: Int): Bitmap? {
+            val cached = bitmapCache[drawableId]
+            if (cached != null && !cached.isRecycled) {
+                return cached
+            }
+            return try {
+                val drawable = ContextCompat.getDrawable(context, drawableId) ?: return null
+                val density = context.resources.displayMetrics.density
+                val widthPx = (widthDp * density).toInt().coerceAtLeast(1)
+                val heightPx = (heightDp * density).toInt().coerceAtLeast(1)
+                val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
+                drawable.draw(canvas)
+                bitmapCache[drawableId] = bitmap
+                bitmap
+            } catch (e: Throwable) {
+                WidgetDiagnostics.log(context, "getVectorBitmap ERROR: ${e.message}")
+                null
+            }
+        }
 
         /**
          * Core update logic — called from onUpdate, AlarmReceiver, BootReceiver, and Flutter MethodChannel.
@@ -120,10 +146,15 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 WidgetDiagnostics.log(context, "Focus: $focusPrayer ($phase), target: ${WidgetDiagnostics.formatTs(targetTimestamp)}")
 
                 // ── Header: Location & App Title ──
-                val cityName = prefs.getString("widget_city_name", "القاهرة") ?: "القاهرة"
-                val appTitle = prefs.getString("widget_app_title", "فُرقان") ?: "فُرقان"
+                val cityName = prefs.getString("widget_city_name", "أوقات الصلاة") ?: "أوقات الصلاة"
+                val appTitle = prefs.getString("widget_app_title", "أوقات صلاة") ?: "أوقات صلاة"
                 views.setTextViewText(R.id.widget_city_name, cityName)
                 views.setTextViewText(R.id.widget_title, appTitle)
+
+                val locBitmap = getVectorBitmap(context, R.drawable.ic_widget_location, 13, 13)
+                if (locBitmap != null) {
+                    views.setImageViewBitmap(R.id.widget_location_icon, locBitmap)
+                }
 
                 // ── Middle: Next Prayer Highlight (Left) ──
                 val nextPrayerDisplay = if (phase == "duringIqamah") {
@@ -204,30 +235,35 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 for (config in prayersConfig) {
                     val isActive = (config.key == activePrayerKey)
 
+                    val activeIcon = when (config.key) {
+                        "fajr" -> R.drawable.ic_widget_fajr_active
+                        "dhuhr" -> R.drawable.ic_widget_dhuhr_active
+                        "asr" -> R.drawable.ic_widget_asr_active
+                        "maghrib" -> R.drawable.ic_widget_maghrib_active
+                        "isha" -> R.drawable.ic_widget_isha_active
+                        else -> R.drawable.ic_widget_dhuhr_active
+                    }
+                    val normalIcon = when (config.key) {
+                        "fajr" -> R.drawable.ic_widget_fajr
+                        "dhuhr" -> R.drawable.ic_widget_dhuhr
+                        "asr" -> R.drawable.ic_widget_asr
+                        "maghrib" -> R.drawable.ic_widget_maghrib
+                        "isha" -> R.drawable.ic_widget_isha
+                        else -> R.drawable.ic_widget_dhuhr
+                    }
+
                     if (isActive) {
                         views.setTextColor(config.labelId, goldColor)
                         views.setTextColor(config.timeId, goldColor)
-                        val activeIcon = when (config.key) {
-                            "fajr" -> R.drawable.ic_widget_fajr_active
-                            "dhuhr" -> R.drawable.ic_widget_dhuhr_active
-                            "asr" -> R.drawable.ic_widget_asr_active
-                            "maghrib" -> R.drawable.ic_widget_maghrib_active
-                            "isha" -> R.drawable.ic_widget_isha_active
-                            else -> R.drawable.ic_widget_dhuhr_active
-                        }
-                        views.setImageViewResource(config.iconId, activeIcon)
                     } else {
                         views.setTextColor(config.labelId, secondaryColor)
                         views.setTextColor(config.timeId, primaryColor)
-                        val normalIcon = when (config.key) {
-                            "fajr" -> R.drawable.ic_widget_fajr
-                            "dhuhr" -> R.drawable.ic_widget_dhuhr
-                            "asr" -> R.drawable.ic_widget_asr
-                            "maghrib" -> R.drawable.ic_widget_maghrib
-                            "isha" -> R.drawable.ic_widget_isha
-                            else -> R.drawable.ic_widget_dhuhr
-                        }
-                        views.setImageViewResource(config.iconId, normalIcon)
+                    }
+
+                    val iconRes = if (isActive) activeIcon else normalIcon
+                    val iconBitmap = getVectorBitmap(context, iconRes, 19, 19)
+                    if (iconBitmap != null) {
+                        views.setImageViewBitmap(config.iconId, iconBitmap)
                     }
                 }
 
@@ -315,7 +351,17 @@ class PrayerWidgetProvider : AppWidgetProvider() {
 
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (alarmManager.canScheduleExactAlarms()) {
+                        alarmManager.setExactAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP, alarmTs, pendingAlarmIntent
+                        )
+                    } else {
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP, alarmTs, pendingAlarmIntent
+                        )
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP, alarmTs, pendingAlarmIntent
                     )

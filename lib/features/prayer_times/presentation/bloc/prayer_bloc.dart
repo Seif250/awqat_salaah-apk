@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../services/prayer_calculation_service.dart';
 import '../../../../services/storage_service.dart';
@@ -7,7 +8,7 @@ import '../../../../services/notification_service.dart';
 import 'prayer_event.dart';
 import 'prayer_state.dart';
 
-class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
+class PrayerBloc extends Bloc<PrayerEvent, PrayerState> with WidgetsBindingObserver {
   final PrayerCalculationService _calculationService;
   final StorageService _storageService;
   final NotificationService _notificationService;
@@ -25,7 +26,22 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
     on<RefreshPrayerTimesEvent>(_onRefreshPrayerTimes);
     on<TimerTickEvent>(_onTimerTick);
 
+    WidgetsBinding.instance.addObserver(this);
     _startCountdownTimer();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // App going to background — stop wasting battery on 1-sec timer
+      _timer?.cancel();
+      _timer = null;
+    } else if (state == AppLifecycleState.resumed) {
+      // App coming back — recalculate fresh and restart timer
+      _startCountdownTimer();
+      add(const RefreshPrayerTimesEvent());
+    }
   }
 
   void _startCountdownTimer() {
@@ -209,6 +225,7 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> {
   @override
   Future<void> close() {
     _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     return super.close();
   }
 }

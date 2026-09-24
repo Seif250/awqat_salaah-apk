@@ -25,6 +25,7 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     on<AddNewZikrItemEvent>(_onAddNewZikrItem);
     on<ImportCustomAzkarEvent>(_onImportCustomAzkar);
     on<ReorderAzkarEvent>(_onReorderAzkar);
+    on<MoveZikrItemEvent>(_onMoveZikrItem);
   }
 
   AzkarCategory _defaultCategoryForCurrentTime() {
@@ -75,7 +76,12 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     if (state is! AzkarLoaded) return;
     final current = state as AzkarLoaded;
 
-    final updatedProgress = repository.incrementCount(event.id, event.targetCount);
+    final targetCategory = event.category ?? current.selectedCategory;
+    final updatedProgress = repository.incrementCount(
+      event.id,
+      event.targetCount,
+      category: targetCategory,
+    );
     final items = repository.getCategoryItems(current.selectedCategory, updatedProgress);
 
     emit(_buildLoadedState(
@@ -90,7 +96,12 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     if (state is! AzkarLoaded) return;
     final current = state as AzkarLoaded;
 
-    final updatedProgress = repository.toggleCompletion(event.id, event.targetCount);
+    final targetCategory = event.category ?? current.selectedCategory;
+    final updatedProgress = repository.toggleCompletion(
+      event.id,
+      event.targetCount,
+      category: targetCategory,
+    );
     final items = repository.getCategoryItems(current.selectedCategory, updatedProgress);
 
     emit(_buildLoadedState(
@@ -251,6 +262,20 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
 
   Future<void> _onReorderAzkar(ReorderAzkarEvent event, Emitter<AzkarState> emit) async {
     await repository.reorderCategoryItems(event.category, event.oldIndex, event.newIndex);
+    final progress = repository.getDailyProgress();
+    final customAzkar = repository.getCustomAzkar();
+    final items = repository.getCategoryItems(event.category, progress);
+
+    emit(_buildLoadedState(
+      selectedCategory: event.category,
+      items: items,
+      progress: progress,
+      customAzkar: customAzkar,
+    ));
+  }
+
+  Future<void> _onMoveZikrItem(MoveZikrItemEvent event, Emitter<AzkarState> emit) async {
+    await repository.moveCategoryItem(event.category, event.fromIndex, event.toIndex);
     final progress = repository.getDailyProgress();
     final customAzkar = repository.getCustomAzkar();
     final items = repository.getCategoryItems(event.category, progress);

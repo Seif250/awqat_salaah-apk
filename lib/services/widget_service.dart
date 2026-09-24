@@ -45,7 +45,7 @@ class WidgetService {
       final Map<String, dynamic> data = {
         // ── Legacy formatted strings (still used by widget display) ──
         'widget_city_name': cityName,
-        'widget_app_title': 'فُرقان',
+        'widget_app_title': 'أوقات صلاة',
         'widget_next_prayer_name': nextPrayerName,
         'widget_next_prayer_time': isDuringIqamah
             ? (iqamahTime != null ? DateUtilsHelper.formatPrayerTime(iqamahTime, is24Hour: is24Hour) : nextPrayerTimeFormatted)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/notification_service.dart';
 import '../widgets/settings_section_card.dart';
 
@@ -35,16 +36,11 @@ class _BatterySettingsPageState extends State<BatterySettingsPage> {
     final granted = await NotificationService().requestBatteryOptimizationExemption();
     await _checkStatus();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            granted
-                ? 'تم إعفاء التطبيق من قيود البطارية بنجاح'
-                : 'يرجى إعفاء التطبيق يدوياً من قائمة البطارية لضمان دقة الأذان',
-          ),
-          backgroundColor: granted ? Colors.green : Colors.orange,
-        ),
-      );
+      if (granted) {
+        AppSnackBar.showSuccess(context, 'تم إعفاء التطبيق من قيود البطارية بنجاح');
+      } else {
+        AppSnackBar.showWarning(context, 'يرجى إعفاء التطبيق يدوياً من قائمة البطارية لضمان دقة الأذان');
+      }
     }
   }
 

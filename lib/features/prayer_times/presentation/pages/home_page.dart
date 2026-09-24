@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/app_snackbar.dart';
+import '../../../../core/utils/page_transitions.dart';
+import '../../../../core/utils/skeleton_loading.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
 import '../../../settings/presentation/bloc/settings_bloc.dart';
 import '../../../settings/presentation/bloc/settings_state.dart';
@@ -11,10 +14,9 @@ import '../bloc/prayer_state.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/next_prayer_card.dart';
 import '../widgets/prayer_list.dart';
+import '../widgets/wird_progress_card.dart';
 
 import '../../../../services/notification_service.dart';
-import '../../../azkar/data/models/azkar_item_model.dart';
-import '../../../azkar/presentation/utils/azkar_ui_helpers.dart';
 import '../../../azkar/presentation/bloc/azkar_bloc.dart';
 import '../../../azkar/presentation/bloc/azkar_state.dart';
 import '../../../azkar/presentation/pages/azkar_page.dart';
@@ -54,7 +56,7 @@ class _HomePageState extends State<HomePage> {
       mainNav.navigateToPage(1);
     } else {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const AzkarPage()),
+        FadeSlidePageRoute(page: const AzkarPage()),
       );
     }
   }
@@ -83,7 +85,7 @@ class _HomePageState extends State<HomePage> {
             tooltip: 'الإعدادات',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
+                FadeSlidePageRoute(page: const SettingsPage()),
               );
             },
           ),
@@ -94,19 +96,12 @@ class _HomePageState extends State<HomePage> {
           return BlocConsumer<PrayerBloc, PrayerState>(
             listener: (context, state) {
               if (state is PrayerError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('خطأ: ${state.message}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                AppSnackBar.showError(context, 'خطأ: ${state.message}');
               }
             },
             builder: (context, state) {
               if (state is PrayerLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(color: AppColors.accentGold),
-                );
+                return const HomeSkeleton();
               }
 
               if (state is PrayerLoaded) {
@@ -148,99 +143,9 @@ class _HomePageState extends State<HomePage> {
                         BlocBuilder<AzkarBloc, AzkarState>(
                           builder: (context, azkarState) {
                             if (azkarState is! AzkarLoaded) return const SizedBox.shrink();
-                            final isAllDone = azkarState.totalCategoryCount > 0 &&
-                                azkarState.completedCategoryCount >= azkarState.totalCategoryCount;
-
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: isDark
-                                      ? [
-                                          AppColors.darkCard,
-                                          AppColors.primaryDark.withValues(alpha: 0.5),
-                                        ]
-                                      : [
-                                          AppColors.lightCard,
-                                          AppColors.primaryContainer.withValues(alpha: 0.3),
-                                        ],
-                                ),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: isAllDone
-                                      ? AppColors.primaryLight.withValues(alpha: 0.5)
-                                      : AppColors.accentGold.withValues(alpha: 0.3),
-                                ),
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(18),
-                                  onTap: () => _navigateToAzkar(context),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          azkarState.selectedCategory.categoryIcon,
-                                          size: 24,
-                                          color: AppColors.accentGold,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Text(
-                                                    'الورد الحالي: ${azkarState.selectedCategory.titleArabic}',
-                                                    style: const TextStyle(
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                                  if (isAllDone) ...[
-                                                    const SizedBox(width: 6),
-                                                    const Icon(Icons.check_circle_rounded,
-                                                        color: AppColors.primaryLight, size: 16),
-                                                  ],
-                                                ],
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                isAllDone
-                                                    ? 'اكتمل الورد بحمد الله'
-                                                    : 'أنجزت ${azkarState.completedCategoryCount} من ${azkarState.totalCategoryCount} أذكار • اضغط للمتابعة',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: isDark ? Colors.white60 : Colors.black54,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 6),
-                                              ClipRRect(
-                                                borderRadius: BorderRadius.circular(4),
-                                                child: LinearProgressIndicator(
-                                                  value: azkarState.totalCategoryCount > 0
-                                                      ? (azkarState.completedCategoryCount / azkarState.totalCategoryCount).clamp(0.0, 1.0)
-                                                      : 0.0,
-                                                  backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
-                                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                                    isAllDone ? AppColors.primaryLight : AppColors.accentGold,
-                                                  ),
-                                                  minHeight: 4,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(Icons.chevron_left_rounded,
-                                            size: 20, color: isDark ? Colors.white54 : Colors.black45),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            return WirdProgressCard(
+                              azkarState: azkarState,
+                              onTap: () => _navigateToAzkar(context),
                             );
                           },
                         ),
@@ -259,20 +164,59 @@ class _HomePageState extends State<HomePage> {
               }
 
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline_rounded, size: 48, color: Colors.orange),
-                    const SizedBox(height: 16),
-                    const Text('حدث خطأ في تحميل مواقيت الصلاة'),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<PrayerBloc>().add(const LoadPrayerTimesEvent());
-                      },
-                      child: const Text('إعادة المحاولة'),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentGold.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.cloud_off_rounded,
+                          size: 48,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'تعذر تحميل مواقيت الصلاة',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'تأكد من تحديد الموقع الجغرافي وحاول مرة أخرى',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.white54 : Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('إعادة المحاولة'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () {
+                          context.read<PrayerBloc>().add(const LoadPrayerTimesEvent());
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

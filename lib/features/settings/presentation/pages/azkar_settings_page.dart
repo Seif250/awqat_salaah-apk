@@ -1,19 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/app_snackbar.dart';
+import '../../../../core/utils/page_transitions.dart';
+import '../../../azkar/data/services/azkar_backup_service.dart';
 import '../../../azkar/presentation/bloc/azkar_bloc.dart';
 import '../../../azkar/presentation/bloc/azkar_event.dart';
 import '../../../azkar/presentation/pages/azkar_page.dart';
 import '../../../azkar/presentation/widgets/add_custom_zikr_dialog.dart';
-import '../../../azkar/presentation/widgets/azkar_backup_dialog.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
 import '../widgets/settings_section_card.dart';
 import '../widgets/settings_tile.dart';
 
-class AzkarSettingsPage extends StatelessWidget {
+class AzkarSettingsPage extends StatefulWidget {
   const AzkarSettingsPage({super.key});
+
+  @override
+  State<AzkarSettingsPage> createState() => _AzkarSettingsPageState();
+}
+
+class _AzkarSettingsPageState extends State<AzkarSettingsPage> {
+  String? _backupDirectory;
+  bool _isLoadingDir = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBackupDirectory();
+  }
+
+  Future<void> _loadBackupDirectory() async {
+    final saved = await AzkarBackupService.getSavedBackupDirectory();
+    final effective = saved ?? await AzkarBackupService.getDefaultBackupDirectory();
+    if (mounted) {
+      setState(() {
+        _backupDirectory = effective;
+        _isLoadingDir = false;
+      });
+    }
+  }
+
+  Future<void> _pickBackupDirectory() async {
+    final picked = await AzkarBackupService.pickBackupDirectory();
+    if (picked != null && mounted) {
+      setState(() => _backupDirectory = picked);
+      AppSnackBar.showSuccess(context, 'تم تعيين مجلد النسخ الاحتياطي:\n$picked');
+    }
+  }
+
+  Future<void> _resetBackupDirectory() async {
+    await AzkarBackupService.resetSavedBackupDirectory();
+    final defaultDir = await AzkarBackupService.getDefaultBackupDirectory();
+    if (mounted) {
+      setState(() => _backupDirectory = defaultDir);
+      AppSnackBar.showInfo(context, 'تمت استعادة مجلد الحفظ الافتراضي');
+    }
+  }
 
   void _showQiyamMinutesDialog(BuildContext context, int currentMinutes) {
     final options = [15, 30, 45, 60, 90];
@@ -71,10 +115,7 @@ class AzkarSettingsPage extends StatelessWidget {
             onPressed: () {
               context.read<AzkarBloc>().add(const RestoreDefaultAzkarEvent());
               Navigator.pop(dialogCtx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('تمت استعادة الأذكار الافتراضية بنجاح')),
-              );
+              AppSnackBar.showSuccess(context, 'تمت استعادة الأذكار الافتراضية بنجاح');
             },
             child: const Text('استعادة'),
           ),
@@ -255,7 +296,7 @@ class AzkarSettingsPage extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const AzkarPage()),
+                        FadeSlidePageRoute(page: const AzkarPage()),
                       );
                     },
                   ),
@@ -271,21 +312,10 @@ class AzkarSettingsPage extends StatelessWidget {
                           context
                               .read<AzkarBloc>()
                               .add(AddCustomZikrEvent(zikr));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('تمت إضافة الذكر بنجاح')),
-                          );
+                          AppSnackBar.showSuccess(context, 'تمت إضافة الذكر بنجاح');
                         },
                       );
                     },
-                  ),
-                  SettingsTile(
-                    icon: Icons.cloud_sync_rounded,
-                    title: 'النسخ الاحتياطي للأذكار المخصصة (JSON)',
-                    subtitle:
-                        'تصدير وحفظ أذكارك في ملف بالذاكرة أو سحابياً واسترجاعها بسهولة',
-                    showDivider: true,
-                    onTap: () => AzkarBackupDialog.show(context),
                   ),
                   SettingsTile(
                     icon: Icons.restore_rounded,
@@ -299,7 +329,43 @@ class AzkarSettingsPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 3. سلوك الإنجاز
+              // 3. النسخ الاحتياطي للأذكار المخصصة (JSON)
+              SettingsSectionCard(
+                title: 'النسخ الاحتياطي للأذكار المخصصة (JSON)',
+                children: [
+                  SettingsTile(
+                    icon: Icons.folder_open_rounded,
+                    title: 'مجلد حفظ النسخ الاحتياطية',
+                    subtitle: _isLoadingDir
+                        ? 'جاري تحميل المسار...'
+                        : (_backupDirectory ?? 'الافتراضي: مجلد التنزيلات (Downloads)'),
+                    showDivider: true,
+                    trailing: IconButton(
+                      icon: const Icon(Icons.restart_alt_rounded, size: 20, color: Colors.blueGrey),
+                      tooltip: 'استعادة المجلد الافتراضي',
+                      onPressed: _resetBackupDirectory,
+                    ),
+                    onTap: _pickBackupDirectory,
+                  ),
+                  SettingsTile(
+                    icon: Icons.save_alt_rounded,
+                    title: 'إنشاء نسخة احتياطية الآن (JSON)',
+                    subtitle: 'حفظ أذكارك المخصصة فوراً كملف JSON في المجلد المحدد أعلاه',
+                    showDivider: true,
+                    onTap: () => AzkarBackupService.performBackupFlow(context),
+                  ),
+                  SettingsTile(
+                    icon: Icons.file_open_rounded,
+                    title: 'استرجاع نسخة سابقة (JSON)',
+                    subtitle: 'اختيار ملف .json واستعادة الأذكار فوراً إلى التطبيق',
+                    showDivider: false,
+                    onTap: () => AzkarBackupService.performRestoreFlow(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // 4. سلوك الإنجاز
               SettingsSectionCard(
                 title: 'سلوك إنجاز الورد',
                 children: [
@@ -333,3 +399,4 @@ class AzkarSettingsPage extends StatelessWidget {
     );
   }
 }
+

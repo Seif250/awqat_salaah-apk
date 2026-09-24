@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/notification_service.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../services/widget_service.dart';
@@ -234,7 +235,7 @@ class AdvancedSettingsPage extends StatelessWidget {
             onPressed: () {
               final pendingSummary = pending.map((p) => '[${p.id}] ${p.title}').join('\n');
               final report = StringBuffer()
-                ..writeln('═══ تقرير تشخيص تطبيق فُرقان (أوقات الصلاة) ═══')
+                ..writeln('═══ تقرير تشخيص تطبيق أوقات الصلاة ═══')
                 ..writeln('تاريخ التقرير: ${DateTime.now().toIso8601String()}')
                 ..writeln('الإصدار: ${AppConstants.appVersion}')
                 ..writeln('صوت الأذان النشط: ${soundCfg["displayName"]} (${soundCfg["channelId"]})')
@@ -250,12 +251,7 @@ class AdvancedSettingsPage extends StatelessWidget {
 
               Clipboard.setData(ClipboardData(text: report.toString()));
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تم نسخ تقرير التشخيص الشامل للحافظة، يمكنك مشاركته مع المطور'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              AppSnackBar.showSuccess(context, 'تم نسخ تقرير التشخيص الشامل للحافظة، يمكنك مشاركته مع المطور');
             },
           ),
         ],
@@ -296,14 +292,11 @@ class AdvancedSettingsPage extends StatelessWidget {
                 onTap: () async {
                   final result = await NotificationService().showCurrentSoundTestNotification();
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(result == 'success'
-                            ? 'تم إرسال إشعار الأذان بصوت ($activeSoundName) بنجاح'
-                            : 'تعذر تشغيل الصوت: $result'),
-                        backgroundColor: result == 'success' ? Colors.green : Colors.red,
-                      ),
-                    );
+                    if (result == 'success') {
+                      AppSnackBar.showSuccess(context, 'تم إرسال إشعار الأذان بصوت ($activeSoundName) بنجاح');
+                    } else {
+                      AppSnackBar.showError(context, 'تعذر تشغيل الصوت: $result');
+                    }
                   }
                 },
               ),
@@ -319,15 +312,11 @@ class AdvancedSettingsPage extends StatelessWidget {
                     soundType: activeSoundType,
                   );
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(result.startsWith('failed')
-                            ? 'فشل الجدولة: $result'
-                            : 'تمت جدولة منبه ($activeSoundName) بعد 10 ثوانٍ. اقفل الشاشة للتجربة'),
-                        duration: const Duration(seconds: 5),
-                        backgroundColor: result.startsWith('failed') ? Colors.red : Colors.green,
-                      ),
-                    );
+                    if (result.startsWith('failed')) {
+                      AppSnackBar.showError(context, 'فشل الجدولة: $result');
+                    } else {
+                      AppSnackBar.showSuccess(context, 'تمت جدولة منبه ($activeSoundName) بعد 10 ثوانٍ. اقفل الشاشة للتجربة');
+                    }
                   }
                 },
               ),
@@ -410,14 +399,11 @@ class AdvancedSettingsPage extends StatelessWidget {
                     onPressed: () async {
                       final res = await NotificationService().showSoundTestNotification(s['key']!);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(res == 'success'
-                                ? 'تم تشغيل إشعار (${s["name"]}) بنجاح'
-                                : 'تعذر إرسال الإشعار: $res'),
-                            backgroundColor: res == 'success' ? Colors.green : Colors.red,
-                          ),
-                        );
+                        if (res == 'success') {
+                          AppSnackBar.showSuccess(context, 'تم تشغيل إشعار (${s["name"]}) بنجاح');
+                        } else {
+                          AppSnackBar.showError(context, 'تعذر إرسال الإشعار: $res');
+                        }
                       }
                     },
                     child: const Text('تجربة'),

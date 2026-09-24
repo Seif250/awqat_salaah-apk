@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/azkar_item_model.dart';
+import 'azkar_card_components.dart';
 
-class AzkarCard extends StatelessWidget {
+class AzkarCard extends StatefulWidget {
   final AzkarItem item;
   final VoidCallback onIncrement;
   final VoidCallback onToggleComplete;
   final VoidCallback? onEdit;
   final VoidCallback? onLongPress;
   final bool isReorderMode;
+  final int? reorderIndex;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
 
   const AzkarCard({
     super.key,
@@ -19,22 +23,74 @@ class AzkarCard extends StatelessWidget {
     this.onEdit,
     this.onLongPress,
     this.isReorderMode = false,
+    this.reorderIndex,
+    this.onMoveUp,
+    this.onMoveDown,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final isCompleted = item.isCompleted;
+  State<AzkarCard> createState() => _AzkarCardState();
+}
 
-    final double progress = item.targetCount > 0
-        ? (item.currentCount / item.targetCount).clamp(0.0, 1.0)
+class _AzkarCardState extends State<AzkarCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _bounceController;
+  late final Animation<double> _scaleAnimation;
+  bool _wasCompleted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _wasCompleted = widget.item.isCompleted;
+    _bounceController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.18), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.18, end: 0.95), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.95, end: 1.0), weight: 30),
+    ]).animate(CurvedAnimation(
+      parent: _bounceController,
+      curve: Curves.easeOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(AzkarCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Bounce the counter when count changes
+    if (widget.item.currentCount != oldWidget.item.currentCount) {
+      _bounceController.forward(from: 0);
+    }
+    // Detect completion transition
+    if (!_wasCompleted && widget.item.isCompleted) {
+      HapticFeedback.heavyImpact();
+    }
+    _wasCompleted = widget.item.isCompleted;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isCompleted = widget.item.isCompleted;
+
+    final double progress = widget.item.targetCount > 0
+        ? (widget.item.currentCount / widget.item.targetCount).clamp(0.0, 1.0)
         : 0.0;
 
     return Semantics(
       button: true,
-      label: '${item.title}، المقروء ${item.currentCount} من ${item.targetCount}، ${isCompleted ? "مكتمل بحمد الله" : "انقر للتسبيح والزيادة"}',
-      child: Container(
+      label: '${widget.item.title}، المقروء ${widget.item.currentCount} من ${widget.item.targetCount}، ${isCompleted ? "مكتمل بحمد الله" : "انقر للتسبيح والزيادة"}',
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkCard : AppColors.lightCard,
@@ -60,306 +116,62 @@ class AzkarCard extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-            onTap: () {
-              if (isReorderMode) return;
-              HapticFeedback.selectionClick();
-              onIncrement();
-            },
-            onLongPress: () {
-              HapticFeedback.mediumImpact();
-              onLongPress?.call();
-            },
-            borderRadius: BorderRadius.circular(18),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Title & Done Toggle
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            if (isReorderMode)
-                              const Padding(
-                                padding: EdgeInsetsDirectional.only(end: 8),
-                                child: Icon(
-                                  Icons.drag_indicator_rounded,
-                                  color: AppColors.accentGold,
-                                  size: 24,
-                                ),
-                              ),
-                            if (isCompleted && !isReorderMode)
-                              Container(
-                                margin: const EdgeInsets.only(left: 6),
-                                padding: const EdgeInsets.all(3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryLight.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.check_rounded,
-                                  size: 16,
-                                  color: AppColors.primaryLight,
-                                ),
-                              ),
-                            Expanded(
-                              child: Text(
-                                item.title,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: isCompleted
-                                      ? AppColors.primaryLight
-                                      : (isDark ? Colors.white : AppColors.primaryDark),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Target badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isCompleted
-                              ? AppColors.primaryLight.withValues(alpha: 0.12)
-                              : (isDark ? AppColors.darkCardElevated : AppColors.lightCardElevated),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isCompleted
-                                ? AppColors.primaryLight.withValues(alpha: 0.3)
-                                : AppColors.accentGold.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        child: Text(
-                          '${item.targetCount} ${item.targetCount == 1 ? "مرة" : "مرات"}',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.bold,
-                            color: isCompleted ? AppColors.primaryLight : AppColors.accentGold,
-                          ),
-                        ),
-                      ),
-                      if (onEdit != null) ...[
-                        const SizedBox(width: 4),
-                        IconButton(
-                          icon: Icon(
-                            Icons.edit_note_rounded,
-                            size: 22,
-                            color: isDark ? Colors.white54 : Colors.black45,
-                          ),
-                          tooltip: 'تعديل أو حذف الذكر',
-                          padding: const EdgeInsets.all(4),
-                          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                          onPressed: onEdit,
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Arabic Text
-                  Text(
-                    item.arabicText,
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 16.5,
-                      height: 1.8,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? AppColors.azkarTextDark : AppColors.azkarTextLight,
+              onTap: widget.isReorderMode
+                  ? null
+                  : () {
+                      HapticFeedback.selectionClick();
+                      widget.onIncrement();
+                    },
+              onLongPress: widget.isReorderMode
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      widget.onLongPress?.call();
+                    },
+              borderRadius: BorderRadius.circular(18),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header: Drag handle, title, checkmark, edit button / reorder arrows
+                    AzkarCardHeader(
+                      item: widget.item,
+                      isCompleted: isCompleted,
+                      isDark: isDark,
+                      isReorderMode: widget.isReorderMode,
+                      reorderIndex: widget.reorderIndex,
+                      onMoveUp: widget.onMoveUp,
+                      onMoveDown: widget.onMoveDown,
+                      onEdit: widget.onEdit,
                     ),
-                    textAlign: TextAlign.start,
-                    textDirection: TextDirection.rtl,
-                  ),
+                    const SizedBox(height: 10),
 
-                  // Reference & Reward (if present)
-                  if (item.reward != null || item.reference != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.darkBackground.withValues(alpha: 0.5)
-                            : AppColors.lightBackground,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.accentGold.withValues(alpha: 0.15),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (item.reward != null)
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('✨ ', style: TextStyle(fontSize: 13)),
-                                Expanded(
-                                  child: Text(
-                                    item.reward!,
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      height: 1.4,
-                                      color: isDark
-                                          ? AppColors.textSecondaryDark
-                                          : AppColors.textSecondaryLight,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          if (item.reference != null) ...[
-                            if (item.reward != null) const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.menu_book_outlined, size: 13, color: AppColors.accentGold),
-                                const SizedBox(width: 4),
-                                Text(
-                                  item.reference!,
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: AppColors.accentGold.withValues(alpha: 0.85),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
+                    // Body: Arabic text and reward / reference cards
+                    AzkarCardBody(
+                      item: widget.item,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Footer: Animated progress bar, counter pill with bounce animation, complete toggle
+                    AzkarCardProgressFooter(
+                      item: widget.item,
+                      isCompleted: isCompleted,
+                      isDark: isDark,
+                      isReorderMode: widget.isReorderMode,
+                      progress: progress,
+                      scaleAnimation: _scaleAnimation,
+                      onIncrement: widget.onIncrement,
+                      onToggleComplete: widget.onToggleComplete,
                     ),
                   ],
-
-                  const SizedBox(height: 14),
-
-                  // Progress Bar & Counter Action
-                  Row(
-                    children: [
-                      // Linear progress bar
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                minHeight: 6,
-                                backgroundColor: isDark
-                                    ? AppColors.darkCardElevated
-                                    : AppColors.lightCardElevated,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  isCompleted ? AppColors.primaryLight : AppColors.accentGold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isCompleted
-                                  ? 'اكتمل الذكر بحمد الله'
-                                  : 'تم: ${item.currentCount} من أصل ${item.targetCount}',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: isCompleted
-                                    ? AppColors.primaryLight
-                                    : (isDark ? Colors.white60 : Colors.black54),
-                                fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Increment Tap Counter Button
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.mediumImpact();
-                          onIncrement();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: isCompleted
-                                ? const LinearGradient(
-                                    colors: [
-                                      AppColors.primaryLight,
-                                      AppColors.primary,
-                                    ],
-                                  )
-                                : const LinearGradient(
-                                    colors: [
-                                      AppColors.accentGold,
-                                      AppColors.accentAmber,
-                                    ],
-                                  ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isCompleted ? AppColors.primary : AppColors.accentGold)
-                                    .withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isCompleted ? Icons.check_circle_rounded : Icons.fingerprint_rounded,
-                                size: 16,
-                                color: isCompleted ? Colors.white : Colors.black87,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                '${item.currentCount}/${item.targetCount}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: isCompleted ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 4),
-
-                      // Direct Complete Toggle Icon
-                      IconButton(
-                        icon: Icon(
-                          isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                          color: isCompleted ? AppColors.primaryLight : Colors.grey,
-                          size: 22,
-                        ),
-                        tooltip: isCompleted ? 'إلغاء التحديد' : 'تحديد كمقروء',
-                        padding: const EdgeInsets.all(4),
-                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          onToggleComplete();
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
-}
-

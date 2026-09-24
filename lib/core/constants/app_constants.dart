@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'أوقات الصلاة';
-  static const String appVersion = '1.3.1';
+  static const String appVersion = '1.4';
 
   // Storage Keys - Location
   static const String keyIsFirstLaunch = 'is_first_launch';

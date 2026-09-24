@@ -116,10 +116,12 @@ class AzkarRepository {
     items.removeWhere((i) => i.id == id);
     await saveAllCatalogItems(items);
 
-    // Also clean up any progress for this id
+    // Also clean up any progress for this id across all categories
     final progress = getDailyProgress();
-    final newCounts = Map<String, int>.from(progress.itemCounts)..remove(id);
-    final newCompleted = Set<String>.from(progress.completedItemIds)..remove(id);
+    final newCounts = Map<String, int>.from(progress.itemCounts)
+      ..removeWhere((key, _) => key == id || key.endsWith(':$id'));
+    final newCompleted = Set<String>.from(progress.completedItemIds)
+      ..removeWhere((key) => key == id || key.endsWith(':$id'));
     await saveDailyProgress(progress.copyWith(
       itemCounts: newCounts,
       completedItemIds: newCompleted,
@@ -139,6 +141,9 @@ class AzkarRepository {
     items.insert(0, item);
     await saveAllCatalogItems(items);
   }
+
+  /// Generate a category-scoped progress key
+  static String scopedKey(String id, AzkarCategory category) => '${category.name}:$id';
 
   /// Get items for a given category with today's counts, multi-category matching, and custom ordering applied
   List<AzkarItem> getCategoryItems(
@@ -162,8 +167,24 @@ class AzkarRepository {
     }
 
     return filtered.map((item) {
-      final count = progress.itemCounts[item.id] ?? 0;
-      final isDone = progress.completedItemIds.contains(item.id) || count >= item.targetCount;
+      final key = scopedKey(item.id, category);
+      int count = 0;
+      bool isDone = false;
+
+      if (progress.itemCounts.containsKey(key)) {
+        count = progress.itemCounts[key] ?? 0;
+        isDone = progress.completedItemIds.contains(key) ||
+            (item.targetCount > 0 && count >= item.targetCount);
+      } else if (progress.completedItemIds.contains(key)) {
+        isDone = true;
+        count = item.targetCount;
+      } else if (item.effectiveCategories.length <= 1) {
+        // Fallback for single-category legacy data
+        count = progress.itemCounts[item.id] ?? 0;
+        isDone = progress.completedItemIds.contains(item.id) ||
+            (item.targetCount > 0 && count >= item.targetCount);
+      }
+
       return item.copyWith(
         currentCount: count,
         isCompleted: isDone,
@@ -171,35 +192,52 @@ class AzkarRepository {
     }).toList();
   }
 
-  /// Reorder items within a category and persist the user's custom order
-  Future<void> reorderCategoryItems(AzkarCategory category, int oldIndex, int newIndex) async {
+  /// Move an item within a category directly to a target index
+  Future<void> moveCategoryItem(AzkarCategory category, int fromIndex, int toIndex) async {
     final progress = getDailyProgress();
     final items = getCategoryItems(category, progress);
-    if (oldIndex < 0 || oldIndex >= items.length || newIndex < 0 || newIndex > items.length) {
+    if (fromIndex < 0 ||
+        fromIndex >= items.length ||
+        toIndex < 0 ||
+        toIndex >= items.length ||
+        fromIndex == toIndex) {
       return;
     }
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-    final moved = items.removeAt(oldIndex);
-    items.insert(newIndex, moved);
+    final moved = items.removeAt(fromIndex);
+    items.insert(toIndex, moved);
 
     final orderKey = 'azkar_order_${category.name}';
     await _prefs.setStringList(orderKey, items.map((i) => i.id).toList());
   }
 
-  /// Increment count for a zikr item
-  DailyAzkarProgress incrementCount(String id, int targetCount) {
+  /// Reorder items within a category and persist the user's custom order (handles Flutter ReorderableListView indices)
+  Future<void> reorderCategoryItems(AzkarCategory category, int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    await moveCategoryItem(category, oldIndex, newIndex);
+  }
+
+  /// Increment count for a zikr item (scoped to category so multi-category items track progress independently)
+  DailyAzkarProgress incrementCount(String id, int targetCount, {AzkarCategory? category}) {
     final currentProgress = getDailyProgress();
     final newCounts = Map<String, int>.from(currentProgress.itemCounts);
     final newCompleted = Set<String>.from(currentProgress.completedItemIds);
 
-    final current = newCounts[id] ?? 0;
-    final next = current + 1;
-    newCounts[id] = next;
+    final key = category != null ? scopedKey(id, category) : id;
 
-    if (next >= targetCount) {
-      newCompleted.add(id);
+    final current = newCounts[key] ?? (category == null ? (newCounts[id] ?? 0) : 0);
+    final next = current + 1;
+    newCounts[key] = next;
+
+    // Clean up unscoped id so it never leaks into other categories
+    if (category != null) {
+      newCounts.remove(id);
+      newCompleted.remove(id);
+    }
+
+    if (targetCount > 0 && next >= targetCount) {
+      newCompleted.add(key);
     }
 
     final updated = currentProgress.copyWith(
@@ -212,18 +250,25 @@ class AzkarRepository {
     return updated;
   }
 
-  /// Toggle completion state directly
-  DailyAzkarProgress toggleCompletion(String id, int targetCount) {
+  /// Toggle completion state directly (scoped to category)
+  DailyAzkarProgress toggleCompletion(String id, int targetCount, {AzkarCategory? category}) {
     final currentProgress = getDailyProgress();
     final newCompleted = Set<String>.from(currentProgress.completedItemIds);
     final newCounts = Map<String, int>.from(currentProgress.itemCounts);
 
-    if (newCompleted.contains(id)) {
+    final key = category != null ? scopedKey(id, category) : id;
+
+    if (category != null) {
       newCompleted.remove(id);
-      newCounts[id] = 0;
+      newCounts.remove(id);
+    }
+
+    if (newCompleted.contains(key)) {
+      newCompleted.remove(key);
+      newCounts[key] = 0;
     } else {
-      newCompleted.add(id);
-      newCounts[id] = targetCount;
+      newCompleted.add(key);
+      newCounts[key] = targetCount;
     }
 
     final updated = currentProgress.copyWith(
@@ -239,12 +284,22 @@ class AzkarRepository {
   DailyAzkarProgress resetCategory(AzkarCategory category) {
     final currentProgress = getDailyProgress();
     final categoryItems = getCategoryItems(category, currentProgress);
-    final categoryIds = categoryItems.map((e) => e.id).toSet();
+    final categoryScopedKeys = categoryItems.map((e) => scopedKey(e.id, category)).toSet();
+    final singleCategoryIds = categoryItems
+        .where((e) => e.effectiveCategories.length <= 1)
+        .map((e) => e.id)
+        .toSet();
 
     final newCounts = Map<String, int>.from(currentProgress.itemCounts)
-      ..removeWhere((key, _) => categoryIds.contains(key));
+      ..removeWhere((key, _) =>
+          categoryScopedKeys.contains(key) ||
+          key.startsWith('${category.name}:') ||
+          singleCategoryIds.contains(key));
     final newCompleted = Set<String>.from(currentProgress.completedItemIds)
-      ..removeWhere((id) => categoryIds.contains(id));
+      ..removeWhere((id) =>
+          categoryScopedKeys.contains(id) ||
+          id.startsWith('${category.name}:') ||
+          singleCategoryIds.contains(id));
 
     final updated = currentProgress.copyWith(
       itemCounts: newCounts,

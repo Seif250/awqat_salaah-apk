@@ -16,8 +16,52 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
+import android.view.KeyEvent
+import android.view.WindowManager
+import android.os.Bundle
+
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.awqatsalaah/widget"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            )
+        }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_VOLUME_UP,
+                KeyEvent.KEYCODE_VOLUME_DOWN,
+                KeyEvent.KEYCODE_POWER -> {
+                    if (AdhanSilencer.silenceAdhan(this)) {
+                        return true // Silenced Adhan
+                    }
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || 
+            keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || 
+            keyCode == KeyEvent.KEYCODE_POWER) {
+            if (AdhanSilencer.silenceAdhan(this)) {
+                return true
+            }
+        }
+        return super.onKeyDown(keyCode, event)
+    }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -47,10 +91,6 @@ class MainActivity : FlutterActivity() {
                             editor.apply()
 
                             WidgetDiagnostics.log(context, "Flutter→updateWidget: data saved to prefs")
-
-                            // Also compute and store tomorrow's fajr timestamp if not provided
-                            // (Flutter sends today's times; native uses widget_ts_tomorrow_fajr)
-                            // We handle this by scheduling alarm to first available future time
 
                             // Push update to all active instances of the widget
                             val appWidgetManager = AppWidgetManager.getInstance(context)
@@ -109,9 +149,11 @@ class MainActivity : FlutterActivity() {
                             setOnCompletionListener {
                                 it.release()
                                 previewPlayer = null
+                                AdhanSilencer.activePlayer = null
                             }
                             start()
                         }
+                        AdhanSilencer.activePlayer = previewPlayer
                         result.success(true)
                     } catch (e: Exception) {
                         result.error("AUDIO_ERROR", e.localizedMessage, null)
@@ -123,9 +165,19 @@ class MainActivity : FlutterActivity() {
                         previewPlayer?.stop()
                         previewPlayer?.release()
                         previewPlayer = null
+                        AdhanSilencer.activePlayer = null
                         result.success(true)
                     } catch (e: Exception) {
                         result.error("AUDIO_ERROR", e.localizedMessage, null)
+                    }
+                }
+
+                "silenceAdhan" -> {
+                    try {
+                        val silenced = AdhanSilencer.silenceAdhan(context)
+                        result.success(silenced)
+                    } catch (e: Exception) {
+                        result.error("SILENCE_ERROR", e.localizedMessage, null)
                     }
                 }
 
@@ -140,6 +192,7 @@ class MainActivity : FlutterActivity() {
         previewPlayer?.stop()
         previewPlayer?.release()
         previewPlayer = null
+        AdhanSilencer.activePlayer = null
         super.onDestroy()
     }
 

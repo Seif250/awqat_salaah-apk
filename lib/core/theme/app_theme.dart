@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/page_transitions.dart';
 import 'app_colors.dart';
 
 class AppTheme {
@@ -66,6 +67,14 @@ class AppTheme {
           return null;
         }),
       ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: AppPageTransitionsBuilder(),
+          TargetPlatform.iOS: AppPageTransitionsBuilder(),
+          TargetPlatform.windows: AppPageTransitionsBuilder(),
+          TargetPlatform.linux: AppPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 
@@ -123,6 +132,14 @@ class AppTheme {
           }
           return null;
         }),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: AppPageTransitionsBuilder(),
+          TargetPlatform.iOS: AppPageTransitionsBuilder(),
+          TargetPlatform.windows: AppPageTransitionsBuilder(),
+          TargetPlatform.linux: AppPageTransitionsBuilder(),
+        },
       ),
     );
   }

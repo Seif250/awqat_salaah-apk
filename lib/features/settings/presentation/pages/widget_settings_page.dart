@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/widget_service.dart';
 import '../widgets/settings_section_card.dart';
 import '../widgets/settings_tile.dart';
@@ -19,21 +20,11 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
     try {
       await WidgetService.forceRefreshWidget();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم إرسال إشارة تحديث الودجت بنجاح'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.showSuccess(context, 'تم إرسال إشارة تحديث الودجت بنجاح');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تعذر تحديث الودجت: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.showError(context, 'تعذر تحديث الودجت: $e');
       }
     } finally {
       if (mounted) setState(() => _isRefreshing = false);

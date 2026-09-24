@@ -7,10 +7,9 @@ import 'features/azkar/presentation/bloc/azkar_bloc.dart';
 import 'features/azkar/presentation/bloc/azkar_event.dart';
 import 'features/location/data/repositories/location_repository_impl.dart';
 import 'features/location/presentation/bloc/location_bloc.dart';
-import 'features/onboarding/presentation/pages/onboarding_page.dart';
+import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/prayer_times/presentation/bloc/prayer_bloc.dart';
 import 'features/prayer_times/presentation/bloc/prayer_event.dart';
-import 'features/prayer_times/presentation/pages/main_navigation_screen.dart';
 import 'features/settings/presentation/bloc/settings_bloc.dart';
 import 'features/settings/presentation/bloc/settings_event.dart';
 import 'features/settings/presentation/bloc/settings_state.dart';
@@ -34,32 +33,38 @@ class AwqatSalaahApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
+    final azkarRepository = AzkarRepository(storageService.prefs);
+
+    return MultiRepositoryProvider(
       providers: [
-        BlocProvider<SettingsBloc>(
-          create: (_) => SettingsBloc(
-            storageService: storageService,
-          )..add(const LoadSettingsEvent()),
-        ),
-        BlocProvider<LocationBloc>(
-          create: (_) => LocationBloc(
-            locationRepository: locationRepository,
-            storageService: storageService,
-          ),
-        ),
-        BlocProvider<PrayerBloc>(
-          create: (_) => PrayerBloc(
-            calculationService: prayerCalculationService,
-            storageService: storageService,
-            notificationService: notificationService,
-          )..add(const LoadPrayerTimesEvent()),
-        ),
-        BlocProvider<AzkarBloc>(
-          create: (_) => AzkarBloc(
-            repository: AzkarRepository(storageService.prefs),
-          )..add(const LoadAzkarEvent()),
-        ),
+        RepositoryProvider<AzkarRepository>.value(value: azkarRepository),
       ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<SettingsBloc>(
+            create: (_) => SettingsBloc(
+              storageService: storageService,
+            )..add(const LoadSettingsEvent()),
+          ),
+          BlocProvider<LocationBloc>(
+            create: (_) => LocationBloc(
+              locationRepository: locationRepository,
+              storageService: storageService,
+            ),
+          ),
+          BlocProvider<PrayerBloc>(
+            create: (_) => PrayerBloc(
+              calculationService: prayerCalculationService,
+              storageService: storageService,
+              notificationService: notificationService,
+            )..add(const LoadPrayerTimesEvent()),
+          ),
+          BlocProvider<AzkarBloc>(
+            create: (_) => AzkarBloc(
+              repository: azkarRepository,
+            )..add(const LoadAzkarEvent()),
+          ),
+        ],
       child: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, settingsState) {
           return MaterialApp(
@@ -78,11 +83,10 @@ class AwqatSalaahApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            home: storageService.isFirstLaunch
-                ? OnboardingPage(storageService: storageService)
-                : const MainNavigationScreen(),
+            home: SplashPage(storageService: storageService),
           );
         },
+      ),
       ),
     );
   }

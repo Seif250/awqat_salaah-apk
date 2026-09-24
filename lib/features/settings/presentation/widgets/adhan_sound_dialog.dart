@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/notification_service.dart';
 import '../../../../services/storage_service.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
@@ -147,14 +148,11 @@ class AdhanSoundDialog {
                     await NotificationService().stopAudioPreview();
                     final res = await NotificationService().showSoundTestNotification(selected);
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(res == 'success'
-                              ? 'تم إرسال إشعار تجريبي بصوت ${getSoundDisplayName(selected)}'
-                              : 'تعذر إرسال الإشعار: $res'),
-                          backgroundColor: res == 'success' ? Colors.green : Colors.red,
-                        ),
-                      );
+                      if (res == 'success') {
+                        AppSnackBar.showSuccess(context, 'تم إرسال إشعار تجريبي بصوت ${getSoundDisplayName(selected)}');
+                      } else {
+                        AppSnackBar.showError(context, 'تعذر إرسال الإشعار: $res');
+                      }
                     }
                   },
                 ),
@@ -167,12 +165,7 @@ class AdhanSoundDialog {
                     context.read<SettingsBloc>().add(ChangeNotificationSoundTypeEvent(selected));
                     context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
                     Navigator.pop(dialogCtx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('تم تعيين وجدولة صوت الأذان: ${getSoundDisplayName(selected)}'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                    AppSnackBar.showSuccess(context, 'تم تعيين وجدولة صوت الأذان: ${getSoundDisplayName(selected)}');
                   },
                   child: const Text('حفظ'),
                 ),

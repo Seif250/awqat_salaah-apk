@@ -3,6 +3,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/app_snackbar.dart';
+import '../../../../core/utils/page_transitions.dart';
 import '../../data/models/azkar_item_model.dart';
 import '../../../settings/presentation/pages/azkar_settings_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
@@ -10,10 +12,12 @@ import '../bloc/azkar_bloc.dart';
 import '../bloc/azkar_event.dart';
 import '../bloc/azkar_state.dart';
 import '../widgets/azkar_card.dart';
+import '../widgets/azkar_category_bar.dart';
+import '../widgets/azkar_empty_view.dart';
 import '../widgets/daily_progress_header.dart';
 import '../widgets/edit_zikr_dialog.dart';
-import '../widgets/azkar_backup_dialog.dart';
-import '../utils/azkar_ui_helpers.dart';
+import '../../data/services/azkar_backup_service.dart';
+import '../../../../core/utils/skeleton_loading.dart';
 
 class AzkarPage extends StatefulWidget {
   const AzkarPage({super.key});
@@ -86,12 +90,8 @@ class _AzkarPageState extends State<AzkarPage> {
             onPressed: () {
               Navigator.pop(ctx);
               context.read<AzkarBloc>().add(const RestoreDefaultAzkarEvent());
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تمت استعادة الأذكار الافتراضية بنجاح'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              AppSnackBar.showSuccess(context, 'تمت استعادة الأذكار الافتراضية بنجاح');
             },
             child: const Text('استعادة'),
           ),
@@ -136,25 +136,22 @@ class _AzkarPageState extends State<AzkarPage> {
               if (value == 'settings') {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                  FadeSlidePageRoute(page: const SettingsPage()),
                 );
               } else if (value == 'azkar_settings') {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AzkarSettingsPage()),
+                  FadeSlidePageRoute(page: const AzkarSettingsPage()),
                 );
               } else if (value == 'reorder') {
                 setState(() => _isReorderMode = !_isReorderMode);
                 if (_isReorderMode) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('وضع إعادة الترتيب مفعّل: اسحب الذكر لأعلى أو لأسفل.'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                  AppSnackBar.showInfo(context, 'وضع إعادة الترتيب مفعّل: اسحب الذكر لأعلى أو لأسفل.');
                 }
               } else if (value == 'backup') {
-                AzkarBackupDialog.show(context);
+                AzkarBackupService.performBackupFlow(context);
+              } else if (value == 'restore_backup') {
+                AzkarBackupService.performRestoreFlow(context);
               } else if (value == 'restore') {
                 _confirmRestoreDefaults(context);
               } else if (value == 'reset_cat') {
@@ -203,9 +200,19 @@ class _AzkarPageState extends State<AzkarPage> {
                 value: 'backup',
                 child: Row(
                   children: [
-                    Icon(Icons.cloud_sync_rounded, size: 20, color: AppColors.accentGold),
+                    Icon(Icons.save_alt_rounded, size: 20, color: AppColors.accentGold),
                     SizedBox(width: 8),
                     Text('النسخ الاحتياطي للأذكار (JSON)'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'restore_backup',
+                child: Row(
+                  children: [
+                    Icon(Icons.file_open_rounded, size: 20, color: AppColors.accentGold),
+                    SizedBox(width: 8),
+                    Text('استرجاع نسخة سابقة (JSON)'),
                   ],
                 ),
               ),
@@ -236,9 +243,7 @@ class _AzkarPageState extends State<AzkarPage> {
       body: BlocBuilder<AzkarBloc, AzkarState>(
         builder: (context, state) {
           if (state is AzkarLoading || state is AzkarInitial) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.accentGold),
-            );
+            return const AzkarSkeleton();
           }
 
           if (state is AzkarError) {
@@ -263,62 +268,12 @@ class _AzkarPageState extends State<AzkarPage> {
             return Column(
               children: [
                 // Category Chips Selector Bar
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.6),
-                        width: 0.8,
-                      ),
-                    ),
-                  ),
-                  child: SizedBox(
-                    height: 40,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      children: AzkarCategory.values.map((category) {
-                        final isSelected = state.selectedCategory == category;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 3),
-                          child: FilterChip(
-                            showCheckmark: false,
-                            avatar: Icon(
-                              category.categoryIcon,
-                              size: 16,
-                              color: isSelected ? AppColors.primaryLight : Colors.grey,
-                            ),
-                            label: Text(category.titleArabic),
-                            selected: isSelected,
-                            selectedColor: AppColors.primaryLight.withValues(alpha: 0.16),
-                            backgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppColors.primaryLight.withValues(alpha: 0.6)
-                                  : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                              width: isSelected ? 1.2 : 0.8,
-                            ),
-                            labelStyle: TextStyle(
-                              fontFamily: 'Cairo',
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected
-                                  ? AppColors.primaryLight
-                                  : (isDark ? Colors.white70 : Colors.black87),
-                            ),
-                            onSelected: (_) {
-                              context.read<AzkarBloc>().add(SelectCategoryEvent(category));
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
+                AzkarCategoryBar(
+                  selectedCategory: state.selectedCategory,
+                  onSelectCategory: (category) {
+                    context.read<AzkarBloc>().add(SelectCategoryEvent(category));
+                  },
+                  isDark: isDark,
                 ),
 
                 // Reorder Mode Active Banner
@@ -337,7 +292,7 @@ class _AzkarPageState extends State<AzkarPage> {
                         const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
-                            'وضع الترتيب: اضغط واسحب الذكر لتغيير مكانه',
+                            'وضع إعادة الترتيب: يمكنك السحب بالأيقونة أو استخدام الأسهم ⬆ ⬇',
                             style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -371,7 +326,6 @@ class _AzkarPageState extends State<AzkarPage> {
                                 .read<AzkarBloc>()
                                 .add(ResetCategoryProgressEvent(state.selectedCategory));
                           },
-                          onOpenTasbih: () {},
                         )
                       : const SizedBox.shrink(),
                 ),
@@ -379,73 +333,26 @@ class _AzkarPageState extends State<AzkarPage> {
                 // Azkar Items List
                 Expanded(
                   child: state.currentItems.isEmpty
-                      ? Center(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.menu_book_outlined, size: 54, color: AppColors.accentGold),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'لا توجد أذكار في قسم "${state.selectedCategory.titleArabic}" حالياً',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  state.selectedCategory == AzkarCategory.custom
-                                      ? 'يمكنك إضافة ذكر مخصص جديد أو استرجاع نسخة احتياطية سابقة محفوظة بصيغة JSON'
-                                      : 'يمكنك إضافة ذكر جديد إلى هذا القسم أو استعادة الأذكار الافتراضية الأصلية',
-                                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 20),
-                                Wrap(
-                                  spacing: 12,
-                                  runSpacing: 10,
-                                  alignment: WrapAlignment.center,
-                                  children: [
-                                    ElevatedButton.icon(
-                                      icon: const Icon(Icons.add_rounded),
-                                      label: Text(state.selectedCategory == AzkarCategory.custom
-                                          ? 'إضافة ذكر مخصص'
-                                          : 'إضافة ذكر هنا'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      onPressed: () {
-                                        EditZikrDialog.showAdd(
-                                          context,
-                                          initialCategory: state.selectedCategory,
-                                          onAdd: (item) {
-                                            context.read<AzkarBloc>().add(AddNewZikrItemEvent(item));
-                                          },
-                                        );
-                                      },
-                                    ),
-                                    if (state.selectedCategory == AzkarCategory.custom)
-                                      OutlinedButton.icon(
-                                        icon: const Icon(Icons.cloud_sync_rounded, color: AppColors.accentGold),
-                                        label: const Text('استرجاع نسخة سابقة (JSON)'),
-                                        onPressed: () => AzkarBackupDialog.show(context),
-                                      )
-                                    else
-                                      OutlinedButton.icon(
-                                        icon: const Icon(Icons.restore_rounded),
-                                        label: const Text('استعادة الأذكار الافتراضية'),
-                                        onPressed: () => _confirmRestoreDefaults(context),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
+                      ? AzkarEmptyView(
+                          category: state.selectedCategory,
+                          onAdd: () {
+                            EditZikrDialog.showAdd(
+                              context,
+                              initialCategory: state.selectedCategory,
+                              onAdd: (item) {
+                                context.read<AzkarBloc>().add(AddNewZikrItemEvent(item));
+                              },
+                            );
+                          },
+                          onRestore: () => _confirmRestoreDefaults(context),
+                          onRestoreBackup: state.selectedCategory == AzkarCategory.custom
+                              ? () => AzkarBackupService.performRestoreFlow(context)
+                              : null,
                         )
                       : _isReorderMode
                           // Reorderable list view in reorder mode
                           ? ReorderableListView.builder(
+                              buildDefaultDragHandles: false,
                               padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                               itemCount: state.currentItems.length,
                               onReorder: (oldIndex, newIndex) {
@@ -460,30 +367,53 @@ class _AzkarPageState extends State<AzkarPage> {
                               },
                               itemBuilder: (context, index) {
                                 final item = state.currentItems[index];
-                                return AzkarCard(
+                                return ReorderableDragStartListener(
                                   key: ValueKey(item.id),
-                                  item: item,
-                                  isReorderMode: true,
-                                  onIncrement: () {},
-                                  onToggleComplete: () {},
-                                  onEdit: () {
-                                    EditZikrDialog.show(
-                                      context,
-                                      item: item,
-                                      onSave: (updated) {
-                                        context.read<AzkarBloc>().add(UpdateZikrItemEvent(updated));
-                                      },
-                                      onDelete: () {
-                                        context.read<AzkarBloc>().add(DeleteZikrItemEvent(item.id));
-                                      },
-                                    );
-                                  },
+                                  index: index,
+                                  child: AzkarCard(
+                                    item: item,
+                                    isReorderMode: true,
+                                    reorderIndex: index,
+                                    onMoveUp: index > 0
+                                        ? () {
+                                            HapticFeedback.selectionClick();
+                                            context.read<AzkarBloc>().add(
+                                                  MoveZikrItemEvent(
+                                                    category: state.selectedCategory,
+                                                    fromIndex: index,
+                                                    toIndex: index - 1,
+                                                  ),
+                                                );
+                                          }
+                                        : null,
+                                    onMoveDown: index < state.currentItems.length - 1
+                                        ? () {
+                                            HapticFeedback.selectionClick();
+                                            context.read<AzkarBloc>().add(
+                                                  MoveZikrItemEvent(
+                                                    category: state.selectedCategory,
+                                                    fromIndex: index,
+                                                    toIndex: index + 1,
+                                                  ),
+                                                );
+                                          }
+                                        : null,
+                                    onIncrement: () {},
+                                    onToggleComplete: () {},
+                                    onEdit: null,
+                                  ),
                                 );
                               },
                             )
                           // Standard list view with scroll auto-hide and long-press to enter reorder mode
-                          : ListView.builder(
+                          : RefreshIndicator(
+                              color: AppColors.accentGold,
+                              onRefresh: () async {
+                                context.read<AzkarBloc>().add(const LoadAzkarEvent());
+                              },
+                              child: ListView.builder(
                               controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                               itemCount: state.selectedCategory == AzkarCategory.custom
                                   ? state.currentItems.length + 1
@@ -513,10 +443,10 @@ class _AzkarPageState extends State<AzkarPage> {
                                             visualDensity: VisualDensity.compact,
                                             foregroundColor: AppColors.accentGold,
                                           ),
-                                          icon: const Icon(Icons.cloud_sync_rounded, size: 18),
+                                          icon: const Icon(Icons.save_alt_rounded, size: 18),
                                           label: const Text('نسخ احتياطي',
                                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                          onPressed: () => AzkarBackupDialog.show(context),
+                                          onPressed: () => AzkarBackupService.performBackupFlow(context),
                                         ),
                                       ],
                                     ),
@@ -529,19 +459,14 @@ class _AzkarPageState extends State<AzkarPage> {
                                   item: item,
                                   onLongPress: () {
                                     setState(() => _isReorderMode = true);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'تم تفعيل وضع إعادة الترتيب. اسحب الذكر لأعلى أو لأسفل.'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
+                                    AppSnackBar.showInfo(context, 'تم تفعيل وضع إعادة الترتيب. اسحب الذكر أو استخدم الأسهم.');
                                   },
                                   onIncrement: () {
                                     context.read<AzkarBloc>().add(
                                           IncrementZikrCountEvent(
                                             id: item.id,
                                             targetCount: item.targetCount,
+                                            category: state.selectedCategory,
                                           ),
                                         );
                                   },
@@ -550,6 +475,7 @@ class _AzkarPageState extends State<AzkarPage> {
                                           ToggleZikrCompletionEvent(
                                             id: item.id,
                                             targetCount: item.targetCount,
+                                            category: state.selectedCategory,
                                           ),
                                         );
                                   },
@@ -568,12 +494,36 @@ class _AzkarPageState extends State<AzkarPage> {
                                 );
                               },
                             ),
+                          ),
                 ),
               ],
             );
           }
 
-          return const SizedBox.shrink();
+          // Unexpected state — show a helpful fallback
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.menu_book_outlined, size: 48, color: AppColors.accentGold),
+                const SizedBox(height: 16),
+                const Text(
+                  'جاري تحميل الأذكار...',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('إعادة التحميل'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => context.read<AzkarBloc>().add(const LoadAzkarEvent()),
+                ),
+              ],
+            ),
+          );
         },
       ),
     );

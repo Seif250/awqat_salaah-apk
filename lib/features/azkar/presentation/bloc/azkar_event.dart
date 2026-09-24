@@ -28,19 +28,29 @@ class SelectCategoryEvent extends AzkarEvent {
 class IncrementZikrCountEvent extends AzkarEvent {
   final String id;
   final int targetCount;
-  const IncrementZikrCountEvent({required this.id, required this.targetCount});
+  final AzkarCategory? category;
+  const IncrementZikrCountEvent({
+    required this.id,
+    required this.targetCount,
+    this.category,
+  });
 
   @override
-  List<Object?> get props => [id, targetCount];
+  List<Object?> get props => [id, targetCount, category];
 }
 
 class ToggleZikrCompletionEvent extends AzkarEvent {
   final String id;
   final int targetCount;
-  const ToggleZikrCompletionEvent({required this.id, required this.targetCount});
+  final AzkarCategory? category;
+  const ToggleZikrCompletionEvent({
+    required this.id,
+    required this.targetCount,
+    this.category,
+  });
 
   @override
-  List<Object?> get props => [id, targetCount];
+  List<Object?> get props => [id, targetCount, category];
 }
 
 class ResetCategoryProgressEvent extends AzkarEvent {
@@ -133,4 +143,19 @@ class ReorderAzkarEvent extends AzkarEvent {
 
   @override
   List<Object?> get props => [category, oldIndex, newIndex];
+}
+
+class MoveZikrItemEvent extends AzkarEvent {
+  final AzkarCategory category;
+  final int fromIndex;
+  final int toIndex;
+
+  const MoveZikrItemEvent({
+    required this.category,
+    required this.fromIndex,
+    required this.toIndex,
+  });
+
+  @override
+  List<Object?> get props => [category, fromIndex, toIndex];
 }
