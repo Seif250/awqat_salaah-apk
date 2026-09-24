@@ -59,6 +59,7 @@ extension AzkarCategoryExtension on AzkarCategory {
 class AzkarItem extends Equatable {
   final String id;
   final AzkarCategory category;
+  final List<AzkarCategory> categories;
   final String title;
   final String arabicText;
   final String? reference; // المصدر مثل صحيح مسلم، سنن أبي داود
@@ -71,6 +72,7 @@ class AzkarItem extends Equatable {
   const AzkarItem({
     required this.id,
     required this.category,
+    List<AzkarCategory>? categories,
     required this.title,
     required this.arabicText,
     this.reference,
@@ -79,11 +81,22 @@ class AzkarItem extends Equatable {
     this.currentCount = 0,
     this.isCompleted = false,
     this.isCustom = false,
-  });
+  }) : categories = categories ?? const [];
+
+  List<AzkarCategory> get effectiveCategories =>
+      categories.isNotEmpty ? categories : [category];
+
+  bool matchesCategory(AzkarCategory cat) {
+    if (cat == AzkarCategory.custom) {
+      return isCustom || category == AzkarCategory.custom || effectiveCategories.contains(AzkarCategory.custom);
+    }
+    return effectiveCategories.contains(cat) || category == cat;
+  }
 
   AzkarItem copyWith({
     String? id,
     AzkarCategory? category,
+    List<AzkarCategory>? categories,
     String? title,
     String? arabicText,
     String? reference,
@@ -93,9 +106,14 @@ class AzkarItem extends Equatable {
     bool? isCompleted,
     bool? isCustom,
   }) {
+    final newCat = category ?? this.category;
+    final newCats = categories ?? (this.categories.isNotEmpty ? this.categories : [newCat]);
+    final normalizedCats = newCats.contains(newCat) ? newCats : [newCat, ...newCats];
+
     return AzkarItem(
       id: id ?? this.id,
-      category: category ?? this.category,
+      category: newCat,
+      categories: normalizedCats,
       title: title ?? this.title,
       arabicText: arabicText ?? this.arabicText,
       reference: reference ?? this.reference,
@@ -111,6 +129,7 @@ class AzkarItem extends Equatable {
     return {
       'id': id,
       'category': category.name,
+      'categories': effectiveCategories.map((c) => c.name).toList(),
       'title': title,
       'arabicText': arabicText,
       'reference': reference,
@@ -123,12 +142,31 @@ class AzkarItem extends Equatable {
   }
 
   factory AzkarItem.fromJson(Map<String, dynamic> json) {
+    final primaryCategory = AzkarCategory.values.firstWhere(
+      (c) => c.name == json['category'],
+      orElse: () => AzkarCategory.general,
+    );
+
+    List<AzkarCategory> parsedCategories = [];
+    if (json['categories'] is List) {
+      parsedCategories = (json['categories'] as List)
+          .map((c) => AzkarCategory.values.firstWhere(
+                (v) => v.name == c,
+                orElse: () => AzkarCategory.general,
+              ))
+          .toSet()
+          .toList();
+    }
+    if (parsedCategories.isEmpty) {
+      parsedCategories = [primaryCategory];
+    } else if (!parsedCategories.contains(primaryCategory)) {
+      parsedCategories.insert(0, primaryCategory);
+    }
+
     return AzkarItem(
       id: json['id'] as String,
-      category: AzkarCategory.values.firstWhere(
-        (c) => c.name == json['category'],
-        orElse: () => AzkarCategory.general,
-      ),
+      category: primaryCategory,
+      categories: parsedCategories,
       title: json['title'] as String? ?? '',
       arabicText: json['arabicText'] as String,
       reference: json['reference'] as String?,
@@ -144,6 +182,7 @@ class AzkarItem extends Equatable {
   List<Object?> get props => [
         id,
         category,
+        categories,
         title,
         arabicText,
         reference,

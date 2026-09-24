@@ -57,7 +57,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF13231B) : Colors.white,
+              color: isDark ? AppColors.darkSurfaceAlt : Colors.white,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
@@ -91,7 +91,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1C3529) : const Color(0xFFE8F5E9),
+                    color: isDark ? AppColors.darkSurfaceSelected : AppColors.lightSurfaceSelected,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Column(

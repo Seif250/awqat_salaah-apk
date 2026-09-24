@@ -106,3 +106,31 @@ class AddNewZikrItemEvent extends AzkarEvent {
   @override
   List<Object?> get props => [item];
 }
+
+class ImportCustomAzkarEvent extends AzkarEvent {
+  final List<AzkarItem> items;
+  final bool replaceExisting;
+
+  const ImportCustomAzkarEvent({
+    required this.items,
+    this.replaceExisting = false,
+  });
+
+  @override
+  List<Object?> get props => [items, replaceExisting];
+}
+
+class ReorderAzkarEvent extends AzkarEvent {
+  final AzkarCategory category;
+  final int oldIndex;
+  final int newIndex;
+
+  const ReorderAzkarEvent({
+    required this.category,
+    required this.oldIndex,
+    required this.newIndex,
+  });
+
+  @override
+  List<Object?> get props => [category, oldIndex, newIndex];
+}

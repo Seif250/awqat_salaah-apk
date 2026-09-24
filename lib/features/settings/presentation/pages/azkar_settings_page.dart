@@ -5,6 +5,7 @@ import '../../../azkar/presentation/bloc/azkar_bloc.dart';
 import '../../../azkar/presentation/bloc/azkar_event.dart';
 import '../../../azkar/presentation/pages/azkar_page.dart';
 import '../../../azkar/presentation/widgets/add_custom_zikr_dialog.dart';
+import '../../../azkar/presentation/widgets/azkar_backup_dialog.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
@@ -277,6 +278,14 @@ class AzkarSettingsPage extends StatelessWidget {
                         },
                       );
                     },
+                  ),
+                  SettingsTile(
+                    icon: Icons.cloud_sync_rounded,
+                    title: 'النسخ الاحتياطي للأذكار المخصصة (JSON)',
+                    subtitle:
+                        'تصدير وحفظ أذكارك في ملف بالذاكرة أو سحابياً واسترجاعها بسهولة',
+                    showDivider: true,
+                    onTap: () => AzkarBackupDialog.show(context),
                   ),
                   SettingsTile(
                     icon: Icons.restore_rounded,

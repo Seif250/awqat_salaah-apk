@@ -9,6 +9,7 @@ import '../core/constants/app_constants.dart';
 import '../core/constants/prayer_constants.dart';
 import '../features/prayer_times/data/models/prayer_day_model.dart';
 import 'prayer_calculation_service.dart';
+import 'storage_service.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -459,32 +460,44 @@ class NotificationService {
     return await showSoundTestNotification(AppConstants.soundTypeTakbeer);
   }
 
-  /// Show an immediate test notification (legacy method)
-  Future<void> showTestNotification({required bool isSoundEnabled}) async {
-    await showSoundTestNotification(AppConstants.soundTypeHayya);
+  /// Show an immediate test notification using currently selected or specified sound
+  Future<String> showCurrentSoundTestNotification({String? soundType}) async {
+    final actualType = soundType ?? StorageService().notificationSoundType;
+    return await showSoundTestNotification(actualType);
   }
 
-  /// Schedule a test alarm N seconds from now
+  /// Show an immediate test notification (legacy method)
+  Future<void> showTestNotification({required bool isSoundEnabled, String? soundType}) async {
+    final actualType = soundType ?? StorageService().notificationSoundType;
+    await showSoundTestNotification(actualType);
+  }
+
+  /// Schedule a test alarm N seconds from now using the active or chosen sound
   Future<String> scheduleTestAlarmInSeconds({
     required int seconds,
     required bool isSoundEnabled,
+    String? soundType,
   }) async {
     try {
+      final actualSoundType = soundType ?? StorageService().notificationSoundType;
+      final soundCfg = getSoundConfig(actualSoundType);
       final now = DateTime.now();
       final fireAt = now.add(Duration(seconds: seconds));
       final tzDate = _localDateTimeToTZ(fireAt);
 
-      _log('Scheduling test: now=$now, fireAt=$fireAt, tz=${tz.local.name}, tzDate=$tzDate');
+      _log('Scheduling test alarm: soundType=$actualSoundType, now=$now, fireAt=$fireAt, tz=${tz.local.name}, tzDate=$tzDate');
 
-      const androidDetails = AndroidNotificationDetails(
-        AppConstants.notificationChannelId,
-        AppConstants.notificationChannelName,
-        channelDescription: AppConstants.notificationChannelDesc,
+      final androidDetails = AndroidNotificationDetails(
+        soundCfg['channelId']!,
+        soundCfg['channelName']!,
+        channelDescription: 'إشعارات وتنبيهات أوقات الصلاة بصوت المؤذن بأعلى أولوية',
         importance: Importance.max,
         priority: Priority.max,
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound(AppConstants.notificationSoundName),
-        enableVibration: true,
+        playSound: isSoundEnabled,
+        sound: isSoundEnabled
+            ? RawResourceAndroidNotificationSound(soundCfg['soundResource']!)
+            : null,
+        enableVibration: isSoundEnabled,
         autoCancel: true,
         icon: '@mipmap/ic_launcher',
         category: AndroidNotificationCategory.alarm,
@@ -492,12 +505,12 @@ class NotificationService {
         visibility: NotificationVisibility.public,
       );
 
-      const details = NotificationDetails(android: androidDetails);
+      final details = NotificationDetails(android: androidDetails);
 
       final result = await _scheduleWithFallback(
         id: 8888,
-        title: 'الله أكبر — تجربة الأذان المجدول',
-        body: 'نجحت تجربة الأذان المجدول والحمد لله!',
+        title: 'الله أكبر — تجربة أذان (${soundCfg["displayName"]})',
+        body: 'نجحت تجربة المنبه المجدول بصوت (${soundCfg["displayName"]}) والحمد لله!',
         tzDate: tzDate,
         details: details,
       );

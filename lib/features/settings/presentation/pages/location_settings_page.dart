@@ -38,8 +38,8 @@ class LocationSettingsPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: isDark
-                        ? [const Color(0xFF132F23), const Color(0xFF0C1D16)]
-                        : [AppColors.primary, const Color(0xFF1B6A43)],
+                        ? AppColors.locationBannerDarkGradient
+                        : AppColors.locationBannerLightGradient,
                     begin: Alignment.topRight,
                     end: Alignment.bottomLeft,
                   ),
@@ -102,7 +102,7 @@ class LocationSettingsPage extends StatelessWidget {
               // Actions Card
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF13231B) : Colors.white,
+                  color: isDark ? AppColors.darkSurfaceAlt : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark

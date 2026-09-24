@@ -52,3 +52,5 @@ flutter_*.png
 # Coverage & Symbols
 coverage/
 app.*.symbols
+
+.agents/*

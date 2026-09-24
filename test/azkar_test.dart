@@ -5,6 +5,7 @@ import 'package:awqat_salaah/features/azkar/data/models/azkar_item_model.dart';
 import 'package:awqat_salaah/features/azkar/data/models/custom_zikr_model.dart';
 import 'package:awqat_salaah/features/azkar/data/models/daily_azkar_progress.dart';
 import 'package:awqat_salaah/features/azkar/data/repositories/azkar_repository.dart';
+import 'package:awqat_salaah/features/azkar/data/services/azkar_backup_service.dart';
 import 'package:awqat_salaah/features/azkar/presentation/bloc/azkar_bloc.dart';
 import 'package:awqat_salaah/features/azkar/presentation/bloc/azkar_event.dart';
 import 'package:awqat_salaah/features/azkar/presentation/bloc/azkar_state.dart';
@@ -331,6 +332,317 @@ void main() {
       ) as AzkarLoaded;
 
       expect(restoredState.currentItems.any((i) => i.id == 'm_1'), isTrue);
+    });
+  });
+
+  group('AzkarBackupService Tests', () {
+    test('generateBackupJson generates structured JSON with app metadata and Azkar list', () {
+      const items = [
+        AzkarItem(
+          id: 'custom_1',
+          category: AzkarCategory.custom,
+          title: 'استغفار خاص',
+          arabicText: 'أستغفر الله العظيم وأتوب إليه',
+          targetCount: 100,
+          isCustom: true,
+        ),
+        AzkarItem(
+          id: 'custom_2',
+          category: AzkarCategory.custom,
+          title: 'صلاة على النبي',
+          arabicText: 'اللهم صل وسلم على نبينا محمد',
+          targetCount: 10,
+          isCustom: true,
+        ),
+      ];
+
+      final jsonStr = AzkarBackupService.generateBackupJson(items);
+      expect(jsonStr, contains('awqat_salaah'));
+      expect(jsonStr, contains('custom_azkar_backup'));
+      expect(jsonStr, contains('استغفار خاص'));
+      expect(jsonStr, contains('صلاة على النبي'));
+      expect(jsonStr, contains('100'));
+    });
+
+    test('parseBackupJson successfully parses valid wrapped JSON backup', () {
+      const rawJson = '''
+      {
+        "app": "awqat_salaah",
+        "type": "custom_azkar_backup",
+        "version": 1,
+        "exportedAt": "2026-09-24T12:00:00Z",
+        "count": 2,
+        "customAzkar": [
+          {
+            "id": "c_1",
+            "category": "custom",
+            "title": "ذكر 1",
+            "arabicText": "سبحان الله وبحمده",
+            "targetCount": 33,
+            "isCustom": true
+          },
+          {
+            "id": "c_2",
+            "category": "custom",
+            "title": "ذكر 2",
+            "arabicText": "لا إله إلا الله",
+            "targetCount": 100,
+            "isCustom": true
+          }
+        ]
+      }
+      ''';
+
+      final parsed = AzkarBackupService.parseBackupJson(rawJson);
+      expect(parsed.length, equals(2));
+      expect(parsed[0].title, equals('ذكر 1'));
+      expect(parsed[0].arabicText, equals('سبحان الله وبحمده'));
+      expect(parsed[0].targetCount, equals(33));
+      expect(parsed[0].isCustom, isTrue);
+      expect(parsed[1].targetCount, equals(100));
+    });
+
+    test('parseBackupJson successfully parses raw list format for resilience', () {
+      const rawListJson = '''
+      [
+        {
+          "id": "raw_1",
+          "title": "حوقلة",
+          "arabicText": "لا حول ولا قوة إلا بالله",
+          "targetCount": 50
+        }
+      ]
+      ''';
+
+      final parsed = AzkarBackupService.parseBackupJson(rawListJson);
+      expect(parsed.length, equals(1));
+      expect(parsed[0].title, equals('حوقلة'));
+      expect(parsed[0].arabicText, equals('لا حول ولا قوة إلا بالله'));
+      expect(parsed[0].targetCount, equals(50));
+      expect(parsed[0].isCustom, isTrue);
+    });
+
+    test('parseBackupJson throws FormatException on invalid or empty JSON', () {
+      expect(() => AzkarBackupService.parseBackupJson(''), throwsFormatException);
+      expect(() => AzkarBackupService.parseBackupJson('{invalid_json}'), throwsFormatException);
+      expect(() => AzkarBackupService.parseBackupJson('{"something_else": 123}'), throwsFormatException);
+    });
+
+    test('defaultFileName generates timestamped JSON filename', () {
+      final fileName = AzkarBackupService.defaultFileName();
+      expect(fileName, startsWith('awqat_salaah_azkar_backup_'));
+      expect(fileName, endsWith('.json'));
+    });
+  });
+
+  group('AzkarRepository Backup & Restore Tests', () {
+    late SharedPreferences prefs;
+    late AzkarRepository repo;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      repo = AzkarRepository(prefs);
+    });
+
+    test('getCustomAzkarItems returns only custom items', () async {
+      final initialCustom = repo.getCustomAzkarItems();
+      expect(initialCustom, isEmpty);
+
+      await repo.addCustomZikr(CustomZikr(
+        id: 'cust_1',
+        title: 'ورد القرآن',
+        arabicText: 'قراءة جزء يومياً',
+        targetCount: 1,
+        createdAt: DateTime.now(),
+      ));
+
+      final customList = repo.getCustomAzkarItems();
+      expect(customList.length, equals(1));
+      expect(customList.first.title, equals('ورد القرآن'));
+      expect(customList.first.isCustom, isTrue);
+    });
+
+    test('importCustomAzkar merges items without duplicates when replaceExisting is false', () async {
+      await repo.addCustomZikr(CustomZikr(
+        id: 'existing_1',
+        title: 'ذكر قديم',
+        arabicText: 'الحمد لله',
+        targetCount: 10,
+        createdAt: DateTime.now(),
+      ));
+
+      const imported = [
+        AzkarItem(
+          id: 'existing_1',
+          category: AzkarCategory.custom,
+          title: 'ذكر قديم',
+          arabicText: 'الحمد لله حمداً كثيراً',
+          targetCount: 20,
+          isCustom: true,
+        ),
+        AzkarItem(
+          id: 'imported_2',
+          category: AzkarCategory.custom,
+          title: 'ذكر جديد',
+          arabicText: 'سبحان الله العظيم',
+          targetCount: 33,
+          isCustom: true,
+        ),
+      ];
+
+      final count = await repo.importCustomAzkar(imported, replaceExisting: false);
+      expect(count, equals(2));
+
+      final allCustom = repo.getCustomAzkarItems();
+      expect(allCustom.length, equals(2));
+      // existing_1 should have updated values
+      final updatedExisting = allCustom.firstWhere((i) => i.id == 'existing_1');
+      expect(updatedExisting.targetCount, equals(20));
+      expect(updatedExisting.arabicText, equals('الحمد لله حمداً كثيراً'));
+    });
+
+    test('importCustomAzkar replaces all custom items when replaceExisting is true', () async {
+      await repo.addCustomZikr(CustomZikr(
+        id: 'old_1',
+        title: 'ذكر سيتم حذفه',
+        arabicText: 'نص قديم',
+        targetCount: 5,
+        createdAt: DateTime.now(),
+      ));
+
+      const imported = [
+        AzkarItem(
+          id: 'new_fresh_1',
+          category: AzkarCategory.custom,
+          title: 'ذكر مسترجع وحيد',
+          arabicText: 'أستغفر الله وأتوب إليه',
+          targetCount: 70,
+          isCustom: true,
+        ),
+      ];
+
+      final count = await repo.importCustomAzkar(imported, replaceExisting: true);
+      expect(count, equals(1));
+
+      final allCustom = repo.getCustomAzkarItems();
+      expect(allCustom.length, equals(1));
+      expect(allCustom.first.id, equals('new_fresh_1'));
+      expect(allCustom.any((i) => i.id == 'old_1'), isFalse);
+    });
+  });
+
+  group('AzkarBloc Backup & Restore Integration Tests', () {
+    late SharedPreferences prefs;
+    late AzkarRepository repo;
+    late AzkarBloc bloc;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      repo = AzkarRepository(prefs);
+      bloc = AzkarBloc(repository: repo);
+    });
+
+    tearDown(() {
+      bloc.close();
+    });
+
+    test('handles importing custom Azkar via ImportCustomAzkarEvent and sets category to custom', () async {
+      bloc.add(const LoadAzkarEvent(category: AzkarCategory.morning));
+      await bloc.stream.firstWhere((s) => s is AzkarLoaded);
+
+      const importedItems = [
+        AzkarItem(
+          id: 'imp_1',
+          category: AzkarCategory.custom,
+          title: 'دعاء مسترجع',
+          arabicText: 'اللهم إنك عفو تحب العفو فاعف عني',
+          targetCount: 7,
+          isCustom: true,
+        ),
+      ];
+
+      bloc.add(const ImportCustomAzkarEvent(items: importedItems, replaceExisting: false));
+
+      final loadedState = await bloc.stream.firstWhere(
+        (s) => s is AzkarLoaded && s.selectedCategory == AzkarCategory.custom,
+      ) as AzkarLoaded;
+
+      expect(loadedState.selectedCategory, equals(AzkarCategory.custom));
+      expect(loadedState.currentItems.any((i) => i.id == 'imp_1'), isTrue);
+      final item = loadedState.currentItems.firstWhere((i) => i.id == 'imp_1');
+      expect(item.title, equals('دعاء مسترجع'));
+      expect(item.targetCount, equals(7));
+    });
+
+    test('handles reordering azkar in a category via ReorderAzkarEvent', () async {
+      bloc.add(const LoadAzkarEvent(category: AzkarCategory.morning));
+      final initial = await bloc.stream.firstWhere((s) => s is AzkarLoaded) as AzkarLoaded;
+
+      final firstId = initial.currentItems[0].id;
+      final secondId = initial.currentItems[1].id;
+
+      bloc.add(const ReorderAzkarEvent(
+        category: AzkarCategory.morning,
+        oldIndex: 0,
+        newIndex: 2,
+      ));
+
+      final reordered = await bloc.stream.firstWhere(
+        (s) => s is AzkarLoaded && s.currentItems[0].id == secondId,
+      ) as AzkarLoaded;
+
+      expect(reordered.currentItems[0].id, equals(secondId));
+      expect(reordered.currentItems[1].id, equals(firstId));
+    });
+  });
+
+  group('Multi-Category Support Tests', () {
+    test('AzkarItem matchesCategory returns true for any category in categories list', () {
+      const item = AzkarItem(
+        id: 'multi_1',
+        category: AzkarCategory.morning,
+        categories: [
+          AzkarCategory.morning,
+          AzkarCategory.evening,
+          AzkarCategory.qiyam,
+        ],
+        title: 'دعاء متعدد الأوقات',
+        arabicText: 'اللهم بك أصبحنا وبك أمسينا',
+        targetCount: 3,
+      );
+
+      expect(item.matchesCategory(AzkarCategory.morning), isTrue);
+      expect(item.matchesCategory(AzkarCategory.evening), isTrue);
+      expect(item.matchesCategory(AzkarCategory.qiyam), isTrue);
+      expect(item.matchesCategory(AzkarCategory.sleep), isFalse);
+    });
+
+    test('AzkarItem JSON roundtrip preserves multiple categories', () {
+      const original = AzkarItem(
+        id: 'multi_json',
+        category: AzkarCategory.morning,
+        categories: [
+          AzkarCategory.morning,
+          AzkarCategory.evening,
+          AzkarCategory.sleep,
+        ],
+        title: 'ذكر متعدد',
+        arabicText: 'سبحان الله وبحمده',
+        targetCount: 10,
+      );
+
+      final json = original.toJson();
+      final fromJson = AzkarItem.fromJson(json);
+
+      expect(fromJson.effectiveCategories, containsAll([
+        AzkarCategory.morning,
+        AzkarCategory.evening,
+        AzkarCategory.sleep,
+      ]));
+      expect(fromJson.matchesCategory(AzkarCategory.evening), isTrue);
+      expect(fromJson.matchesCategory(AzkarCategory.sleep), isTrue);
     });
   });
 }

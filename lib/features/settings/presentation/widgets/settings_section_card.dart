@@ -35,7 +35,7 @@ class SettingsSectionCard extends StatelessWidget {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF13231B) : Colors.white,
+            color: isDark ? AppColors.darkSurfaceAlt : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark

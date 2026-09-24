@@ -64,7 +64,7 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
   late final TextEditingController _rewardController;
   late final TextEditingController _referenceController;
   late int _targetCount;
-  late AzkarCategory _category;
+  late Set<AzkarCategory> _selectedCategories;
 
   bool get _isEditing => widget.item != null;
 
@@ -78,9 +78,16 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
     _referenceController =
         TextEditingController(text: widget.item?.reference ?? '');
     _targetCount = widget.item?.targetCount ?? 3;
-    _category = widget.item?.category ??
-        widget.initialCategory ??
-        AzkarCategory.morning;
+
+    final initialCat = widget.initialCategory ?? AzkarCategory.morning;
+    if (widget.item != null) {
+      _selectedCategories = widget.item!.effectiveCategories.toSet();
+      if (_selectedCategories.isEmpty) {
+        _selectedCategories = {widget.item!.category};
+      }
+    } else {
+      _selectedCategories = {initialCat};
+    }
   }
 
   @override
@@ -94,11 +101,25 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
 
   void _save() {
     if (_formKey.currentState?.validate() ?? false) {
+      if (_selectedCategories.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('يرجى اختيار قسم واحد على الأقل للذكر'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      final primaryCategory = _selectedCategories.first;
+      final categoryList = _selectedCategories.toList();
+
       final item = _isEditing
           ? widget.item!.copyWith(
               title: _titleController.text.trim(),
               arabicText: _textController.text.trim(),
-              category: _category,
+              category: primaryCategory,
+              categories: categoryList,
               reward: _rewardController.text.trim().isNotEmpty
                   ? _rewardController.text.trim()
                   : null,
@@ -111,7 +132,8 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
               id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
               title: _titleController.text.trim(),
               arabicText: _textController.text.trim(),
-              category: _category,
+              category: primaryCategory,
+              categories: categoryList,
               targetCount: _targetCount,
               reward: _rewardController.text.trim().isNotEmpty
                   ? _rewardController.text.trim()
@@ -239,31 +261,88 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
               ),
               const SizedBox(height: 14),
 
-              // Category Selector Dropdown
-              DropdownButtonFormField<AzkarCategory>(
-                initialValue: _category,
-                decoration: InputDecoration(
-                  labelText: 'قسم الورد والوقت',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  prefixIcon: const Icon(Icons.folder_outlined),
+              // Multi-Category Selector Card
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
                 ),
-                items: AzkarCategory.values.map((cat) {
-                  return DropdownMenuItem(
-                    value: cat,
-                    child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Icon(cat.categoryIcon,
-                            size: 18, color: AppColors.accentGold),
+                        const Icon(Icons.category_outlined, size: 18, color: AppColors.accentGold),
                         const SizedBox(width: 8),
-                        Text(cat.titleArabic),
+                        Text(
+                          'أقسام وظهور الذكر (يمكنك اختيار أكثر من قسم):',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                            color: isDark ? Colors.white : AppColors.primaryDark,
+                          ),
+                        ),
                       ],
                     ),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _category = val);
-                },
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: AzkarCategory.values.map((cat) {
+                        final isSelected = _selectedCategories.contains(cat);
+                        return FilterChip(
+                          selected: isSelected,
+                          avatar: Icon(
+                            cat.categoryIcon,
+                            size: 15,
+                            color: isSelected ? Colors.white : AppColors.accentGold,
+                          ),
+                          label: Text(cat.titleArabic),
+                          labelStyle: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : Colors.black87),
+                          ),
+                          selectedColor: AppColors.primary,
+                          backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                            ),
+                          ),
+                          showCheckmark: false,
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedCategories.add(cat);
+                              } else {
+                                if (_selectedCategories.length > 1) {
+                                  _selectedCategories.remove(cat);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('يجب أن ينتمي الذكر لقسم واحد على الأقل'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                }
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
 

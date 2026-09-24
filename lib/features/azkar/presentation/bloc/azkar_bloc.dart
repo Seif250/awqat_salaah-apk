@@ -23,6 +23,8 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     on<DeleteZikrItemEvent>(_onDeleteZikrItem);
     on<RestoreDefaultAzkarEvent>(_onRestoreDefaultAzkar);
     on<AddNewZikrItemEvent>(_onAddNewZikrItem);
+    on<ImportCustomAzkarEvent>(_onImportCustomAzkar);
+    on<ReorderAzkarEvent>(_onReorderAzkar);
   }
 
   AzkarCategory _defaultCategoryForCurrentTime() {
@@ -226,6 +228,35 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
 
     emit(_buildLoadedState(
       selectedCategory: currentCategory,
+      items: items,
+      progress: progress,
+      customAzkar: customAzkar,
+    ));
+  }
+
+  Future<void> _onImportCustomAzkar(ImportCustomAzkarEvent event, Emitter<AzkarState> emit) async {
+    await repository.importCustomAzkar(event.items, replaceExisting: event.replaceExisting);
+    final progress = repository.getDailyProgress();
+    final customAzkar = repository.getCustomAzkar();
+    // After importing custom Azkar, switch directly to the custom category to view them
+    final items = repository.getCategoryItems(AzkarCategory.custom, progress);
+
+    emit(_buildLoadedState(
+      selectedCategory: AzkarCategory.custom,
+      items: items,
+      progress: progress,
+      customAzkar: customAzkar,
+    ));
+  }
+
+  Future<void> _onReorderAzkar(ReorderAzkarEvent event, Emitter<AzkarState> emit) async {
+    await repository.reorderCategoryItems(event.category, event.oldIndex, event.newIndex);
+    final progress = repository.getDailyProgress();
+    final customAzkar = repository.getCustomAzkar();
+    final items = repository.getCategoryItems(event.category, progress);
+
+    emit(_buildLoadedState(
+      selectedCategory: event.category,
       items: items,
       progress: progress,
       customAzkar: customAzkar,

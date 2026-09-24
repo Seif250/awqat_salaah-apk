@@ -11,6 +11,7 @@ class AzkarRepository {
   static const String keyDailyProgress = 'azkar_daily_progress_v2';
   static const String keyCatalog = 'azkar_unified_catalog_v2';
   static const String keyCustomAzkarList = 'azkar_custom_list_v1';
+  static const String keyCatalogMigrationV14 = 'azkar_catalog_migration_v1_4';
 
   AzkarRepository(this._prefs);
 
@@ -62,15 +63,33 @@ class AzkarRepository {
     final jsonList = _prefs.getStringList(keyCatalog);
     if (jsonList != null && jsonList.isNotEmpty) {
       try {
-        return jsonList
+        final items = jsonList
             .map((str) => AzkarItem.fromJson(jsonDecode(str) as Map<String, dynamic>))
             .toList();
+
+        // Ensure newly introduced v1.4 system Azkar are migrated once
+        if (!(_prefs.getBool(keyCatalogMigrationV14) ?? false)) {
+          bool updated = false;
+          for (final def in AzkarLocalData.defaultAzkar) {
+            if (!items.any((i) => i.id == def.id)) {
+              items.add(def);
+              updated = true;
+            }
+          }
+          if (updated) {
+            saveAllCatalogItems(items);
+          }
+          _prefs.setBool(keyCatalogMigrationV14, true);
+        }
+
+        return items;
       } catch (_) {}
     }
 
     // Initialize with default Azkar database
     final defaults = List<AzkarItem>.from(AzkarLocalData.defaultAzkar);
     saveAllCatalogItems(defaults);
+    _prefs.setBool(keyCatalogMigrationV14, true);
     return defaults;
   }
 
@@ -113,7 +132,7 @@ class AzkarRepository {
     await saveAllCatalogItems(defaults);
   }
 
-  /// Add new zikr (to any category)
+  /// Add new zikr (to any category or multiple categories)
   Future<void> addZikrItem(AzkarItem item) async {
     final items = getAllCatalogItems();
     items.removeWhere((i) => i.id == item.id);
@@ -121,16 +140,26 @@ class AzkarRepository {
     await saveAllCatalogItems(items);
   }
 
-  /// Get items for a given category with today's counts and completion status applied
+  /// Get items for a given category with today's counts, multi-category matching, and custom ordering applied
   List<AzkarItem> getCategoryItems(
     AzkarCategory category,
     DailyAzkarProgress progress,
   ) {
     final allItems = getAllCatalogItems();
 
-    final filtered = category == AzkarCategory.custom
-        ? allItems.where((i) => i.isCustom || i.category == AzkarCategory.custom).toList()
-        : allItems.where((i) => i.category == category).toList();
+    final filtered = allItems.where((i) => i.matchesCategory(category)).toList();
+
+    // Apply custom user order for this category if saved
+    final orderKey = 'azkar_order_${category.name}';
+    final savedOrder = _prefs.getStringList(orderKey);
+    if (savedOrder != null && savedOrder.isNotEmpty) {
+      final orderMap = {for (var i = 0; i < savedOrder.length; i++) savedOrder[i]: i};
+      filtered.sort((a, b) {
+        final orderA = orderMap[a.id] ?? 999999;
+        final orderB = orderMap[b.id] ?? 999999;
+        return orderA.compareTo(orderB);
+      });
+    }
 
     return filtered.map((item) {
       final count = progress.itemCounts[item.id] ?? 0;
@@ -140,6 +169,23 @@ class AzkarRepository {
         isCompleted: isDone,
       );
     }).toList();
+  }
+
+  /// Reorder items within a category and persist the user's custom order
+  Future<void> reorderCategoryItems(AzkarCategory category, int oldIndex, int newIndex) async {
+    final progress = getDailyProgress();
+    final items = getCategoryItems(category, progress);
+    if (oldIndex < 0 || oldIndex >= items.length || newIndex < 0 || newIndex > items.length) {
+      return;
+    }
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final moved = items.removeAt(oldIndex);
+    items.insert(newIndex, moved);
+
+    final orderKey = 'azkar_order_${category.name}';
+    await _prefs.setStringList(orderKey, items.map((i) => i.id).toList());
   }
 
   /// Increment count for a zikr item
@@ -263,5 +309,53 @@ class AzkarRepository {
 
   Future<void> deleteCustomZikr(String id) async {
     await deleteZikrItem(id);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // BACKUP & RESTORE FOR CUSTOM AZKAR
+  // ═══════════════════════════════════════════════════════════
+
+  /// Returns all custom Azkar items currently saved in catalog
+  List<AzkarItem> getCustomAzkarItems() {
+    return getAllCatalogItems()
+        .where((i) => i.isCustom || i.category == AzkarCategory.custom)
+        .toList();
+  }
+
+  /// Imports a list of custom Azkar items into the catalog.
+  /// If [replaceExisting] is true, deletes all current custom Azkar before adding new ones.
+  /// If [replaceExisting] is false, merges them (matching by id or identical title & arabicText).
+  /// Returns the number of successfully imported items.
+  Future<int> importCustomAzkar(
+    List<AzkarItem> importedItems, {
+    bool replaceExisting = false,
+  }) async {
+    final catalog = getAllCatalogItems();
+
+    final sanitized = importedItems.map((item) {
+      return item.copyWith(
+        category: AzkarCategory.custom,
+        isCustom: true,
+      );
+    }).toList();
+
+    if (replaceExisting) {
+      catalog.removeWhere((i) => i.isCustom || i.category == AzkarCategory.custom);
+      catalog.insertAll(0, sanitized);
+    } else {
+      for (final item in sanitized) {
+        final idx = catalog.indexWhere((i) =>
+            i.id == item.id ||
+            (i.title == item.title && i.arabicText == item.arabicText));
+        if (idx >= 0) {
+          catalog[idx] = item;
+        } else {
+          catalog.insert(0, item);
+        }
+      }
+    }
+
+    await saveAllCatalogItems(catalog);
+    return sanitized.length;
   }
 }

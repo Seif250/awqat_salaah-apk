@@ -5,14 +5,28 @@ import '../core/constants/prayer_constants.dart';
 
 class StorageService {
   final SharedPreferences _prefs;
+  static StorageService? _instance;
 
-  StorageService(this._prefs);
+  StorageService._internal(this._prefs) {
+    _instance = this;
+  }
+
+  factory StorageService() {
+    if (_instance != null) return _instance!;
+    throw StateError('StorageService has not been initialized. Call init() first.');
+  }
+
+  factory StorageService.withPrefs(SharedPreferences prefs) {
+    return StorageService._internal(prefs);
+  }
 
   SharedPreferences get prefs => _prefs;
 
   static Future<StorageService> init() async {
     final prefs = await SharedPreferences.getInstance();
-    return StorageService(prefs);
+    final service = StorageService._internal(prefs);
+    _instance = service;
+    return service;
   }
 
   // First Launch

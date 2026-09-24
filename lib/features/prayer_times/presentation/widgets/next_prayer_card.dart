@@ -60,169 +60,166 @@ class NextPrayerCard extends StatelessWidget {
 
     final countdownFormatted = DateUtilsHelper.formatCountdown(remainingDuration);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: isDuringIqamah
-              ? [
-                  const Color(0xFF1B4D3E),
-                  const Color(0xFF10362A),
-                  const Color(0xFF092018),
-                ]
-              : (isDark
-                  ? [
-                      const Color(0xFF193D2C),
-                      const Color(0xFF10281D),
-                      const Color(0xFF0A1912),
-                    ]
-                  : [
-                      AppColors.primary,
-                      const Color(0xFF125C3A),
-                      const Color(0xFF0A3D25),
-                    ]),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-        border: Border.all(
-          color: isDuringIqamah
-              ? const Color(0xFF48CAE4).withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Top Label Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: isDuringIqamah
-                  ? const Color(0xFF48CAE4).withValues(alpha: 0.15)
-                  : Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _getPrayerIcon(prayerDay.focusPrayerType),
-                  color: isDuringIqamah ? const Color(0xFF90E0EF) : AppColors.accentGold,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  isDuringIqamah ? 'أُذِّن الآن للصلاة (انتظار الإقامة)' : 'الصلاة القادمة',
-                  style: TextStyle(
-                    color: isDuringIqamah ? const Color(0xFF90E0EF) : Colors.white.withValues(alpha: 0.9),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+    final nextPrayerAnnouncement = isDuringIqamah
+        ? 'أُذّن الآن لصلاة $focusedPrayerName، متبقي للإقامة $countdownFormatted${focusedPrayerIqamahFormatted != null ? "، وقت الإقامة $focusedPrayerIqamahFormatted" : ""}'
+        : 'الصلاة القادمة $focusedPrayerName، متبقي للأذان $countdownFormatted، موعد الأذان $focusedPrayerTimeFormatted${focusedPrayerIqamahFormatted != null ? "، وموعد الإقامة $focusedPrayerIqamahFormatted" : ""}';
 
-          // Primary Visual Element: Prayer Name
-          Text(
-            focusedPrayerName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 34,
-              letterSpacing: 0.5,
-            ),
+    return Semantics(
+      label: nextPrayerAnnouncement,
+      container: true,
+      excludeSemantics: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: isDuringIqamah
+                ? AppColors.iqamahCardGradient
+                : (isDark
+                    ? AppColors.nextPrayerDarkGradient
+                    : AppColors.nextPrayerLightGradient),
           ),
-          const SizedBox(height: 10),
-
-          // Countdown - Clean, Large & Prominent
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+          border: Border.all(
+            color: isDuringIqamah
+                ? AppColors.iqamahActive.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            // Top Label Pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
                 color: isDuringIqamah
-                    ? const Color(0xFF48CAE4).withValues(alpha: 0.3)
-                    : Colors.white.withValues(alpha: 0.08),
+                    ? AppColors.iqamahActive.withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isDuringIqamah ? 'متبقي للإقامة  ' : 'متبقي للأذان  ',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _getPrayerIcon(prayerDay.focusPrayerType),
+                    color: isDuringIqamah ? AppColors.iqamahActiveLight : AppColors.accentGold,
+                    size: 16,
                   ),
-                ),
-                Text(
-                  countdownFormatted,
-                  style: TextStyle(
-                    color: isDuringIqamah ? const Color(0xFF90E0EF) : AppColors.accentGold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Secondary Details: Adhan and Iqamah times
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'الأذان: $focusedPrayerTimeFormatted',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (focusedPrayerIqamahFormatted != null &&
-                    focusedPrayerModel!.iqamahOffsetMinutes > 0) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      '•',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                    ),
-                  ),
+                  const SizedBox(width: 6),
                   Text(
-                    'الإقامة: $focusedPrayerIqamahFormatted (+${focusedPrayerModel.iqamahOffsetMinutes}د)',
+                    isDuringIqamah ? 'أُذِّن الآن للصلاة (انتظار الإقامة)' : 'الصلاة القادمة',
                     style: TextStyle(
-                      fontSize: 12.5,
-                      color: isDuringIqamah ? const Color(0xFF90E0EF) : AppColors.accentGold,
+                      color: isDuringIqamah ? AppColors.iqamahActiveLight : Colors.white.withValues(alpha: 0.9),
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+
+            // Primary Visual Element: Prayer Name
+            Text(
+              focusedPrayerName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 34,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Countdown - Clean, Large & Prominent
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDuringIqamah
+                      ? AppColors.iqamahActive.withValues(alpha: 0.3)
+                      : Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isDuringIqamah ? 'متبقي للإقامة  ' : 'متبقي للأذان  ',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    countdownFormatted,
+                    style: TextStyle(
+                      color: isDuringIqamah ? AppColors.iqamahActiveLight : AppColors.accentGold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Secondary Details: Adhan and Iqamah times
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'الأذان: $focusedPrayerTimeFormatted',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (focusedPrayerIqamahFormatted != null &&
+                      focusedPrayerModel!.iqamahOffsetMinutes > 0) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        '•',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                      ),
+                    ),
+                    Text(
+                      'الإقامة: $focusedPrayerIqamahFormatted (+${focusedPrayerModel.iqamahOffsetMinutes}د)',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: isDuringIqamah ? AppColors.iqamahActiveLight : AppColors.accentGold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -8,6 +8,8 @@ class AzkarCard extends StatelessWidget {
   final VoidCallback onIncrement;
   final VoidCallback onToggleComplete;
   final VoidCallback? onEdit;
+  final VoidCallback? onLongPress;
+  final bool isReorderMode;
 
   const AzkarCard({
     super.key,
@@ -15,6 +17,8 @@ class AzkarCard extends StatelessWidget {
     required this.onIncrement,
     required this.onToggleComplete,
     this.onEdit,
+    this.onLongPress,
+    this.isReorderMode = false,
   });
 
   @override
@@ -27,35 +31,43 @@ class AzkarCard extends StatelessWidget {
         ? (item.currentCount / item.targetCount).clamp(0.0, 1.0)
         : 0.0;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isCompleted
-              ? AppColors.primaryLight.withValues(alpha: 0.5)
-              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-          width: isCompleted ? 1.4 : 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
+    return Semantics(
+      button: true,
+      label: '${item.title}، المقروء ${item.currentCount} من ${item.targetCount}، ${isCompleted ? "مكتمل بحمد الله" : "انقر للتسبيح والزيادة"}',
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
             color: isCompleted
-                ? AppColors.primaryLight.withValues(alpha: 0.06)
-                : Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+                ? AppColors.primaryLight.withValues(alpha: 0.5)
+                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+            width: isCompleted ? 1.4 : 0.8,
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
+          boxShadow: [
+            BoxShadow(
+              color: isCompleted
+                  ? AppColors.primaryLight.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
             onTap: () {
+              if (isReorderMode) return;
               HapticFeedback.selectionClick();
               onIncrement();
+            },
+            onLongPress: () {
+              HapticFeedback.mediumImpact();
+              onLongPress?.call();
             },
             borderRadius: BorderRadius.circular(18),
             child: Padding(
@@ -70,7 +82,16 @@ class AzkarCard extends StatelessWidget {
                       Expanded(
                         child: Row(
                           children: [
-                            if (isCompleted)
+                            if (isReorderMode)
+                              const Padding(
+                                padding: EdgeInsetsDirectional.only(end: 8),
+                                child: Icon(
+                                  Icons.drag_indicator_rounded,
+                                  color: AppColors.accentGold,
+                                  size: 24,
+                                ),
+                              ),
+                            if (isCompleted && !isReorderMode)
                               Container(
                                 margin: const EdgeInsets.only(left: 6),
                                 padding: const EdgeInsets.all(3),
@@ -136,7 +157,7 @@ class AzkarCard extends StatelessWidget {
                           ),
                           tooltip: 'تعديل أو حذف الذكر',
                           padding: const EdgeInsets.all(4),
-                          constraints: const BoxConstraints(),
+                          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                           onPressed: onEdit,
                         ),
                       ],
@@ -152,7 +173,7 @@ class AzkarCard extends StatelessWidget {
                       fontSize: 16.5,
                       height: 1.8,
                       fontWeight: FontWeight.w500,
-                      color: isDark ? const Color(0xFFECEFF1) : const Color(0xFF263238),
+                      color: isDark ? AppColors.azkarTextDark : AppColors.azkarTextLight,
                     ),
                     textAlign: TextAlign.start,
                     textDirection: TextDirection.rtl,
@@ -323,7 +344,7 @@ class AzkarCard extends StatelessWidget {
                         ),
                         tooltip: isCompleted ? 'إلغاء التحديد' : 'تحديد كمقروء',
                         padding: const EdgeInsets.all(4),
-                        constraints: const BoxConstraints(),
+                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                         onPressed: () {
                           HapticFeedback.selectionClick();
                           onToggleComplete();
@@ -337,6 +358,8 @@ class AzkarCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
+}
+

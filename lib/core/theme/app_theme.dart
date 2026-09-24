@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
+  static const String fontCairo = 'Cairo';
+
+  static TextTheme _buildCairoTextTheme(TextTheme base) {
+    return base.apply(
+      fontFamily: fontCairo,
+      fontFamilyFallback: const [fontCairo, 'sans-serif'],
+    );
+  }
+
   static ThemeData get lightTheme {
     final baseTextTheme = ThemeData.light().textTheme;
-    final textTheme = GoogleFonts.cairoTextTheme(baseTextTheme);
+    final textTheme = _buildCairoTextTheme(baseTextTheme);
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'Cairo',
+      fontFamily: fontCairo,
+      fontFamilyFallback: const [fontCairo, 'sans-serif'],
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
@@ -40,6 +49,7 @@ class AppTheme {
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: AppColors.textPrimaryLight,
           fontWeight: FontWeight.bold,
+          fontFamily: fontCairo,
         ),
       ),
       switchTheme: SwitchThemeData(
@@ -61,11 +71,12 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     final baseTextTheme = ThemeData.dark().textTheme;
-    final textTheme = GoogleFonts.cairoTextTheme(baseTextTheme);
+    final textTheme = _buildCairoTextTheme(baseTextTheme);
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'Cairo',
+      fontFamily: fontCairo,
+      fontFamilyFallback: const [fontCairo, 'sans-serif'],
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryLight,
@@ -96,6 +107,7 @@ class AppTheme {
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: AppColors.textPrimaryDark,
           fontWeight: FontWeight.bold,
+          fontFamily: fontCairo,
         ),
       ),
       switchTheme: SwitchThemeData(

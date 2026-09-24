@@ -536,5 +536,66 @@ class AzkarLocalData {
           reward: 'لم يدعُ بها مسلم في شيء قط إلا استجاب الله له',
           targetCount: 33,
         ),
+        const AzkarItem(
+          id: 'img_rizq',
+          category: AzkarCategory.supplications,
+          categories: [
+            AzkarCategory.supplications,
+            AzkarCategory.morning,
+            AzkarCategory.evening,
+            AzkarCategory.general,
+          ],
+          title: 'الرزق',
+          arabicText:
+              'اللهم مالك الملك تؤتي الملك من تشاء، وتنزع الملك ممن تشاء، وتعز من تشاء، وتذل من تشاء، بيدك الخير، إنك على كل شيء قدير، رحمن الدنيا والآخرة ورحيمهما، تعطيهما من تشاء، وتمنع منهما من تشاء، ارحمني رحمة تغنيني بها عن رحمة من سواك',
+          reference: 'رواه الطبراني في الصغير وحسنه الألباني (صحيح الترغيب 1828)',
+          reward: 'دعاء عظيم لقضاء الدين وجلب الرزق، لو كان عليك مثل جبل أحد ديناً لأداه الله عنك',
+          targetCount: 3,
+        ),
+        const AzkarItem(
+          id: 'img_sleep_wajhi',
+          category: AzkarCategory.sleep,
+          categories: [
+            AzkarCategory.sleep,
+            AzkarCategory.evening,
+          ],
+          title: 'اللهم سلمت وجهي اليك',
+          arabicText:
+              'اللهم سلمت وجهي اليك، وفوضت امري اليك، وألجأت ظهري اليك، رغبة ورهبة اليك، لا ملجا ولا منجا منك الا اليك، اللهم امنت بكتابك الذي انزلت و بنبيك الذي ارسلت',
+          reference: 'البخاري ومسلم',
+          reward: 'النبي ﷺ علّم البراء بن عازب رضي الله عنه هذا الدعاء ليقوله عند النوم، وقال له إنه إذا قاله ثم مات في ليلته مات على الفطرة.',
+          targetCount: 1,
+        ),
+        const AzkarItem(
+          id: 'img_sleep_samawat',
+          category: AzkarCategory.sleep,
+          categories: [
+            AzkarCategory.sleep,
+            AzkarCategory.supplications,
+            AzkarCategory.qiyam,
+          ],
+          title: 'اللهم رب السماوات والأرض',
+          arabicText:
+              'اللهم رب السماوات السبع ورب العرش العظيم، ربنا ورب كل شيء، فالق الحب والنوى، ومنزل التوراة والإنجيل والفرقان، أعوذ بك من شر كل شيء أنت آخذ بناصيته، اللهم أنت الأول فليس قبلك شيء، وأنت الآخر فليس بعدك شيء، وأنت الظاهر فليس فوقك شيء، وأنت الباطن فليس دونك شيء، اقض عنا الدين وأغننا من الفقر',
+          reference: 'صحيح مسلم، حديث 2713.',
+          reward: 'فضله الأساسي إنه دعاء جامع للتوحيد، والاستعاذة بالله من الشر، وطلب قضاء الدين والاستغناء عن الفقر، وثابت عن النبي ﷺ.',
+          targetCount: 1,
+        ),
+        const AzkarItem(
+          id: 'img_khalaqtani',
+          category: AzkarCategory.supplications,
+          categories: [
+            AzkarCategory.supplications,
+            AzkarCategory.morning,
+            AzkarCategory.evening,
+            AzkarCategory.general,
+          ],
+          title: 'دعاء التوحيد والافتقار إلى الله',
+          arabicText:
+              'اللَّهُمَّ أَنْتَ خَلَقْتَنِي، وَأَنْتَ تَهْدِينِي، وَأَنْتَ تُطْعِمُنِي، وَأَنْتَ تَسْقِينِي، وَأَنْتَ تُمِيتُنِي، وَأَنْتَ تُحْيِينِي.',
+          reference: 'رواه الطبراني في المعجم الأوسط (1028) عن سمرة بن جندب رضي الله عنه.',
+          reward: 'لَمْ يَسْأَلِ اللَّهَ شَيْئًا إِلَّا أَعْطَاهُ إِيَّاهُ.',
+          targetCount: 7,
+        ),
       ];
 }

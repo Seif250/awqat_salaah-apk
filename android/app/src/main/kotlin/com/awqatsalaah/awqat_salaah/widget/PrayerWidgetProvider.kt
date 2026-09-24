@@ -207,7 +207,6 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                     if (isActive) {
                         views.setTextColor(config.labelId, goldColor)
                         views.setTextColor(config.timeId, goldColor)
-                        views.setInt(config.colId, "setBackgroundResource", R.drawable.widget_active_prayer_bg)
                         val activeIcon = when (config.key) {
                             "fajr" -> R.drawable.ic_widget_fajr_active
                             "dhuhr" -> R.drawable.ic_widget_dhuhr_active
@@ -220,7 +219,6 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                     } else {
                         views.setTextColor(config.labelId, secondaryColor)
                         views.setTextColor(config.timeId, primaryColor)
-                        views.setInt(config.colId, "setBackgroundResource", R.drawable.widget_inactive_prayer_bg)
                         val normalIcon = when (config.key) {
                             "fajr" -> R.drawable.ic_widget_fajr
                             "dhuhr" -> R.drawable.ic_widget_dhuhr

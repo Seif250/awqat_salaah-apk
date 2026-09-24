@@ -1,279 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../services/notification_service.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
+import '../widgets/adhan_sound_dialog.dart';
+import '../widgets/notification_offsets_dialog.dart';
 import '../widgets/settings_section_card.dart';
 
 class NotificationSettingsPage extends StatelessWidget {
   const NotificationSettingsPage({super.key});
 
-  String _getSoundDisplayName(String soundType) {
-    switch (soundType) {
-      case AppConstants.soundTypeFull:
-        return 'الأذان كامل';
-      case AppConstants.soundTypeTakbeer:
-        return 'الله أكبر الله أكبر (تكبيرات)';
-      case AppConstants.soundTypeHayya:
-      default:
-        return 'حي على الصلاة (مختصر)';
-    }
-  }
-
-  void _showAdhanSoundDialog(BuildContext context, String currentSoundType) {
-    String selected = currentSoundType;
-    String? currentlyPlaying;
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final options = [
-              {
-                'key': AppConstants.soundTypeFull,
-                'title': 'الأذان كامل',
-                'subtitle': 'صوت الأذان كاملاً مع الترديد والدعاء',
-              },
-              {
-                'key': AppConstants.soundTypeHayya,
-                'title': 'حي على الصلاة',
-                'subtitle': 'صوت الأذان المختصر المعتاد',
-              },
-              {
-                'key': AppConstants.soundTypeTakbeer,
-                'title': 'الله أكبر الله أكبر',
-                'subtitle': 'تكبيرات دخول وقت الصلاة',
-              },
-            ];
-
-            return AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.music_note_rounded, color: AppColors.accentGold),
-                  SizedBox(width: 8),
-                  Text('اختيار صوت الأذان'),
-                ],
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'اختر صوت الأذان المفضل مع إمكانية الاستماع للتجربة قبل الاختيار:',
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 12),
-                    ...options.map((opt) {
-                      final key = opt['key']!;
-                      final isSelected = selected == key;
-                      final isPlaying = currentlyPlaying == key;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.accentGold
-                                : Colors.grey.withValues(alpha: 0.2),
-                            width: isSelected ? 1.5 : 1,
-                          ),
-                          color: isSelected
-                              ? AppColors.accentGold.withValues(alpha: 0.08)
-                              : null,
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                          leading: Radio<String>(
-                            value: key,
-                            groupValue: selected,
-                            activeColor: AppColors.accentGold,
-                            onChanged: (val) {
-                              if (val != null) {
-                                setDialogState(() => selected = val);
-                              }
-                            },
-                          ),
-                          title: Text(
-                            opt['title']!,
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected ? AppColors.accentGold : null,
-                            ),
-                          ),
-                          subtitle: Text(opt['subtitle']!, style: const TextStyle(fontSize: 12)),
-                          trailing: IconButton.filledTonal(
-                            tooltip: isPlaying ? 'إيقاف' : 'استماع',
-                            icon: Icon(
-                              isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                              color: isPlaying ? Colors.red : AppColors.accentGold,
-                              size: 22,
-                            ),
-                            onPressed: () async {
-                              if (isPlaying) {
-                                await NotificationService().stopAudioPreview();
-                                setDialogState(() => currentlyPlaying = null);
-                              } else {
-                                await NotificationService().playAudioPreview(key);
-                                setDialogState(() => currentlyPlaying = key);
-                              }
-                            },
-                          ),
-                          onTap: () {
-                            setDialogState(() => selected = key);
-                          },
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    NotificationService().stopAudioPreview();
-                    Navigator.pop(dialogCtx);
-                  },
-                  child: const Text('إلغاء'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.accentGold),
-                  onPressed: () {
-                    NotificationService().stopAudioPreview();
-                    context.read<SettingsBloc>().add(ChangeNotificationSoundTypeEvent(selected));
-                    context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
-                    Navigator.pop(dialogCtx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('تم تعيين صوت الأذان: ${_getSoundDisplayName(selected)}'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  },
-                  child: const Text('حفظ'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).then((_) {
-      NotificationService().stopAudioPreview();
-    });
-  }
-
-  String _formatNotificationOffsets(List<int> offsets) {
-    if (offsets.isEmpty) return 'عند دخول وقت الصلاة';
-    final labels = <String>[];
-    for (final o in (offsets.toSet().toList()..sort())) {
-      if (o == 0) {
-        labels.add('عند دخول الوقت');
-      } else if (o < 0) {
-        labels.add('قبل الأذان بـ ${-o} د');
-      } else {
-        labels.add('بعد الأذان بـ $o د');
-      }
-    }
-    return labels.join(' • ');
-  }
-
-  void _showNotificationOffsetsDialog(BuildContext context, List<int> currentOffsets) {
-    final selected = Set<int>.from(currentOffsets);
-    if (selected.isEmpty) selected.add(0);
-
-    final standardOptions = [
-      const MapEntry(-15, 'قبل الأذان بـ 15 دقيقة'),
-      const MapEntry(-10, 'قبل الأذان بـ 10 دقائق'),
-      const MapEntry(-5, 'قبل الأذان بـ 5 دقائق'),
-      const MapEntry(0, 'عند دخول وقت الصلاة (الأذان)'),
-      const MapEntry(5, 'بعد الأذان بـ 5 دقائق'),
-      const MapEntry(10, 'بعد الأذان بـ 10 دقائق'),
-    ];
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.timer_outlined, color: AppColors.accentGold),
-                  SizedBox(width: 8),
-                  Text('مواعيد تنبيه الصلاة'),
-                ],
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'يمكنك اختيار أكثر من موعد تنبيه للصلاة الواحدة:',
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 8),
-                      ...standardOptions.map((entry) {
-                        final isChecked = selected.contains(entry.key);
-                        return CheckboxListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            entry.value,
-                            style: TextStyle(
-                              fontWeight: isChecked ? FontWeight.bold : FontWeight.normal,
-                              color: isChecked ? AppColors.accentGold : null,
-                            ),
-                          ),
-                          value: isChecked,
-                          activeColor: AppColors.accentGold,
-                          onChanged: (bool? val) {
-                            setDialogState(() {
-                              if (val == true) {
-                                selected.add(entry.key);
-                              } else {
-                                if (selected.length > 1) {
-                                  selected.remove(entry.key);
-                                }
-                              }
-                            });
-                          },
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogCtx),
-                  child: const Text('إلغاء'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.accentGold),
-                  onPressed: () {
-                    final result = selected.toList()..sort();
-                    context.read<SettingsBloc>().add(ChangeNotificationOffsetsEvent(result));
-                    Navigator.pop(dialogCtx);
-                  },
-                  child: const Text('حفظ'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   Widget _buildIqamahStepper(
     BuildContext context, {
@@ -299,7 +38,7 @@ class NotificationSettingsPage extends StatelessWidget {
               IconButton.filledTonal(
                 icon: const Icon(Icons.remove, size: 16),
                 onPressed: value > 0 ? () => onChanged(value - 1) : null,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 padding: EdgeInsets.zero,
               ),
               SizedBox(
@@ -313,7 +52,7 @@ class NotificationSettingsPage extends StatelessWidget {
               IconButton.filledTonal(
                 icon: const Icon(Icons.add, size: 16),
                 onPressed: value < 60 ? () => onChanged(value + 1) : null,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 padding: EdgeInsets.zero,
               ),
             ],
@@ -419,9 +158,9 @@ class NotificationSettingsPage extends StatelessWidget {
                           child: const Icon(Icons.music_note_outlined, size: 20, color: AppColors.accentGold),
                         ),
                         title: const Text('صوت إشعار الأذان', style: TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(_getSoundDisplayName(state.notificationSoundType)),
+                        subtitle: Text(AdhanSoundDialog.getSoundDisplayName(state.notificationSoundType)),
                         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                        onTap: () => _showAdhanSoundDialog(context, state.notificationSoundType),
+                        onTap: () => AdhanSoundDialog.show(context, state.notificationSoundType),
                       ),
                     ],
                   ],
@@ -445,9 +184,9 @@ class NotificationSettingsPage extends StatelessWidget {
                         child: const Icon(Icons.alarm_outlined, size: 20, color: AppColors.accentGold),
                       ),
                       title: const Text('مواعيد التنبيه قبل أو عند الأذان', style: TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(_formatNotificationOffsets(state.notificationOffsets)),
+                      subtitle: Text(NotificationOffsetsDialog.formatNotificationOffsets(state.notificationOffsets)),
                       trailing: const Icon(Icons.chevron_left_rounded),
-                      onTap: () => _showNotificationOffsetsDialog(context, state.notificationOffsets),
+                      onTap: () => NotificationOffsetsDialog.show(context, state.notificationOffsets),
                     ),
                   ],
                 ),
