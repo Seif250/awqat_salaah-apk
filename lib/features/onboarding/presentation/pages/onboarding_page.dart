@@ -103,7 +103,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         const Icon(Icons.mosque_rounded, size: 22, color: AppColors.accentGold),
                         const SizedBox(width: 8),
                         Text(
-                          'أوقات الصلاة',
+                          'وِرد',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

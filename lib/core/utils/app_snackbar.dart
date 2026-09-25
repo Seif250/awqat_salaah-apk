@@ -5,8 +5,14 @@ import '../theme/app_colors.dart';
 /// No external dependencies. Minimal overhead — just styled SnackBar.
 class AppSnackBar {
   /// Shows a success SnackBar with a green accent
-  static void showSuccess(BuildContext context, String message) {
-    _show(context, message, Icons.check_circle_rounded, AppColors.primaryLight);
+  static void showSuccess(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    _show(context, message, Icons.check_circle_rounded, AppColors.primaryLight,
+        actionLabel: actionLabel, onAction: onAction);
   }
 
   /// Shows an error SnackBar with a red accent
@@ -20,16 +26,24 @@ class AppSnackBar {
   }
 
   /// Shows an info SnackBar with a gold accent
-  static void showInfo(BuildContext context, String message) {
-    _show(context, message, Icons.info_outline_rounded, AppColors.accentGold);
+  static void showInfo(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    _show(context, message, Icons.info_outline_rounded, AppColors.accentGold,
+        actionLabel: actionLabel, onAction: onAction);
   }
 
   static void _show(
     BuildContext context,
     String message,
     IconData icon,
-    Color accentColor,
-  ) {
+    Color accentColor, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -40,7 +54,14 @@ class AppSnackBar {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         backgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
         elevation: 4,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
+        action: actionLabel != null && onAction != null
+            ? SnackBarAction(
+                label: actionLabel,
+                textColor: AppColors.accentGold,
+                onPressed: onAction,
+              )
+            : null,
         content: Row(
           children: [
             Container(

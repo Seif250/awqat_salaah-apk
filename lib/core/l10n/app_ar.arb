@@ -1,6 +1,6 @@
 {
   "@@locale": "ar",
-  "appTitle": "أوقات الصلاة",
+  "appTitle": "وِرد",
   "nextPrayer": "الصلاة القادمة",
   "remaining": "متبقي",
   "hours": "ساعة",
@@ -29,7 +29,7 @@
   "darkTheme": "داكن",
   "systemTheme": "النظام",
   "timeFormat24": "تنسيق 24 ساعة",
-  "onboardingWelcome": "مرحباً بك في أوقات الصلاة",
+  "onboardingWelcome": "مرحباً بك في تطبيق وِرد",
   "onboardingDescription": "احصل على مواقيت صلاة دقيقة بناءً على موقعك باستخدام الحسابات الفلكية.",
   "onboardingLocationTitle": "اختر موقعك",
   "onboardingLocationDesc": "نحتاج موقعك لحساب مواقيت الصلاة بدقة.",

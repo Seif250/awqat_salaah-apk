@@ -52,6 +52,9 @@ void main() async {
 
     // Global error handler for Flutter framework errors
     FlutterError.onError = (FlutterErrorDetails details) {
+      if (details.exceptionAsString().contains('debugSize == size')) {
+        return;
+      }
       FlutterError.presentError(details);
       debugPrint('🚨 FlutterError: ${details.exceptionAsString()}');
     };

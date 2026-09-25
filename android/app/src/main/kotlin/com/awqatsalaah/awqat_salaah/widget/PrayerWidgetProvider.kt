@@ -146,8 +146,8 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 WidgetDiagnostics.log(context, "Focus: $focusPrayer ($phase), target: ${WidgetDiagnostics.formatTs(targetTimestamp)}")
 
                 // ── Header: Location & App Title ──
-                val cityName = prefs.getString("widget_city_name", "أوقات الصلاة") ?: "أوقات الصلاة"
-                val appTitle = prefs.getString("widget_app_title", "أوقات صلاة") ?: "أوقات صلاة"
+                val cityName = prefs.getString("widget_city_name", "وِرد") ?: "وِرد"
+                val appTitle = prefs.getString("widget_app_title", "وِرد") ?: "وِرد"
                 views.setTextViewText(R.id.widget_city_name, cityName)
                 views.setTextViewText(R.id.widget_title, appTitle)
 

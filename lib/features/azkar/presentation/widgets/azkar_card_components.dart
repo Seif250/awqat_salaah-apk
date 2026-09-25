@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/azkar_item_model.dart';
 
-/// Top row of AzkarCard containing drag handle, title, checkmark, target count, and action buttons.
+/// Top row of AzkarCard containing title, completion check, target repetition badge, and optional actions.
 class AzkarCardHeader extends StatelessWidget {
   final AzkarItem item;
   final bool isCompleted;
@@ -26,10 +26,15 @@ class AzkarCardHeader extends StatelessWidget {
     this.onEdit,
   });
 
+  String _formatTargetCount(int count) {
+    if (count == 1) return 'مرة واحدة';
+    if (count == 2) return 'مرتان';
+    if (count >= 3 && count <= 10) return '$count مرات';
+    return '$count مرة';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -37,13 +42,14 @@ class AzkarCardHeader extends StatelessWidget {
           ReorderableDragStartListener(
             index: reorderIndex!,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               margin: const EdgeInsetsDirectional.only(end: 8),
               decoration: BoxDecoration(
-                color: AppColors.accentGold.withValues(alpha: isDark ? 0.24 : 0.15),
-                borderRadius: BorderRadius.circular(10),
+                color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.accentGold.withValues(alpha: 0.4),
+                  color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+                  width: 0.8,
                 ),
               ),
               child: const Row(
@@ -52,13 +58,14 @@ class AzkarCardHeader extends StatelessWidget {
                   Icon(
                     Icons.drag_indicator_rounded,
                     color: AppColors.accentGold,
-                    size: 22,
+                    size: 18,
                   ),
-                  SizedBox(width: 4),
+                  SizedBox(width: 3),
                   Text(
                     'اسحب',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontFamily: 'Cairo',
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: AppColors.accentGold,
                     ),
@@ -68,43 +75,29 @@ class AzkarCardHeader extends StatelessWidget {
             ),
           ),
         ],
+
+        // Title and Completion Status
         Expanded(
           child: Row(
             children: [
-              if (isCompleted && !isReorderMode)
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.elasticOut,
-                  builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: child,
-                    );
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 6),
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      size: 16,
-                      color: AppColors.primaryLight,
-                    ),
-                  ),
+              if (isCompleted && !isReorderMode) ...[
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 16,
+                  color: AppColors.primary,
                 ),
+                const SizedBox(width: 6),
+              ],
               Expanded(
                 child: Text(
                   item.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.5,
                     color: isCompleted
-                        ? AppColors.primaryLight
-                        : (isDark ? Colors.white : AppColors.primaryDark),
+                        ? AppColors.primary
+                        : (isDark ? Colors.white70 : const Color(0xFF4B5563)),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -115,49 +108,55 @@ class AzkarCardHeader extends StatelessWidget {
         ),
         const SizedBox(width: 8),
 
+        // Reorder Actions or Repetition Badge & Edit
         if (isReorderMode) ...[
           IconButton(
-            icon: const Icon(Icons.arrow_upward_rounded, size: 22),
+            icon: const Icon(Icons.arrow_upward_rounded, size: 20),
             color: onMoveUp != null
                 ? AppColors.accentGold
                 : (isDark ? Colors.white24 : Colors.black26),
             tooltip: 'تحريك لأعلى',
             visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.all(4),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            padding: const EdgeInsets.all(2),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: onMoveUp,
           ),
           IconButton(
-            icon: const Icon(Icons.arrow_downward_rounded, size: 22),
+            icon: const Icon(Icons.arrow_downward_rounded, size: 20),
             color: onMoveDown != null
                 ? AppColors.accentGold
                 : (isDark ? Colors.white24 : Colors.black26),
             tooltip: 'تحريك لأسفل',
             visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.all(4),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            padding: const EdgeInsets.all(2),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: onMoveDown,
           ),
         ] else ...[
+          // Subtle Repetition Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
             decoration: BoxDecoration(
               color: isCompleted
-                  ? AppColors.primaryLight.withValues(alpha: 0.12)
-                  : (isDark ? AppColors.darkCardElevated : AppColors.lightCardElevated),
-              borderRadius: BorderRadius.circular(10),
+                  ? (isDark ? AppColors.primary.withValues(alpha: 0.15) : const Color(0xFFE8F5E9))
+                  : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF3F4F6)),
+              borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: isCompleted
-                    ? AppColors.primaryLight.withValues(alpha: 0.3)
-                    : AppColors.accentGold.withValues(alpha: 0.25),
+                    ? AppColors.primary.withValues(alpha: 0.3)
+                    : (isDark ? Colors.white10 : const Color(0xFFE5E7EB)),
+                width: 0.7,
               ),
             ),
             child: Text(
-              '${item.targetCount} ${item.targetCount == 1 ? "مرة" : "مرات"}',
+              _formatTargetCount(item.targetCount),
               style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.bold,
-                color: isCompleted ? AppColors.primaryLight : AppColors.accentGold,
+                fontFamily: 'Cairo',
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isCompleted
+                    ? AppColors.primary
+                    : (isDark ? Colors.white60 : const Color(0xFF6B7280)),
               ),
             ),
           ),
@@ -166,12 +165,12 @@ class AzkarCardHeader extends StatelessWidget {
             IconButton(
               icon: Icon(
                 Icons.edit_note_rounded,
-                size: 22,
-                color: isDark ? Colors.white54 : Colors.black45,
+                size: 20,
+                color: isDark ? Colors.white38 : Colors.black38,
               ),
               tooltip: 'تعديل أو حذف الذكر',
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               onPressed: onEdit,
             ),
           ],
@@ -181,7 +180,7 @@ class AzkarCardHeader extends StatelessWidget {
   }
 }
 
-/// Middle section of AzkarCard containing the Arabic text, and optional reward/reference box.
+/// Middle section of AzkarCard containing the Arabic Dhikr text (THE HERO), and optional reward/reference.
 class AzkarCardBody extends StatelessWidget {
   final AzkarItem item;
   final bool isDark;
@@ -197,48 +196,53 @@ class AzkarCardBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Arabic Text
-        Text(
-          item.arabicText,
-          style: TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 16.5,
-            height: 1.8,
-            fontWeight: FontWeight.w500,
-            color: isDark ? AppColors.azkarTextDark : AppColors.azkarTextLight,
+        // Arabic Dhikr Text (THE HERO - large readable font, comfortable line height)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            item.arabicText,
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 19.5,
+              height: 1.9,
+              fontWeight: FontWeight.w500,
+              color: isDark ? AppColors.azkarTextDark : AppColors.azkarTextLight,
+            ),
+            textAlign: TextAlign.start,
+            textDirection: TextDirection.rtl,
           ),
-          textAlign: TextAlign.start,
-          textDirection: TextDirection.rtl,
         ),
 
-        // Reference & Reward (if present)
+        // Reference & Reward (Subtle, visually separated)
         if (item.reward != null || item.reference != null) ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: isDark
-                  ? AppColors.darkBackground.withValues(alpha: 0.5)
-                  : AppColors.lightBackground,
-              borderRadius: BorderRadius.circular(12),
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: AppColors.accentGold.withValues(alpha: 0.15),
+                color: isDark ? Colors.white10 : const Color(0xFFE5E7EB),
+                width: 0.6,
               ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (item.reward != null)
+                if (item.reward != null) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('✨ ', style: TextStyle(fontSize: 13)),
+                      const Text('✨ ', style: TextStyle(fontSize: 12)),
                       Expanded(
                         child: Text(
                           item.reward!,
                           style: TextStyle(
-                            fontSize: 12.5,
-                            height: 1.4,
+                            fontFamily: 'Cairo',
+                            fontSize: 12,
+                            height: 1.5,
                             color: isDark
                                 ? AppColors.textSecondaryDark
                                 : AppColors.textSecondaryLight,
@@ -248,24 +252,29 @@ class AzkarCardBody extends StatelessWidget {
                       ),
                     ],
                   ),
+                ],
                 if (item.reference != null) ...[
                   if (item.reward != null) const SizedBox(height: 4),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 2),
-                        child: Icon(Icons.menu_book_outlined, size: 13, color: AppColors.accentGold),
+                      Icon(
+                        Icons.menu_book_outlined,
+                        size: 13,
+                        color: AppColors.accentGold.withValues(alpha: 0.8),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 5),
                       Expanded(
                         child: Text(
                           item.reference!,
                           style: TextStyle(
-                            fontSize: 11.5,
+                            fontFamily: 'Cairo',
+                            fontSize: 11,
                             height: 1.4,
-                            color: AppColors.accentGold.withValues(alpha: 0.85),
-                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : const Color(0xFF6B7280),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -281,7 +290,7 @@ class AzkarCardBody extends StatelessWidget {
   }
 }
 
-/// Bottom footer of AzkarCard with animated progress bar, count pill, and check toggle.
+/// Bottom footer of AzkarCard with animated thin progress bar, clear counter pill, and secondary check toggle.
 class AzkarCardProgressFooter extends StatelessWidget {
   final AzkarItem item;
   final bool isCompleted;
@@ -306,128 +315,130 @@ class AzkarCardProgressFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Animated linear progress bar
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: progress),
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, _) {
-                    return LinearProgressIndicator(
-                      value: value,
-                      minHeight: 6,
-                      backgroundColor: isDark
-                          ? AppColors.darkCardElevated
-                          : AppColors.lightCardElevated,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isCompleted ? AppColors.primaryLight : AppColors.accentGold,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                isCompleted
-                    ? 'اكتمل الذكر بحمد الله'
-                    : 'تم: ${item.currentCount} من أصل ${item.targetCount}',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: isCompleted
-                      ? AppColors.primaryLight
-                      : (isDark ? Colors.white60 : Colors.black54),
-                  fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-
-        // Animated Increment Tap Counter Button
-        GestureDetector(
-          onTap: isReorderMode
-              ? null
-              : () {
-                  HapticFeedback.mediumImpact();
-                  onIncrement();
-                },
-          child: ScaleTransition(
-            scale: scaleAnimation,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: isCompleted
-                    ? const LinearGradient(
-                        colors: [
-                          AppColors.primaryLight,
-                          AppColors.primary,
-                        ],
-                      )
-                    : const LinearGradient(
-                        colors: [
-                          AppColors.accentGold,
-                          AppColors.accentAmber,
-                        ],
-                      ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isCompleted ? AppColors.primary : AppColors.accentGold)
-                        .withValues(alpha: 0.25),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isCompleted ? Icons.check_circle_rounded : Icons.fingerprint_rounded,
-                    size: 16,
-                    color: isCompleted ? Colors.white : Colors.black87,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    '${item.currentCount}/${item.targetCount}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: isCompleted ? Colors.white : Colors.black87,
+        // Counter Row: Counter Pill (Right/Start), Subtitle (Center), Checkbox (Left/End)
+        Row(
+          children: [
+            // Interactive Counter Pill (Calm, non-loud, scale animation)
+            GestureDetector(
+              onTap: isReorderMode
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      onIncrement();
+                    },
+              child: ScaleTransition(
+                scale: scaleAnimation,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? (isDark
+                            ? AppColors.primary.withValues(alpha: 0.2)
+                            : const Color(0xFFE8F5E9))
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : const Color(0xFFF3F4F6)),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isCompleted
+                          ? AppColors.primary.withValues(alpha: 0.4)
+                          : (isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
+                      width: 0.8,
                     ),
                   ),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isCompleted ? Icons.check_rounded : Icons.fingerprint_rounded,
+                        size: 14,
+                        color: isCompleted
+                            ? AppColors.primary
+                            : (isDark ? Colors.white60 : const Color(0xFF6B7280)),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${item.currentCount}/${item.targetCount}',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: isCompleted
+                              ? AppColors.primary
+                              : (isDark ? Colors.white : AppColors.primaryDark),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+            const SizedBox(width: 8),
+
+            // Secondary Status Subtitle
+            Expanded(
+              child: Text(
+                isCompleted
+                    ? 'اكتمل بحمد الله'
+                    : '${item.currentCount} من أصل ${item.targetCount}',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 11.5,
+                  color: isCompleted
+                      ? AppColors.primary
+                      : (isDark ? Colors.white38 : const Color(0xFF9CA3AF)),
+                ),
+              ),
+            ),
+
+            // Secondary Checkbox Toggle
+            IconButton(
+              icon: Icon(
+                isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                color: isCompleted
+                    ? AppColors.primary
+                    : (isDark ? Colors.white24 : const Color(0xFFD1D5DB)),
+                size: 20,
+              ),
+              tooltip: isCompleted ? 'إلغاء التحديد' : 'تحديد كمقروء',
+              padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              onPressed: isReorderMode
+                  ? null
+                  : () {
+                      HapticFeedback.selectionClick();
+                      onToggleComplete();
+                    },
+            ),
+          ],
         ),
 
-        const SizedBox(width: 4),
+        const SizedBox(height: 6),
 
-        // Direct Complete Toggle Icon
-        IconButton(
-          icon: Icon(
-            isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-            color: isCompleted ? AppColors.primaryLight : Colors.grey,
-            size: 22,
+        // Slim, Subtle Linear Progress Line (3px)
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: progress),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) {
+              return LinearProgressIndicator(
+                value: value,
+                minHeight: 3.0,
+                backgroundColor: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : const Color(0xFFF3F4F6),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isCompleted ? AppColors.primary : AppColors.primaryLight,
+                ),
+              );
+            },
           ),
-          tooltip: isCompleted ? 'إلغاء التحديد' : 'تحديد كمقروء',
-          padding: const EdgeInsets.all(4),
-          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-          onPressed: isReorderMode
-              ? null
-              : () {
-                  HapticFeedback.selectionClick();
-                  onToggleComplete();
-                },
         ),
       ],
     );

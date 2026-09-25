@@ -1,7 +1,7 @@
 name: awqat_salaah
-description: "أوقات الصلاة - Prayer Times with Home Screen Widget"
+description: "وِرد - صلاتك، قرآنك، ذكرك"
 publish_to: 'none'
-version: 1.4.0+4
+version: 2.0.0+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -45,6 +45,7 @@ dependencies:
   file_picker: ^13.1.0
   share_plus: ^13.3.0
   path_provider: ^2.1.6
+  flutter_compass: ^0.8.1
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +57,7 @@ flutter:
   generate: true
 
   assets:
+    - assets/data/
     - assets/fonts/
 
   fonts:
@@ -69,4 +71,11 @@ flutter:
           weight: 600
         - asset: assets/fonts/Cairo-Bold.ttf
           weight: 700
+    - family: AmiriQuran
+      fonts:
+        - asset: assets/fonts/AmiriQuran-Regular.ttf
+    - family: UthmanicHafs
+      fonts:
+        - asset: assets/fonts/UthmanicHafs.otf
+
 

@@ -18,7 +18,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
-  late final Animation<double> _slideAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -42,7 +42,10 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
       ),
     );
 
-    _slideAnimation = Tween<double>(begin: 20.0, end: 0.0).animate(
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.2),
+      end: Offset.zero,
+    ).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.3, 0.9, curve: Curves.easeOutCubic),
@@ -148,69 +151,69 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
               const SizedBox(height: 32),
 
               // Animated App Title & Ayah
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(0, _slideAnimation.value),
-                    child: Opacity(
-                      opacity: _fadeAnimation.value,
-                      child: Column(
-                        children: [
-                          Text(
-                            'أوقات الصلاة',
-                            style: TextStyle(
-                              fontFamily: 'Cairo',
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? AppColors.textPrimaryDark
-                                  : AppColors.textPrimaryLight,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              '« إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا »',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 13,
-                                color: AppColors.accentGold,
-                                fontWeight: FontWeight.w600,
-                                height: 1.6,
-                              ),
-                            ),
-                          ),
-                        ],
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    children: [
+                      Text(
+                        'وِرد',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 34,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                      const SizedBox(height: 6),
+                      Text(
+                        'صلاتك، قرآنك، ذكرك',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Text(
+                          '« إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا »',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 13,
+                            color: AppColors.accentGold,
+                            fontWeight: FontWeight.w600,
+                            height: 1.6,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
 
               const Spacer(flex: 3),
 
               // Subtle bottom loading indicator
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _fadeAnimation.value.clamp(0.0, 1.0),
-                    child: const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.accentGold,
-                        ),
-                      ),
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.accentGold,
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
               const SizedBox(height: 36),
             ],

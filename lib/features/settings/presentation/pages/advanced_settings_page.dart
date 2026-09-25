@@ -235,7 +235,7 @@ class AdvancedSettingsPage extends StatelessWidget {
             onPressed: () {
               final pendingSummary = pending.map((p) => '[${p.id}] ${p.title}').join('\n');
               final report = StringBuffer()
-                ..writeln('═══ تقرير تشخيص تطبيق أوقات الصلاة ═══')
+                ..writeln('═══ تقرير تشخيص تطبيق وِرد ═══')
                 ..writeln('تاريخ التقرير: ${DateTime.now().toIso8601String()}')
                 ..writeln('الإصدار: ${AppConstants.appVersion}')
                 ..writeln('صوت الأذان النشط: ${soundCfg["displayName"]} (${soundCfg["channelId"]})')

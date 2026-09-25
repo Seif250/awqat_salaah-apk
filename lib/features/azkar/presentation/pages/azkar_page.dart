@@ -155,10 +155,17 @@ class _AzkarPageState extends State<AzkarPage>
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 50,
+        backgroundColor: Colors.transparent,
         title: Text(
           'الأذكار والورد اليومي',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: TextStyle(
+            fontFamily: 'Cairo',
+            fontSize: 21,
+            fontWeight: FontWeight.w700,
+            color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDark,
           ),
         ),
         actions: [
@@ -316,15 +323,17 @@ class _AzkarPageState extends State<AzkarPage>
                     if (_headerAnimController.value == 0.0 && !_isHeaderVisible) {
                       return const SizedBox.shrink();
                     }
-                    return SizeTransition(
-                      sizeFactor: _headerSizeAnimation,
-                      // ignore: deprecated_member_use
-                      axisAlignment: -1.0,
-                      child: FadeTransition(
-                        opacity: _headerFadeAnimation,
-                        child: SlideTransition(
-                          position: _headerSlideAnimation,
-                          child: child,
+                    return ClipRect(
+                      child: SizeTransition(
+                        sizeFactor: _headerSizeAnimation,
+                        // ignore: deprecated_member_use
+                        axisAlignment: 0.0,
+                        child: FadeTransition(
+                          opacity: _headerFadeAnimation,
+                          child: SlideTransition(
+                            position: _headerSlideAnimation,
+                            child: child,
+                          ),
                         ),
                       ),
                     );
@@ -407,7 +416,7 @@ class _AzkarPageState extends State<AzkarPage>
                             physics: const AlwaysScrollableScrollPhysics(),
                             buildDefaultDragHandles: false,
                             autoScrollerVelocityScalar: 140.0,
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
+                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
                             itemCount: state.currentItems.length,
                             onReorderStart: (index) {
                               HapticFeedback.heavyImpact();

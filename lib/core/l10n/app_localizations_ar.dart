@@ -9,7 +9,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appTitle => 'أوقات الصلاة';
+  String get appTitle => 'وِرد';
 
   @override
   String get nextPrayer => 'الصلاة القادمة';
@@ -98,7 +98,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get timeFormat24 => 'تنسيق 24 ساعة';
 
   @override
-  String get onboardingWelcome => 'مرحباً بك في أوقات الصلاة';
+  String get onboardingWelcome => 'مرحباً بك في تطبيق وِرد';
 
   @override
   String get onboardingDescription =>

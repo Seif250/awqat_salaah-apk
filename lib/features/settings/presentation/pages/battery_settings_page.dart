@@ -68,8 +68,8 @@ class _BatterySettingsPageState extends State<BatterySettingsPage> {
               Text('هواتف شاومي (Xiaomi / Redmi / POCO):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               SizedBox(height: 4),
               Text(
-                '1. افتح الإعدادات → التطبيقات → إدارة التطبيقات.\n'
-                '2. اختر "أوقات الصلاة".\n'
+                '1. افتح الإعدادات ← التطبيقات ← إدارة التطبيقات.\n'
+                '2. اختر "وِرد".\n'
                 '3. فعّل "التشغيل التلقائي" (Autostart).\n'
                 '4. في "موفر البطارية" اختر "بلا قيود" (No restrictions).',
                 style: TextStyle(height: 1.6, fontSize: 12.5),
@@ -78,8 +78,8 @@ class _BatterySettingsPageState extends State<BatterySettingsPage> {
               Text('هواتف ريلمي وأوبو (Realme / Oppo):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               SizedBox(height: 4),
               Text(
-                '1. افتح الإعدادات → إدارة التطبيقات.\n'
-                '2. اختر "أوقات الصلاة".\n'
+                '1. افتح الإعدادات ← إدارة التطبيقات.\n'
+                '2. اختر "وِرد".\n'
                 '3. فعّل "السماح بالتشغيل التلقائي".\n'
                 '4. في استخدام البطارية فعّل "السماح بالنشاط في الخلفية".',
                 style: TextStyle(height: 1.6, fontSize: 12.5),
@@ -88,9 +88,9 @@ class _BatterySettingsPageState extends State<BatterySettingsPage> {
               Text('هواتف سامسونج (Samsung):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               SizedBox(height: 4),
               Text(
-                '1. افتح الإعدادات → العناية بالجهاز → البطارية.\n'
+                '1. افتح الإعدادات ← العناية بالجهاز ← البطارية.\n'
                 '2. اختر "حدود استخدام الخلفية".\n'
-                '3. تأكد أن تطبيق أوقات الصلاة في "تطبيقات لا تسكن أبداً".',
+                '3. تأكد أن تطبيق وِرد في "تطبيقات لا تسكن أبداً".',
                 style: TextStyle(height: 1.6, fontSize: 12.5),
               ),
             ],

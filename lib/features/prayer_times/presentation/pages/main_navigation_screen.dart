@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../azkar/presentation/pages/azkar_page.dart';
+import '../../../quran/presentation/pages/quran_page.dart';
 import 'home_page.dart';
+import 'prayer_times_page.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -69,12 +71,10 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
         onNotification: (notification) {
           if (notification.metrics.axis == Axis.vertical) {
             if (notification.direction == ScrollDirection.reverse) {
-              // Scrolling down -> hide navbar to maximize reading space
               if (_isNavBarVisible) {
                 setState(() => _isNavBarVisible = false);
               }
             } else if (notification.direction == ScrollDirection.forward) {
-              // Scrolling up -> show navbar smoothly
               if (!_isNavBarVisible) {
                 setState(() => _isNavBarVisible = true);
               }
@@ -92,6 +92,8 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           children: const [
             HomePage(),
+            QuranPage(),
+            PrayerTimesPage(),
             AzkarPage(),
           ],
         ),
@@ -114,9 +116,9 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, -2),
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, -3),
                 ),
               ],
             ),
@@ -127,16 +129,30 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
                   children: [
                     _buildNavItem(
                       index: 0,
-                      icon: Icons.mosque_outlined,
-                      selectedIcon: Icons.mosque_rounded,
-                      label: 'مواقيت الصلاة',
+                      icon: Icons.home_outlined,
+                      selectedIcon: Icons.home_rounded,
+                      label: 'الرئيسية',
                       isDark: isDark,
                     ),
                     _buildNavItem(
                       index: 1,
+                      icon: Icons.menu_book_outlined,
+                      selectedIcon: Icons.menu_book_rounded,
+                      label: 'القرآن',
+                      isDark: isDark,
+                    ),
+                    _buildNavItem(
+                      index: 2,
+                      icon: Icons.mosque_outlined,
+                      selectedIcon: Icons.mosque_rounded,
+                      label: 'المواقيت',
+                      isDark: isDark,
+                    ),
+                    _buildNavItem(
+                      index: 3,
                       icon: Icons.auto_stories_outlined,
                       selectedIcon: Icons.auto_stories_rounded,
-                      label: 'الأذكار والورد',
+                      label: 'الأذكار',
                       isDark: isDark,
                     ),
                   ],
@@ -164,46 +180,49 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
         child: InkWell(
           onTap: () => navigateToPage(index),
           child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                border: isSelected
-                    ? Border.all(
-                        color: AppColors.primaryLight.withValues(alpha: 0.35),
-                        width: 1,
-                      )
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withValues(alpha: isDark ? 0.45 : 0.14)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    border: isSelected
+                        ? Border.all(
+                            color: AppColors.accentGold.withValues(alpha: isDark ? 0.4 : 0.5),
+                            width: 1,
+                          )
+                        : null,
+                  ),
+                  child: Icon(
                     isSelected ? selectedIcon : icon,
                     color: isSelected
-                        ? AppColors.primaryLight
+                        ? (isDark ? AppColors.accentGoldLight : AppColors.primary)
                         : (isDark ? Colors.white60 : Colors.black54),
                     size: 22,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      fontSize: 13,
-                      color: isSelected
-                          ? AppColors.primaryLight
-                          : (isDark ? Colors.white60 : Colors.black54),
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    fontSize: 11,
+                    color: isSelected
+                        ? (isDark ? AppColors.accentGoldLight : AppColors.primary)
+                        : (isDark ? Colors.white60 : Colors.black54),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

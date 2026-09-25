@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'features/azkar/data/repositories/azkar_repository.dart';
 import 'features/azkar/presentation/bloc/azkar_bloc.dart';
 import 'features/azkar/presentation/bloc/azkar_event.dart';
+import 'features/quran/data/repositories/quran_repository.dart';
+import 'features/quran/presentation/bloc/quran_bloc.dart';
+import 'features/quran/presentation/bloc/quran_event.dart';
 import 'features/location/data/repositories/location_repository_impl.dart';
 import 'features/location/presentation/bloc/location_bloc.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
@@ -34,10 +38,12 @@ class AwqatSalaahApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final azkarRepository = AzkarRepository(storageService.prefs);
+    final quranRepository = QuranRepository(storageService.prefs);
 
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<AzkarRepository>.value(value: azkarRepository),
+        RepositoryProvider<QuranRepository>.value(value: quranRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -64,11 +70,16 @@ class AwqatSalaahApp extends StatelessWidget {
               repository: azkarRepository,
             )..add(const LoadAzkarEvent()),
           ),
+          BlocProvider<QuranBloc>(
+            create: (_) => QuranBloc(
+              repository: quranRepository,
+            )..add(const LoadQuranEvent()),
+          ),
         ],
       child: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, settingsState) {
           return MaterialApp(
-            title: 'أوقات الصلاة والأذكار',
+            title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

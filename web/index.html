@@ -23,14 +23,31 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="awqat_salaah">
+  <meta name="apple-mobile-web-app-title" content="وِرد">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>awqat_salaah</title>
+  <title>وِرد - صلاتك، قرآنك، ذكرك</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Preconnect and load Cairo & Amiri Quran fonts for seamless typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'UthmanicHafs';
+      src: url('fonts/UthmanicHafs.otf') format('opentype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'AmiriQuran';
+      src: url('fonts/AmiriQuran-Regular.ttf') format('truetype');
+      font-display: swap;
+    }
+  </style>
 </head>
 <body>
   <!--

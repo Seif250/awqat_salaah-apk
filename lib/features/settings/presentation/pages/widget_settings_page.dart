@@ -68,7 +68,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                   children: [
                     const Text('القاهرة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     Text(
-                      'أوقات الصلاة',
+                      'وِرد',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
@@ -173,7 +173,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                   '1. انتقل إلى الشاشة الرئيسية لهاتفك.\n'
                   '2. اضغط مطولاً على أي مساحة فارغة.\n'
                   '3. اختر "الأدوات" أو "الودجت" (Widgets).\n'
-                  '4. ابحث عن تطبيق "أوقات الصلاة" واختر الودجت.\n'
+                  '4. ابحث عن تطبيق "وِرد" واختر الودجت.\n'
                   '5. اسحب الودجت وضعه في المكان المناسب على شاشتك.',
                   style: TextStyle(
                     fontSize: 12.5,

@@ -265,8 +265,8 @@ class AzkarBackupService {
     final shareResult = await SharePlus.instance.share(
       ShareParams(
         files: [xFile],
-        subject: 'نسخة احتياطية للأذكار المخصصة - تطبيق أوقات الصلاة',
-        text: 'نسخة احتياطية لأذكاري المخصصة (${customItems.length} أذكار) من تطبيق أوقات الصلاة.',
+        subject: 'نسخة احتياطية للأذكار المخصصة - تطبيق وِرد',
+        text: 'نسخة احتياطية لأذكاري المخصصة (${customItems.length} أذكار) من تطبيق وِرد.',
       ),
     );
 

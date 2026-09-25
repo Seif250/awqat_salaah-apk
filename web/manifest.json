@@ -1,11 +1,11 @@
 {
-    "name": "awqat_salaah",
-    "short_name": "awqat_salaah",
+    "name": "وِرد - صلاتك، قرآنك، ذكرك",
+    "short_name": "وِرد",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "وِرد - صلاتك، قرآنك، ذكرك",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

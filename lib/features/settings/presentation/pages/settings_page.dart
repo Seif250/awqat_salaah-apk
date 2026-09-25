@@ -36,7 +36,7 @@ class SettingsPage extends StatelessWidget {
         ),
         content: const SingleChildScrollView(
           child: Text(
-            'تطبيق "أوقات الصلاة" يحترم خصوصيتك بالكامل:\n\n'
+            'تطبيق "وِرد" يحترم خصوصيتك بالكامل:\n\n'
             '• لا يتم جمع أو تخزين أو مشاركة أي بيانات شخصية أو موقعك الجغرافي مع أي جهة خارجية.\n'
             '• يتم استخدام موقعك الجغرافي حصرياً داخل جهازك لحساب أوقات الصلاة فلكياً دون الحاجة للاتصال بالإنترنت.\n'
             '• جميع الأذكار والتفضيلات والإعدادات يتم حفظها محلياً على جهازك فقط.',
@@ -237,7 +237,7 @@ class SettingsPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'أوقات الصلاة • الإصدار ${AppConstants.appVersion}',
+                          '${AppConstants.appName} • ${AppConstants.appSubtitle} • الإصدار ${AppConstants.appVersion}',
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? Colors.white38 : Colors.black38,

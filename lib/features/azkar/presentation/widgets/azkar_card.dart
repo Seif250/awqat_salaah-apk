@@ -89,30 +89,30 @@ class _AzkarCardState extends State<AzkarCard>
       button: true,
       label: '${widget.item.title}، المقروء ${widget.item.currentCount} من ${widget.item.targetCount}، ${isCompleted ? "مكتمل بحمد الله" : "انقر للتسبيح والزيادة"}',
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : AppColors.lightCard,
-          borderRadius: BorderRadius.circular(18),
+          color: isCompleted
+              ? (isDark ? const Color(0xFF0F2218) : const Color(0xFFF3F9F5))
+              : (isDark ? AppColors.darkCard : Colors.white),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isCompleted
-                ? AppColors.primaryLight.withValues(alpha: 0.5)
+                ? AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.25)
                 : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-            width: isCompleted ? 1.4 : 0.8,
+            width: isCompleted ? 1.0 : 0.8,
           ),
           boxShadow: [
             BoxShadow(
-              color: isCompleted
-                  ? AppColors.primaryLight.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+              color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.025),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -128,13 +128,13 @@ class _AzkarCardState extends State<AzkarCard>
                       widget.onLongPress!();
                     }
                   : null,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Header: Drag handle, title, checkmark, edit button / reorder arrows
+                    // Header: Drag handle, title, repetition badge, edit button / reorder arrows
                     AzkarCardHeader(
                       item: widget.item,
                       isCompleted: isCompleted,
@@ -147,14 +147,14 @@ class _AzkarCardState extends State<AzkarCard>
                     ),
                     const SizedBox(height: 10),
 
-                    // Body: Arabic text and reward / reference cards
+                    // Body: Arabic Dhikr text (Hero) and reward / reference
                     AzkarCardBody(
                       item: widget.item,
                       isDark: isDark,
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
 
-                    // Footer: Animated progress bar, counter pill with bounce animation, complete toggle
+                    // Footer: Animated progress bar, counter pill, complete toggle
                     AzkarCardProgressFooter(
                       item: widget.item,
                       isCompleted: isCompleted,
@@ -175,3 +175,4 @@ class _AzkarCardState extends State<AzkarCard>
     );
   }
 }
+

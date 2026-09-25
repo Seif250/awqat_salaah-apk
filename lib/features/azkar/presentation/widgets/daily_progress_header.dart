@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/azkar_item_model.dart';
-import '../utils/azkar_ui_helpers.dart';
 
 class DailyProgressHeader extends StatelessWidget {
   final AzkarCategory category;
@@ -21,81 +20,87 @@ class DailyProgressHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isAllDone = totalCount > 0 && completedCount >= totalCount;
-    final percent = (completionRate * 100).toInt();
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AppColors.darkCard.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isAllDone
-              ? AppColors.primaryLight.withValues(alpha: 0.4)
+              ? AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.25)
               : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+          width: 0.8,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header row: Category Title & Progress Badge & Reset
+          // Row 1: Category Info & Progress & Reset
           Row(
             children: [
-              Icon(
-                category.categoryIcon,
-                size: 20,
-                color: AppColors.accentGold,
-              ),
-              const SizedBox(width: 8),
-
               // Category Title
               Expanded(
-                child: Text(
-                  category.titleArabic,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: isDark ? Colors.white : AppColors.primaryDark,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    Text(
+                      category.titleArabic,
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (category.timeDescription.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          category.timeDescription,
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 11,
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
 
-              // Progress badge (e.g. 3/10 • 30%)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
+              // Progress Text (e.g. 3 / 13 مكتملة)
+              Text(
+                isAllDone
+                    ? 'مكتمل بحمد الله'
+                    : '$completedCount / $totalCount مكتملة',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                   color: isAllDone
-                      ? AppColors.primaryLight.withValues(alpha: 0.15)
-                      : (isDark ? AppColors.darkCardElevated : AppColors.lightCardElevated),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  isAllDone
-                      ? 'مكتمل بحمد الله'
-                      : '$completedCount من $totalCount ($percent%)',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                    color: isAllDone ? AppColors.primaryLight : AppColors.accentGold,
-                  ),
+                      ? AppColors.primary
+                      : (isDark ? AppColors.accentGoldLight : AppColors.primaryDark),
                 ),
               ),
               const SizedBox(width: 4),
 
-              // Reset mini button
+              // Reset subtle button
               InkWell(
                 onTap: () {
                   showDialog(
@@ -124,51 +129,32 @@ class DailyProgressHeader extends StatelessWidget {
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 child: Padding(
                   padding: const EdgeInsets.all(4),
                   child: Icon(
                     Icons.refresh_rounded,
-                    size: 18,
-                    color: isDark ? Colors.white54 : Colors.black45,
+                    size: 16,
+                    color: isDark ? Colors.white38 : Colors.black38,
                   ),
                 ),
               ),
             ],
           ),
 
-          // Time Description on a clean separate line
-          if (category.timeDescription.isNotEmpty) ...[
-            const SizedBox(height: 3),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(start: 28),
-                child: Text(
-                  category.timeDescription,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
 
-          // Slim progress line
+          // Slim progress line (Subtle, 3px)
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
-              value: completionRate,
-              minHeight: 4,
+              value: totalCount > 0 ? completionRate.clamp(0.0, 1.0) : 0.0,
+              minHeight: 3,
               backgroundColor: isDark
-                  ? AppColors.darkCardElevated
-                  : AppColors.lightCardElevated,
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0xFFE5E7EB),
               valueColor: AlwaysStoppedAnimation<Color>(
-                isAllDone ? AppColors.primaryLight : AppColors.accentGold,
+                isAllDone ? AppColors.primary : AppColors.primaryLight,
               ),
             ),
           ),
@@ -177,3 +163,4 @@ class DailyProgressHeader extends StatelessWidget {
     );
   }
 }
+
