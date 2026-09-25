@@ -251,15 +251,22 @@ class AzkarCardBody extends StatelessWidget {
                 if (item.reference != null) ...[
                   if (item.reward != null) const SizedBox(height: 4),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.menu_book_outlined, size: 13, color: AppColors.accentGold),
-                      const SizedBox(width: 4),
-                      Text(
-                        item.reference!,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.accentGold.withValues(alpha: 0.85),
-                          fontWeight: FontWeight.w600,
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Icon(Icons.menu_book_outlined, size: 13, color: AppColors.accentGold),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          item.reference!,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            height: 1.4,
+                            color: AppColors.accentGold.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],

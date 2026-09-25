@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -26,35 +28,81 @@ class AzkarPage extends StatefulWidget {
   State<AzkarPage> createState() => _AzkarPageState();
 }
 
-class _AzkarPageState extends State<AzkarPage> {
+class _AzkarPageState extends State<AzkarPage>
+    with SingleTickerProviderStateMixin {
   late final ScrollController _scrollController;
+  late final AnimationController _headerAnimController;
+  late final Animation<double> _headerFadeAnimation;
+  late final Animation<Offset> _headerSlideAnimation;
+  late final Animation<double> _headerSizeAnimation;
   bool _isHeaderVisible = true;
-  bool _isReorderMode = false;
+  bool _isDragging = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    _headerAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+      value: 1.0,
+    );
+    _headerFadeAnimation = CurvedAnimation(
+      parent: _headerAnimController,
+      curve: const Interval(0.15, 1.0, curve: Curves.easeInOut),
+    );
+    _headerSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, -0.35),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _headerAnimController,
+      curve: Curves.easeInOutCubic,
+    ));
+    _headerSizeAnimation = CurvedAnimation(
+      parent: _headerAnimController,
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _headerAnimController.dispose();
     super.dispose();
   }
 
+  void _setHeaderVisibility(bool visible) {
+    if (_isHeaderVisible == visible) return;
+    setState(() => _isHeaderVisible = visible);
+    if (visible) {
+      _headerAnimController.forward();
+    } else {
+      _headerAnimController.reverse();
+    }
+  }
+
   void _onScroll() {
-    if (_isReorderMode) return;
+    if (_isDragging) return;
+    if (!_scrollController.hasClients) return;
+
+    // Keep header visible when near the top
+    if (_scrollController.offset <= 20) {
+      if (!_isHeaderVisible) {
+        _setHeaderVisibility(true);
+      }
+      return;
+    }
+
     final direction = _scrollController.position.userScrollDirection;
     if (direction == ScrollDirection.reverse) {
       if (_isHeaderVisible) {
-        setState(() => _isHeaderVisible = false);
+        _setHeaderVisibility(false);
       }
     } else if (direction == ScrollDirection.forward) {
       if (!_isHeaderVisible) {
-        setState(() => _isHeaderVisible = true);
+        _setHeaderVisibility(true);
       }
     }
   }
@@ -143,11 +191,6 @@ class _AzkarPageState extends State<AzkarPage> {
                   context,
                   FadeSlidePageRoute(page: const AzkarSettingsPage()),
                 );
-              } else if (value == 'reorder') {
-                setState(() => _isReorderMode = !_isReorderMode);
-                if (_isReorderMode) {
-                  AppSnackBar.showInfo(context, 'وضع إعادة الترتيب مفعّل: اسحب الذكر لأعلى أو لأسفل.');
-                }
               } else if (value == 'backup') {
                 AzkarBackupService.performBackupFlow(context);
               } else if (value == 'restore_backup') {
@@ -179,20 +222,6 @@ class _AzkarPageState extends State<AzkarPage> {
                     Icon(Icons.tune_rounded, size: 20, color: isDark ? Colors.white70 : Colors.black87),
                     const SizedBox(width: 8),
                     const Text('إعدادات الأذكار والتنبيهات'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'reorder',
-                child: Row(
-                  children: [
-                    Icon(
-                      _isReorderMode ? Icons.check_circle_outline_rounded : Icons.swap_vert_rounded,
-                      size: 20,
-                      color: AppColors.accentGold,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(_isReorderMode ? 'إنهاء إعادة الترتيب' : 'إعادة ترتيب الأذكار'),
                   ],
                 ),
               ),
@@ -272,65 +301,84 @@ class _AzkarPageState extends State<AzkarPage> {
                   selectedCategory: state.selectedCategory,
                   onSelectCategory: (category) {
                     context.read<AzkarBloc>().add(SelectCategoryEvent(category));
+                    if (_scrollController.hasClients) {
+                      _scrollController.jumpTo(0);
+                    }
+                    _setHeaderVisibility(true);
                   },
                   isDark: isDark,
                 ),
 
-                // Reorder Mode Active Banner
-                if (_isReorderMode)
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentGold.withValues(alpha: isDark ? 0.16 : 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.4)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.touch_app_rounded, color: AppColors.accentGold, size: 22),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text(
-                            'وضع إعادة الترتيب: يمكنك السحب بالأيقونة أو استخدام الأسهم ⬆ ⬇',
-                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
-                          ),
+                // Collapsible Animated Daily Progress Header on Scroll
+                AnimatedBuilder(
+                  animation: _headerAnimController,
+                  builder: (context, child) {
+                    if (_headerAnimController.value == 0.0 && !_isHeaderVisible) {
+                      return const SizedBox.shrink();
+                    }
+                    return SizeTransition(
+                      sizeFactor: _headerSizeAnimation,
+                      // ignore: deprecated_member_use
+                      axisAlignment: -1.0,
+                      child: FadeTransition(
+                        opacity: _headerFadeAnimation,
+                        child: SlideTransition(
+                          position: _headerSlideAnimation,
+                          child: child,
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    );
+                  },
+                  child: DailyProgressHeader(
+                    category: state.selectedCategory,
+                    completedCount: state.completedCategoryCount,
+                    totalCount: state.totalCategoryCount,
+                    completionRate: state.categoryCompletionRate,
+                    onResetCategory: () {
+                      context
+                          .read<AzkarBloc>()
+                          .add(ResetCategoryProgressEvent(state.selectedCategory));
+                    },
+                  ),
+                ),
+
+                // Custom Azkar Info & Backup Bar
+                if (state.selectedCategory == AzkarCategory.custom)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.25)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.shield_outlined, size: 20, color: AppColors.accentGold),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'أذكارك المخصصة (${state.currentItems.length})',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
                           ),
-                          onPressed: () => setState(() => _isReorderMode = false),
-                          child: const Text('تم'),
-                        ),
-                      ],
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              foregroundColor: AppColors.accentGold,
+                            ),
+                            icon: const Icon(Icons.save_alt_rounded, size: 18),
+                            label: const Text('نسخ احتياطي',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            onPressed: () => AzkarBackupService.performBackupFlow(context),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
-                // Collapsible Daily Progress Header on Scroll
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  child: (_isHeaderVisible && !_isReorderMode)
-                      ? DailyProgressHeader(
-                          category: state.selectedCategory,
-                          completedCount: state.completedCategoryCount,
-                          totalCount: state.totalCategoryCount,
-                          completionRate: state.categoryCompletionRate,
-                          onResetCategory: () {
-                            context
-                                .read<AzkarBloc>()
-                                .add(ResetCategoryProgressEvent(state.selectedCategory));
-                          },
-                        )
-                      : const SizedBox.shrink(),
-                ),
-
-                // Azkar Items List
+                // Azkar Items List with Direct Long-Press Drag-and-Drop Reordering
                 Expanded(
                   child: state.currentItems.isEmpty
                       ? AzkarEmptyView(
@@ -349,118 +397,65 @@ class _AzkarPageState extends State<AzkarPage> {
                               ? () => AzkarBackupService.performRestoreFlow(context)
                               : null,
                         )
-                      : _isReorderMode
-                          // Reorderable list view in reorder mode
-                          ? ReorderableListView.builder(
-                              buildDefaultDragHandles: false,
-                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
-                              itemCount: state.currentItems.length,
-                              onReorder: (oldIndex, newIndex) {
-                                HapticFeedback.selectionClick();
-                                context.read<AzkarBloc>().add(
-                                      ReorderAzkarEvent(
-                                        category: state.selectedCategory,
-                                        oldIndex: oldIndex,
-                                        newIndex: newIndex,
-                                      ),
-                                    );
-                              },
-                              itemBuilder: (context, index) {
-                                final item = state.currentItems[index];
-                                return ReorderableDragStartListener(
-                                  key: ValueKey(item.id),
-                                  index: index,
-                                  child: AzkarCard(
-                                    item: item,
-                                    isReorderMode: true,
-                                    reorderIndex: index,
-                                    onMoveUp: index > 0
-                                        ? () {
-                                            HapticFeedback.selectionClick();
-                                            context.read<AzkarBloc>().add(
-                                                  MoveZikrItemEvent(
-                                                    category: state.selectedCategory,
-                                                    fromIndex: index,
-                                                    toIndex: index - 1,
-                                                  ),
-                                                );
-                                          }
-                                        : null,
-                                    onMoveDown: index < state.currentItems.length - 1
-                                        ? () {
-                                            HapticFeedback.selectionClick();
-                                            context.read<AzkarBloc>().add(
-                                                  MoveZikrItemEvent(
-                                                    category: state.selectedCategory,
-                                                    fromIndex: index,
-                                                    toIndex: index + 1,
-                                                  ),
-                                                );
-                                          }
-                                        : null,
-                                    onIncrement: () {},
-                                    onToggleComplete: () {},
-                                    onEdit: null,
-                                  ),
-                                );
-                              },
-                            )
-                          // Standard list view with scroll auto-hide and long-press to enter reorder mode
-                          : RefreshIndicator(
-                              color: AppColors.accentGold,
-                              onRefresh: () async {
-                                context.read<AzkarBloc>().add(const LoadAzkarEvent());
-                              },
-                              child: ListView.builder(
-                              controller: _scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
-                              itemCount: state.selectedCategory == AzkarCategory.custom
-                                  ? state.currentItems.length + 1
-                                  : state.currentItems.length,
-                              itemBuilder: (context, index) {
-                                if (state.selectedCategory == AzkarCategory.custom && index == 0) {
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.25)),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.shield_outlined, size: 20, color: AppColors.accentGold),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            'أذكارك المخصصة (${state.currentItems.length})',
-                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                        TextButton.icon(
-                                          style: TextButton.styleFrom(
-                                            visualDensity: VisualDensity.compact,
-                                            foregroundColor: AppColors.accentGold,
-                                          ),
-                                          icon: const Icon(Icons.save_alt_rounded, size: 18),
-                                          label: const Text('نسخ احتياطي',
-                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                          onPressed: () => AzkarBackupService.performBackupFlow(context),
-                                        ),
-                                      ],
+                      : RefreshIndicator(
+                          color: AppColors.accentGold,
+                          onRefresh: () async {
+                            context.read<AzkarBloc>().add(const LoadAzkarEvent());
+                          },
+                          child: ReorderableListView.builder(
+                            scrollController: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            buildDefaultDragHandles: false,
+                            autoScrollerVelocityScalar: 140.0,
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
+                            itemCount: state.currentItems.length,
+                            onReorderStart: (index) {
+                              HapticFeedback.heavyImpact();
+                              setState(() => _isDragging = true);
+                            },
+                            onReorderEnd: (index) {
+                              setState(() => _isDragging = false);
+                            },
+                            // ignore: deprecated_member_use
+                            onReorder: (oldIndex, newIndex) {
+                              HapticFeedback.selectionClick();
+                              context.read<AzkarBloc>().add(
+                                    ReorderAzkarEvent(
+                                      category: state.selectedCategory,
+                                      oldIndex: oldIndex,
+                                      newIndex: newIndex,
                                     ),
                                   );
-                                }
-                                final item = state.currentItems[
-                                    state.selectedCategory == AzkarCategory.custom ? index - 1 : index];
-                                return AzkarCard(
-                                  key: ValueKey(item.id),
+                            },
+                            proxyDecorator: (child, index, animation) {
+                              return AnimatedBuilder(
+                                animation: animation,
+                                builder: (context, animChild) {
+                                  final animValue = Curves.easeOutCubic.transform(animation.value);
+                                  final elevation = lerpDouble(0, 12, animValue)!;
+                                  final scale = lerpDouble(1.0, 1.025, animValue)!;
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: Material(
+                                      elevation: elevation,
+                                      color: Colors.transparent,
+                                      shadowColor: AppColors.accentGold.withValues(alpha: 0.35),
+                                      borderRadius: BorderRadius.circular(18),
+                                      child: animChild,
+                                    ),
+                                  );
+                                },
+                                child: child,
+                              );
+                            },
+                            itemBuilder: (context, index) {
+                              final item = state.currentItems[index];
+                              return FastReorderableDelayedDragStartListener(
+                                key: ValueKey(item.id),
+                                index: index,
+                                delay: const Duration(milliseconds: 180),
+                                child: AzkarCard(
                                   item: item,
-                                  onLongPress: () {
-                                    setState(() => _isReorderMode = true);
-                                    AppSnackBar.showInfo(context, 'تم تفعيل وضع إعادة الترتيب. اسحب الذكر أو استخدم الأسهم.');
-                                  },
                                   onIncrement: () {
                                     context.read<AzkarBloc>().add(
                                           IncrementZikrCountEvent(
@@ -491,10 +486,11 @@ class _AzkarPageState extends State<AzkarPage> {
                                       },
                                     );
                                   },
-                                );
-                              },
-                            ),
+                                ),
+                              );
+                            },
                           ),
+                        ),
                 ),
               ],
             );
@@ -526,6 +522,28 @@ class _AzkarPageState extends State<AzkarPage> {
           );
         },
       ),
+    );
+  }
+}
+
+/// A custom drag start listener that allows faster long-press detection (180ms instead of 500ms default)
+/// so dragging and moving items feels immediate, snappy, and responsive.
+class FastReorderableDelayedDragStartListener extends ReorderableDragStartListener {
+  final Duration delay;
+
+  const FastReorderableDelayedDragStartListener({
+    super.key,
+    required super.child,
+    required super.index,
+    super.enabled,
+    this.delay = const Duration(milliseconds: 180),
+  });
+
+  @override
+  MultiDragGestureRecognizer createRecognizer() {
+    return DelayedMultiDragGestureRecognizer(
+      delay: delay,
+      debugOwner: this,
     );
   }
 }

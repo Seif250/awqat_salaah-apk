@@ -148,21 +148,45 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
               const SizedBox(height: 18),
 
               // Target Repetitions
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('العدد المطلوب: ',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const Spacer(),
-                  ...[1, 3, 33, 70, 100].map((count) {
-                    final isSelected = _targetCount == count;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: ChoiceChip(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('العدد المطلوب:',
+                          style:
+                              TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentGold.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$_targetCount ${_targetCount == 1 ? "مرة" : "مرات"}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accentGold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [1, 3, 7, 33, 70, 100].map((count) {
+                      final isSelected = _targetCount == count;
+                      return ChoiceChip(
                         label: Text('$count'),
                         selected: isSelected,
+                        showCheckmark: false,
+                        visualDensity: VisualDensity.compact,
                         selectedColor:
-                            AppColors.accentGold.withValues(alpha: 0.3),
+                            AppColors.accentGold.withValues(alpha: 0.25),
                         labelStyle: TextStyle(
                           fontSize: 12,
                           fontWeight:
@@ -172,9 +196,9 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
                         onSelected: (selected) {
                           if (selected) setState(() => _targetCount = count);
                         },
-                      ),
-                    );
-                  }),
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),

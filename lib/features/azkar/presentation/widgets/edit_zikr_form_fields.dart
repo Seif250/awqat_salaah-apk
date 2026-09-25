@@ -154,21 +154,45 @@ class ZikrTargetCountChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'عدد التكرار: ',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'عدد التكرار:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.accentGold.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$targetCount ${targetCount == 1 ? "مرة" : "مرات"}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.accentGold,
+                ),
+              ),
+            ),
+          ],
         ),
-        const Spacer(),
-        ...[1, 3, 7, 33, 70, 100].map((count) {
-          final isSelected = targetCount == count;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.5),
-            child: ChoiceChip(
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [1, 3, 7, 33, 70, 100].map((count) {
+            final isSelected = targetCount == count;
+            return ChoiceChip(
               label: Text('$count'),
               selected: isSelected,
-              selectedColor: AppColors.accentGold.withValues(alpha: 0.3),
+              showCheckmark: false,
+              visualDensity: VisualDensity.compact,
+              selectedColor: AppColors.accentGold.withValues(alpha: 0.25),
               labelStyle: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -177,9 +201,9 @@ class ZikrTargetCountChips extends StatelessWidget {
               onSelected: (selected) {
                 if (selected) onCountChanged(count);
               },
-            ),
-          );
-        }),
+            );
+          }).toList(),
+        ),
       ],
     );
   }

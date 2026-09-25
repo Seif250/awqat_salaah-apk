@@ -122,12 +122,12 @@ class _AzkarCardState extends State<AzkarCard>
                       HapticFeedback.selectionClick();
                       widget.onIncrement();
                     },
-              onLongPress: widget.isReorderMode
-                  ? null
-                  : () {
+              onLongPress: widget.onLongPress != null
+                  ? () {
                       HapticFeedback.mediumImpact();
-                      widget.onLongPress?.call();
-                    },
+                      widget.onLongPress!();
+                    }
+                  : null,
               borderRadius: BorderRadius.circular(18),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

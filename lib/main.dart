@@ -9,14 +9,6 @@ import 'services/prayer_calculation_service.dart';
 import 'services/storage_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Global error handler for Flutter framework errors
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint('🚨 FlutterError: ${details.exceptionAsString()}');
-  };
-
   // Custom error widget instead of red screen of death
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
@@ -56,6 +48,14 @@ void main() async {
 
   // Catch async errors that escape Flutter's framework
   runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Global error handler for Flutter framework errors
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      debugPrint('🚨 FlutterError: ${details.exceptionAsString()}');
+    };
+
     // Set preferred orientations & transparent status bar
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
