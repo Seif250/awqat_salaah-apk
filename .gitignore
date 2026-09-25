@@ -1,17 +1,30 @@
 # Miscellaneous & IDE
 *.class
-*.lock
 *.log
 *.pyc
 *.swp
+*.tmp
 .buildlog/
 .history
 .idea/
 .vscode/
 Thumbs.db
+ehthumbs.db
 desktop.ini
+.DS_Store
 
-# Compiled APKs and Binaries
+# AI Agents & IDE Cache
+.agents/
+.gemini/
+.system_generated/
+scratch/
+
+# Environment Variables & Secrets
+.env
+*.env
+.env.*
+
+# Compiled APKs, AABs and Binaries
 *.apk
 *.aab
 *.ap_
@@ -35,6 +48,7 @@ flutter_*.png
 **/android/captures/
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
+key.properties
 **/android/key.properties
 *.jks
 *.keystore
@@ -48,9 +62,11 @@ flutter_*.png
 **/macos/Flutter/ephemeral
 **/windows/flutter/generated_plugins.cmake
 **/linux/flutter/generated_plugins.cmake
+*.p8
+*.p12
+*.key
+*.mobileprovision
 
 # Coverage & Symbols
 coverage/
 app.*.symbols
-
-.agents/*

@@ -16,7 +16,8 @@
     <application
         android:label="وِرد"
         android:name=".AwqatSalaahApp"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round">
 
         <activity
             android:name=".MainActivity"

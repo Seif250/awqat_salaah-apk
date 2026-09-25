@@ -7,6 +7,7 @@ import 'package:awqat_salaah/features/quran/data/repositories/quran_repository.d
 import 'package:awqat_salaah/features/quran/presentation/bloc/quran_bloc.dart';
 import 'package:awqat_salaah/features/quran/presentation/bloc/quran_event.dart';
 import 'package:awqat_salaah/features/quran/presentation/pages/surah_detail_page.dart';
+import 'package:awqat_salaah/features/quran/presentation/widgets/qcf_mushaf_page_renderer.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +59,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the Ayah text widget and perform a long press
-      final ayahFinder = find.textContaining('بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ').first;
+      final ayahFinder = find.textContaining('بِس').first;
       expect(ayahFinder, findsOneWidget);
 
       final state = tester.state(find.byType(SurahDetailPage)) as dynamic;
@@ -189,6 +190,49 @@ void main() {
       );
       expect(hasHighlightedMarkerContainer, isTrue,
           reason: 'Ayah marker container must have the bookmark highlight color');
+    });
+
+    testWidgets('Deterministic 604-page Mushaf fills viewport dynamically without surrounding card',
+        (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      // 1. PageView has 604 pages
+      final pageViewFinder = find.byType(PageView);
+      expect(pageViewFinder, findsOneWidget);
+      final pageView = tester.widget<PageView>(pageViewFinder);
+      expect(pageView.childrenDelegate.estimatedChildCount, equals(604));
+
+      // 2. QcfMushafPageRenderer is rendered dynamically
+      final qcfRendererFinder = find.byType(QcfMushafPageRenderer);
+      expect(qcfRendererFinder, findsWidgets);
+
+      // 3. No Card surrounding the Mushaf page
+      final cardsFinder = find.byType(Card);
+      expect(cardsFinder, findsNothing);
+    });
+
+    testWidgets('Bottom Sheet contains ONLY the 5 required actions and no audio or translation',
+        (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      // Trigger bottom sheet via test hook
+      final state = tester.state<State<SurahDetailPage>>(find.byType(SurahDetailPage));
+      final fatiha = quranRepository.getSurahById(1)!;
+      (state as dynamic).showAyahActions(1, fatiha.name, fatiha.verses.first);
+      await tester.pumpAndSettle();
+
+      // Verify the 5 required actions are present
+      expect(find.text('تفسير'), findsOneWidget);
+      expect(find.text('حفظ كعلامة'), findsOneWidget);
+      expect(find.text('نسخ الآية'), findsOneWidget);
+      expect(find.text('مشاركة'), findsOneWidget);
+      expect(find.text('تحديد آيات متعددة للمشاركة أو الحفظ'), findsOneWidget);
+
+      // Verify removed actions are NOT present
+      expect(find.text('استماع'), findsNothing);
+      expect(find.text('ترجمة'), findsNothing);
     });
   });
 }

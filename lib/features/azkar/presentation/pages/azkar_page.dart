@@ -1,24 +1,25 @@
 import 'dart:ui' show lerpDouble;
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/app_snackbar.dart';
-import '../../../../core/utils/page_transitions.dart';
+import '../../../../core/utils/arabic_numbers.dart';
 import '../../data/models/azkar_item_model.dart';
-import '../../../settings/presentation/pages/azkar_settings_page.dart';
-import '../../../settings/presentation/pages/settings_page.dart';
+import '../../data/repositories/azkar_repository.dart';
+import '../../data/services/backup_service.dart';
 import '../bloc/azkar_bloc.dart';
 import '../bloc/azkar_event.dart';
 import '../bloc/azkar_state.dart';
 import '../widgets/azkar_card.dart';
 import '../widgets/azkar_category_bar.dart';
 import '../widgets/azkar_empty_view.dart';
+import '../widgets/azkar_settings_sheet.dart';
+import '../widgets/custom_dhikr_tile.dart';
 import '../widgets/daily_progress_header.dart';
 import '../widgets/edit_zikr_dialog.dart';
-import '../../data/services/azkar_backup_service.dart';
+import '../widgets/import_backup_preview_dialog.dart';
 import '../../../../core/utils/skeleton_loading.dart';
 
 class AzkarPage extends StatefulWidget {
@@ -107,45 +108,112 @@ class _AzkarPageState extends State<AzkarPage>
     }
   }
 
-  void _confirmRestoreDefaults(BuildContext context) {
+  void _openAddDhikr(BuildContext context, AzkarCategory currentCat) {
+    EditZikrDialog.showAdd(
+      context,
+      initialCategory: currentCat,
+      onAdd: (item) {
+        context.read<AzkarBloc>().add(AddNewZikrItemEvent(item));
+        AppSnackBar.showSuccess(context, 'تمت إضافة الذكر بنجاح');
+      },
+    );
+  }
+
+  void _openEditDhikr(BuildContext context, AzkarItem item) {
+    EditZikrDialog.show(
+      context,
+      item: item,
+      onSave: (updated) {
+        context.read<AzkarBloc>().add(UpdateZikrItemEvent(updated));
+        AppSnackBar.showSuccess(context, 'تم تعديل الذكر بنجاح');
+      },
+      onDelete: () {
+        context.read<AzkarBloc>().add(DeleteZikrItemEvent(item.id));
+        AppSnackBar.showInfo(context, 'تم حذف الذكر');
+      },
+    );
+  }
+
+  void _confirmDeleteDhikr(BuildContext context, AzkarItem item) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Icon(Icons.restore_rounded, color: AppColors.accentGold),
+            Icon(Icons.delete_outline_rounded, color: Colors.red),
             SizedBox(width: 8),
-            Text('استعادة الأذكار الأصلية'),
+            Text('حذف الذكر', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
           ],
         ),
-        content: const Text(
-          'هل تريد استعادة جميع أذكار السنة النبوية الافتراضية؟\n\n'
-          'سيتم استرجاع جميع الأذكار الأصلية مع الاحتفاظ بالأذكار التي قمت بإضافتها بنفسك.',
-          style: TextStyle(height: 1.5),
+        content: Text(
+          'هل أنت متأكد من حذف "${item.title}" من أذكارك المخصصة؟',
+          style: const TextStyle(fontFamily: 'Cairo', height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: Colors.red,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<AzkarBloc>().add(const RestoreDefaultAzkarEvent());
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              AppSnackBar.showSuccess(context, 'تمت استعادة الأذكار الافتراضية بنجاح');
+              context.read<AzkarBloc>().add(DeleteZikrItemEvent(item.id));
+              AppSnackBar.showInfo(context, 'تم حذف الذكر من القائمة المخصصة');
             },
-            child: const Text('استعادة'),
+            child: const Text('حذف', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
+
+  void _handleImportFromEmptyState(BuildContext context) async {
+    final repo = context.read<AzkarRepository>();
+    final existingItems = repo.getCustomAzkarItems();
+
+    try {
+      final analysis = await BackupService.pickAndValidateBackup(existingItems: existingItems);
+      if (analysis == null) return;
+
+      if (!context.mounted) return;
+      await ImportBackupPreviewDialog.show(
+        context,
+        analysis: analysis,
+        onConfirm: (replaceExisting) async {
+          final count = await BackupService.executeImport(
+            context: context,
+            analysis: analysis,
+            replaceExisting: replaceExisting,
+          );
+
+          if (!context.mounted) return;
+          context.read<AzkarBloc>().add(const LoadAzkarEvent());
+
+          if (replaceExisting) {
+            AppSnackBar.showSuccess(context, 'تم استبدال واستيراد $count أذكار بنجاح');
+          } else {
+            final skipped = analysis.duplicateItems.length;
+            final message = skipped > 0
+                ? 'تمت إضافة $count أذكار (تم تجاهل $skipped مكرر)'
+                : 'تمت إضافة $count أذكار بنجاح';
+            AppSnackBar.showSuccess(context, message);
+          }
+        },
+      );
+    } catch (_) {
+      if (context.mounted) {
+        AppSnackBar.showError(
+          context,
+          'تعذر استيراد النسخة الاحتياطية. الملف غير صالح أو غير متوافق.',
+        );
+      }
+    }
   }
 
   @override
@@ -157,122 +225,45 @@ class _AzkarPageState extends State<AzkarPage>
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
-        toolbarHeight: 50,
+        toolbarHeight: 52,
         backgroundColor: Colors.transparent,
         title: Text(
           'الأذكار والورد اليومي',
           style: TextStyle(
             fontFamily: 'Cairo',
-            fontSize: 21,
+            fontSize: 20,
             fontWeight: FontWeight.w700,
             color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDark,
           ),
         ),
         actions: [
+          // Primary Action: Add Custom Dhikr
           IconButton(
-            icon: const Icon(Icons.add_circle_outline_rounded),
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add_circle_outline_rounded, size: 22, color: AppColors.primary),
+            ),
             tooltip: 'إضافة ذكر جديد',
             onPressed: () {
               final state = context.read<AzkarBloc>().state;
-              final cat = state is AzkarLoaded ? state.selectedCategory : AzkarCategory.morning;
-              EditZikrDialog.showAdd(
-                context,
-                initialCategory: cat,
-                onAdd: (item) {
-                  context.read<AzkarBloc>().add(AddNewZikrItemEvent(item));
-                },
-              );
+              final cat = state is AzkarLoaded ? state.selectedCategory : AzkarCategory.custom;
+              _openAddDhikr(context, cat);
             },
           ),
-          PopupMenuButton<String>(
-            tooltip: 'خيارات إضافية',
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            onSelected: (value) {
-              if (value == 'settings') {
-                Navigator.push(
-                  context,
-                  FadeSlidePageRoute(page: const SettingsPage()),
-                );
-              } else if (value == 'azkar_settings') {
-                Navigator.push(
-                  context,
-                  FadeSlidePageRoute(page: const AzkarSettingsPage()),
-                );
-              } else if (value == 'backup') {
-                AzkarBackupService.performBackupFlow(context);
-              } else if (value == 'restore_backup') {
-                AzkarBackupService.performRestoreFlow(context);
-              } else if (value == 'restore') {
-                _confirmRestoreDefaults(context);
-              } else if (value == 'reset_cat') {
-                final state = context.read<AzkarBloc>().state;
-                if (state is AzkarLoaded) {
-                  context.read<AzkarBloc>().add(ResetCategoryProgressEvent(state.selectedCategory));
-                }
-              }
+
+          // Secondary Action: Settings & Data management bottom sheet
+          IconButton(
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'خيارات وإعدادات الأذكار',
+            onPressed: () {
+              final state = context.read<AzkarBloc>().state;
+              final cat = state is AzkarLoaded ? state.selectedCategory : AzkarCategory.morning;
+              AzkarSettingsSheet.show(context, currentCategory: cat);
             },
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings_outlined, size: 20, color: isDark ? Colors.white70 : Colors.black87),
-                    const SizedBox(width: 8),
-                    const Text('الإعدادات العامة'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'azkar_settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.tune_rounded, size: 20, color: isDark ? Colors.white70 : Colors.black87),
-                    const SizedBox(width: 8),
-                    const Text('إعدادات الأذكار والتنبيهات'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'backup',
-                child: Row(
-                  children: [
-                    Icon(Icons.save_alt_rounded, size: 20, color: AppColors.accentGold),
-                    SizedBox(width: 8),
-                    Text('النسخ الاحتياطي للأذكار (JSON)'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'restore_backup',
-                child: Row(
-                  children: [
-                    Icon(Icons.file_open_rounded, size: 20, color: AppColors.accentGold),
-                    SizedBox(width: 8),
-                    Text('استرجاع نسخة سابقة (JSON)'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'restore',
-                child: Row(
-                  children: [
-                    Icon(Icons.restore_rounded, size: 20, color: AppColors.accentGold),
-                    SizedBox(width: 8),
-                    Text('استعادة الأذكار الافتراضية'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'reset_cat',
-                child: Row(
-                  children: [
-                    Icon(Icons.restart_alt_rounded, size: 20, color: Colors.blueGrey),
-                    SizedBox(width: 8),
-                    Text('تصفير عدادات هذا القسم'),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -289,11 +280,11 @@ class _AzkarPageState extends State<AzkarPage>
                 children: [
                   const Icon(Icons.error_outline_rounded, color: Colors.orange, size: 48),
                   const SizedBox(height: 16),
-                  Text(state.message),
+                  Text(state.message, style: const TextStyle(fontFamily: 'Cairo')),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => context.read<AzkarBloc>().add(const LoadAzkarEvent()),
-                    child: const Text('إعادة المحاولة'),
+                    child: const Text('إعادة المحاولة', style: TextStyle(fontFamily: 'Cairo')),
                   ),
                 ],
               ),
@@ -301,9 +292,11 @@ class _AzkarPageState extends State<AzkarPage>
           }
 
           if (state is AzkarLoaded) {
+            final isCustomTab = state.selectedCategory == AzkarCategory.custom;
+
             return Column(
               children: [
-                // Category Chips Selector Bar
+                // Lightweight Category Segmented Tabs
                 AzkarCategoryBar(
                   selectedCategory: state.selectedCategory,
                   onSelectCategory: (category) {
@@ -316,243 +309,226 @@ class _AzkarPageState extends State<AzkarPage>
                   isDark: isDark,
                 ),
 
-                // Collapsible Animated Daily Progress Header on Scroll
-                AnimatedBuilder(
-                  animation: _headerAnimController,
-                  builder: (context, child) {
-                    if (_headerAnimController.value == 0.0 && !_isHeaderVisible) {
-                      return const SizedBox.shrink();
-                    }
-                    return ClipRect(
-                      child: SizeTransition(
-                        sizeFactor: _headerSizeAnimation,
-                        // ignore: deprecated_member_use
-                        axisAlignment: 0.0,
-                        child: FadeTransition(
-                          opacity: _headerFadeAnimation,
-                          child: SlideTransition(
-                            position: _headerSlideAnimation,
-                            child: child,
+                // Collapsible Progress Header (for standard categories)
+                if (!isCustomTab)
+                  AnimatedBuilder(
+                    animation: _headerAnimController,
+                    builder: (context, child) {
+                      if (_headerAnimController.value == 0.0 && !_isHeaderVisible) {
+                        return const SizedBox.shrink();
+                      }
+                      return ClipRect(
+                        child: SizeTransition(
+                          sizeFactor: _headerSizeAnimation,
+                          axisAlignment: 0.0,
+                          child: FadeTransition(
+                            opacity: _headerFadeAnimation,
+                            child: SlideTransition(
+                              position: _headerSlideAnimation,
+                              child: child,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                  child: DailyProgressHeader(
-                    category: state.selectedCategory,
-                    completedCount: state.completedCategoryCount,
-                    totalCount: state.totalCategoryCount,
-                    completionRate: state.categoryCompletionRate,
-                    onResetCategory: () {
-                      context
-                          .read<AzkarBloc>()
-                          .add(ResetCategoryProgressEvent(state.selectedCategory));
+                      );
                     },
-                  ),
-                ),
-
-                // Custom Azkar Info & Backup Bar
-                if (state.selectedCategory == AzkarCategory.custom)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.25)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.shield_outlined, size: 20, color: AppColors.accentGold),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'أذكارك المخصصة (${state.currentItems.length})',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                              foregroundColor: AppColors.accentGold,
-                            ),
-                            icon: const Icon(Icons.save_alt_rounded, size: 18),
-                            label: const Text('نسخ احتياطي',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            onPressed: () => AzkarBackupService.performBackupFlow(context),
-                          ),
-                        ],
-                      ),
+                    child: DailyProgressHeader(
+                      category: state.selectedCategory,
+                      completedCount: state.completedCategoryCount,
+                      totalCount: state.totalCategoryCount,
+                      completionRate: state.categoryCompletionRate,
+                      onResetCategory: () {
+                        context
+                            .read<AzkarBloc>()
+                            .add(ResetCategoryProgressEvent(state.selectedCategory));
+                      },
                     ),
                   ),
 
-                // Azkar Items List with Direct Long-Press Drag-and-Drop Reordering
+                // Compact Custom Adhkar Section Header (when "أذكاري المخصصة" is active)
+                if (isCustomTab)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'أذكاري المخصصة',
+                              style: TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'أذكار وأدعية أضفتها بنفسك',
+                              style: TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 11.5,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.25),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            '${toArabicDigits(state.currentItems.length)} أذكار',
+                            style: const TextStyle(
+                              fontFamily: 'Cairo',
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Content View: List or Calm Empty State
                 Expanded(
                   child: state.currentItems.isEmpty
                       ? AzkarEmptyView(
                           category: state.selectedCategory,
-                          onAdd: () {
-                            EditZikrDialog.showAdd(
-                              context,
-                              initialCategory: state.selectedCategory,
-                              onAdd: (item) {
-                                context.read<AzkarBloc>().add(AddNewZikrItemEvent(item));
-                              },
-                            );
+                          onAdd: () => _openAddDhikr(context, state.selectedCategory),
+                          onRestore: () {
+                            context.read<AzkarBloc>().add(const RestoreDefaultAzkarEvent());
+                            AppSnackBar.showSuccess(context, 'تمت استعادة الأذكار الافتراضية');
                           },
-                          onRestore: () => _confirmRestoreDefaults(context),
-                          onRestoreBackup: state.selectedCategory == AzkarCategory.custom
-                              ? () => AzkarBackupService.performRestoreFlow(context)
+                          onRestoreBackup: isCustomTab
+                              ? () => _handleImportFromEmptyState(context)
                               : null,
                         )
-                      : RefreshIndicator(
-                          color: AppColors.accentGold,
-                          onRefresh: () async {
-                            context.read<AzkarBloc>().add(const LoadAzkarEvent());
-                          },
-                          child: ReorderableListView.builder(
-                            scrollController: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            buildDefaultDragHandles: false,
-                            autoScrollerVelocityScalar: 140.0,
-                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
-                            itemCount: state.currentItems.length,
-                            onReorderStart: (index) {
-                              HapticFeedback.heavyImpact();
-                              setState(() => _isDragging = true);
-                            },
-                            onReorderEnd: (index) {
-                              setState(() => _isDragging = false);
-                            },
-                            // ignore: deprecated_member_use
-                            onReorder: (oldIndex, newIndex) {
-                              HapticFeedback.selectionClick();
-                              context.read<AzkarBloc>().add(
-                                    ReorderAzkarEvent(
-                                      category: state.selectedCategory,
-                                      oldIndex: oldIndex,
-                                      newIndex: newIndex,
-                                    ),
-                                  );
-                            },
-                            proxyDecorator: (child, index, animation) {
-                              return AnimatedBuilder(
-                                animation: animation,
-                                builder: (context, animChild) {
-                                  final animValue = Curves.easeOutCubic.transform(animation.value);
-                                  final elevation = lerpDouble(0, 12, animValue)!;
-                                  final scale = lerpDouble(1.0, 1.025, animValue)!;
-                                  return Transform.scale(
-                                    scale: scale,
-                                    child: Material(
-                                      elevation: elevation,
-                                      color: Colors.transparent,
-                                      shadowColor: AppColors.accentGold.withValues(alpha: 0.35),
-                                      borderRadius: BorderRadius.circular(18),
-                                      child: animChild,
-                                    ),
-                                  );
-                                },
-                                child: child,
-                              );
-                            },
-                            itemBuilder: (context, index) {
-                              final item = state.currentItems[index];
-                              return FastReorderableDelayedDragStartListener(
-                                key: ValueKey(item.id),
-                                index: index,
-                                delay: const Duration(milliseconds: 180),
-                                child: AzkarCard(
-                                  item: item,
-                                  onIncrement: () {
-                                    context.read<AzkarBloc>().add(
-                                          IncrementZikrCountEvent(
-                                            id: item.id,
-                                            targetCount: item.targetCount,
-                                            category: state.selectedCategory,
-                                          ),
-                                        );
-                                  },
-                                  onToggleComplete: () {
-                                    context.read<AzkarBloc>().add(
-                                          ToggleZikrCompletionEvent(
-                                            id: item.id,
-                                            targetCount: item.targetCount,
-                                            category: state.selectedCategory,
-                                          ),
-                                        );
-                                  },
-                                  onEdit: () {
-                                    EditZikrDialog.show(
-                                      context,
-                                      item: item,
-                                      onSave: (updated) {
-                                        context.read<AzkarBloc>().add(UpdateZikrItemEvent(updated));
-                                      },
-                                      onDelete: () {
-                                        context.read<AzkarBloc>().add(DeleteZikrItemEvent(item.id));
-                                      },
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                      : isCustomTab
+                          ? _buildCustomAdhkarList(state)
+                          : _buildStandardAdhkarList(state),
                 ),
               ],
             );
           }
 
-          // Unexpected state — show a helpful fallback
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.menu_book_outlined, size: 48, color: AppColors.accentGold),
-                const SizedBox(height: 16),
-                const Text(
-                  'جاري تحميل الأذكار...',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('إعادة التحميل'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () => context.read<AzkarBloc>().add(const LoadAzkarEvent()),
-                ),
-              ],
-            ),
-          );
+          return const SizedBox.shrink();
         },
       ),
     );
   }
-}
 
-/// A custom drag start listener that allows faster long-press detection (180ms instead of 500ms default)
-/// so dragging and moving items feels immediate, snappy, and responsive.
-class FastReorderableDelayedDragStartListener extends ReorderableDragStartListener {
-  final Duration delay;
+  /// Clean, lightweight list for Custom Adhkar where Arabic text is hero
+  Widget _buildCustomAdhkarList(AzkarLoaded state) {
+    return ListView.builder(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
+      itemCount: state.currentItems.length,
+      itemBuilder: (context, index) {
+        final item = state.currentItems[index];
+        return CustomDhikrTile(
+          item: item,
+          onEdit: () => _openEditDhikr(context, item),
+          onDelete: () => _confirmDeleteDhikr(context, item),
+          onIncrement: () {
+            context.read<AzkarBloc>().add(IncrementZikrCountEvent(
+                  id: item.id,
+                  targetCount: item.targetCount,
+                  category: item.category,
+                ));
+          },
+          onReset: () {
+            context.read<AzkarBloc>().add(UpdateZikrItemEvent(
+                  item.copyWith(currentCount: 0, isCompleted: false),
+                ));
+          },
+        );
+      },
+    );
+  }
 
-  const FastReorderableDelayedDragStartListener({
-    super.key,
-    required super.child,
-    required super.index,
-    super.enabled,
-    this.delay = const Duration(milliseconds: 180),
-  });
-
-  @override
-  MultiDragGestureRecognizer createRecognizer() {
-    return DelayedMultiDragGestureRecognizer(
-      delay: delay,
-      debugOwner: this,
+  /// Reorderable interactive list for standard Azkar categories
+  Widget _buildStandardAdhkarList(AzkarLoaded state) {
+    return RefreshIndicator(
+      color: AppColors.accentGold,
+      onRefresh: () async {
+        context.read<AzkarBloc>().add(const LoadAzkarEvent());
+      },
+      child: ReorderableListView.builder(
+        scrollController: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        autoScrollerVelocityScalar: 140.0,
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+        itemCount: state.currentItems.length,
+        onReorderStart: (index) {
+          HapticFeedback.heavyImpact();
+          setState(() => _isDragging = true);
+        },
+        onReorderEnd: (index) {
+          setState(() => _isDragging = false);
+        },
+        onReorder: (oldIndex, newIndex) {
+          HapticFeedback.selectionClick();
+          context.read<AzkarBloc>().add(
+                ReorderAzkarEvent(
+                  category: state.selectedCategory,
+                  oldIndex: oldIndex,
+                  newIndex: newIndex,
+                ),
+              );
+        },
+        proxyDecorator: (child, index, animation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, animChild) {
+              final animValue = Curves.easeOutCubic.transform(animation.value);
+              final elevation = lerpDouble(0, 12, animValue)!;
+              final scale = lerpDouble(1.0, 1.025, animValue)!;
+              return Transform.scale(
+                scale: scale,
+                child: Material(
+                  elevation: elevation,
+                  color: Colors.transparent,
+                  shadowColor: Colors.black.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(16),
+                  child: child,
+                ),
+              );
+            },
+          );
+        },
+        itemBuilder: (context, index) {
+          final item = state.currentItems[index];
+          return AzkarCard(
+            key: ValueKey(item.id),
+            item: item,
+            onIncrement: () {
+              context.read<AzkarBloc>().add(IncrementZikrCountEvent(
+                    id: item.id,
+                    targetCount: item.targetCount,
+                    category: item.category,
+                  ));
+            },
+            onToggleComplete: () {
+              context.read<AzkarBloc>().add(ToggleZikrCompletionEvent(
+                    id: item.id,
+                    targetCount: item.targetCount,
+                    category: item.category,
+                  ));
+            },
+            onEdit: () => _openEditDhikr(context, item),
+          );
+        },
+      ),
     );
   }
 }

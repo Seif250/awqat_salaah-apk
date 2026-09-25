@@ -9,6 +9,8 @@ class AyahRosette extends StatelessWidget {
   final Color? borderColor;
   final Color? fillColor;
   final Color? textColor;
+  final Color? highlightBgColor;
+  final EdgeInsetsGeometry? padding;
 
   const AyahRosette({
     super.key,
@@ -17,6 +19,8 @@ class AyahRosette extends StatelessWidget {
     this.borderColor,
     this.fillColor,
     this.textColor,
+    this.highlightBgColor,
+    this.padding,
   });
 
   @override
@@ -28,9 +32,10 @@ class AyahRosette extends StatelessWidget {
     final border = borderColor ?? defaultBorder;
     final fill = fillColor ?? defaultFill;
     final text = textColor ?? defaultText;
+    final contentPadding = padding ?? const EdgeInsets.symmetric(horizontal: 3.0);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+    Widget rosetteWidget = Padding(
+      padding: contentPadding,
       child: CustomPaint(
         size: Size(size, size),
         painter: _RosettePainter(
@@ -55,6 +60,15 @@ class AyahRosette extends StatelessWidget {
         ),
       ),
     );
+
+    if (highlightBgColor != null) {
+      return Container(
+        color: highlightBgColor,
+        child: rosetteWidget,
+      );
+    }
+
+    return rosetteWidget;
   }
 }
 

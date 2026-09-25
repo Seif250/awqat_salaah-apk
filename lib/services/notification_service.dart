@@ -33,6 +33,11 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
+    if (kIsWeb) {
+      _initialized = true;
+      _log('Running on Web: notifications disabled');
+      return;
+    }
 
     try {
       // ── 1. Timezone ──

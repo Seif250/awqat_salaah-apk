@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="ic_launcher_background">#F8F3E4</color>
     <!-- Widget Dark Theme Palette (Premium Islamic Slate & Gold) -->
     <color name="widget_background_solid">#12161A</color>
     <color name="widget_card_solid">#182028</color>

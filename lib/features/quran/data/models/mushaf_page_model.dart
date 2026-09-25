@@ -33,6 +33,24 @@ class MushafPageModel extends Equatable {
     required this.segments,
   });
 
+  List<AyahModel> get allVerses => [
+        for (final segment in segments) ...segment.verses,
+      ];
+
+  int get totalAyahs => segments.fold<int>(0, (sum, seg) => sum + seg.verses.length);
+
+  bool get isCenteredPage => pageNumber <= 2;
+
+  List<int> get surahIds => segments.map((s) => s.surahId).toSet().toList();
+
+  List<String> get surahNames => segments.map((s) => s.surahName).toSet().toList();
+
+  bool containsAyah(int surahId, int ayahId) {
+    return segments.any(
+      (seg) => seg.surahId == surahId && seg.verses.any((v) => v.id == ayahId),
+    );
+  }
+
   @override
   List<Object?> get props => [pageNumber, juz, hizb, surahName, segments];
 }

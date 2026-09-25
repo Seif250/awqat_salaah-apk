@@ -7,6 +7,7 @@ import 'package:flutter_compass/flutter_compass.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 import '../../../location/presentation/bloc/location_bloc.dart';
+import '../../../location/presentation/bloc/location_event.dart';
 import '../../../location/presentation/bloc/location_state.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
@@ -33,6 +34,17 @@ class _QiblaPageState extends State<QiblaPage> {
   void initState() {
     super.initState();
     _initCompass();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _verifyLocationOnStartup();
+    });
+  }
+
+  void _verifyLocationOnStartup() {
+    if (!mounted) return;
+    final locationState = context.read<LocationBloc>().state;
+    if (locationState is! LocationSuccess || locationState.latitude == 0) {
+      context.read<LocationBloc>().add(const RequestCurrentLocationEvent());
+    }
   }
 
   @override
@@ -398,12 +410,6 @@ class _QiblaPageState extends State<QiblaPage> {
                     qiblaAngle: qiblaAngle,
                     distanceKm: distanceKm,
                     currentHeading: _currentHeading,
-                    onHeadingChanged: (newHeading) {
-                      setState(() {
-                        _isAutoCompass = false;
-                        _currentHeading = newHeading;
-                      });
-                    },
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -441,9 +447,9 @@ class _QiblaPageState extends State<QiblaPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Compass Interactive Guidance Slider / Calibrator
+                // Automatic Compass Sensor Status & Live Calibration Card
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkCard : AppColors.lightCard,
                     borderRadius: BorderRadius.circular(16),
@@ -452,99 +458,76 @@ class _QiblaPageState extends State<QiblaPage> {
                     ),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            _isAutoCompass
-                                ? 'الاتجاه المقروء من المستشعر:'
-                                : 'المعايرة اليدوية لاتجاه الهاتف:',
-                            style: const TextStyle(
-                              fontFamily: 'Cairo',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.autorenew_rounded,
+                              size: 20,
+                              color: Color(0xFF4CAF50),
                             ),
                           ),
-                          Row(
-                            children: [
-                              Text(
-                                '${toArabicDigits(_currentHeading.round())}°',
-                                style: const TextStyle(
-                                  fontFamily: 'Cairo',
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.accentGold,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'التوجيه التلقائي للمستشعر نشط',
+                                      style: TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2E7D32).withValues(alpha: 0.18),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'تلقائي',
+                                        style: TextStyle(
+                                          fontFamily: 'Cairo',
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF4CAF50),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: (_isAutoCompass ? const Color(0xFF2E7D32) : Colors.orange)
-                                      .withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  _isAutoCompass ? 'تلقائي' : 'يدوي',
+                                const SizedBox(height: 2),
+                                Text(
+                                  _hasCompassSensor
+                                      ? 'البوصلة تدور تلقائياً مع حركة يدك لتوجيهك بدقة نحو القبلة'
+                                      : 'جهازك لا يدعم مستشعر البوصلة المغناطيسي',
                                   style: TextStyle(
                                     fontFamily: 'Cairo',
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: _isAutoCompass ? const Color(0xFF4CAF50) : Colors.orange,
+                                    fontSize: 11.5,
+                                    color: isDark ? Colors.white60 : Colors.black54,
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.screen_rotation_rounded, size: 20, color: AppColors.accentGold),
+                            tooltip: 'معايرة البوصلة',
+                            onPressed: _showCalibrationDialog,
                           ),
                         ],
                       ),
-                      Slider(
-                        value: _currentHeading,
-                        min: 0.0,
-                        max: 360.0,
-                        activeColor: AppColors.accentGold,
-                        inactiveColor: isDark ? Colors.white12 : Colors.black12,
-                        onChanged: (val) {
-                          setState(() {
-                            _isAutoCompass = false;
-                            _currentHeading = val;
-                          });
-                        },
-                      ),
-                      Center(
-                        child: Text(
-                          _isAutoCompass
-                              ? 'البوصلة تدور تلقائياً مع حركة يدك. اسحب المؤشر للتحكم اليدوي.'
-                              : 'اسحب المؤشر للمحاذاة يدوياً، أو اضغط أدناه للعودة للتوجيه التلقائي.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 11,
-                            color: isDark ? Colors.white54 : Colors.black54,
-                          ),
-                        ),
-                      ),
-                      if (!_isAutoCompass && _hasCompassSensor) ...[
-                        const SizedBox(height: 12),
-                        Center(
-                          child: TextButton.icon(
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.accentGold,
-                            ),
-                            onPressed: _resumeAutoCompass,
-                            icon: const Icon(Icons.explore_rounded, size: 16),
-                            label: const Text(
-                              'إعادة تفعيل البوصلة التلقائية (المستشعر)',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

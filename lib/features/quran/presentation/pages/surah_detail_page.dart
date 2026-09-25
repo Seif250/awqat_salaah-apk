@@ -18,6 +18,9 @@ import '../widgets/mushaf_info_sheets.dart';
 import '../../data/models/bookmark_model.dart';
 import '../widgets/bookmark_collection_dialog.dart';
 import '../widgets/quran_share_composer_dialog.dart';
+import '../../data/models/qcf_page_model.dart';
+import '../../services/qcf_layout_service.dart';
+import '../widgets/qcf_mushaf_page_renderer.dart';
 
 class SurahDetailPage extends StatefulWidget {
   final SurahModel surah;
@@ -29,6 +32,12 @@ class SurahDetailPage extends StatefulWidget {
     this.initialAyah = 1,
   });
 
+  // Deterministic Medina Mushaf Reference Dimensions & Aspect Ratio
+  // King Fahd Medina Mushaf Page Geometry (Rigid 385 x 620 logical canvas)
+  static const double kMushafPageWidth = 385.0;
+  static const double kMushafPageHeight = 620.0;
+  static const double kMushafAspectRatio = kMushafPageWidth / kMushafPageHeight;
+
   @override
   State<SurahDetailPage> createState() => _SurahDetailPageState();
 }
@@ -37,6 +46,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   late final PageController _pageController;
   late int _currentPage;
   int? _highlightedAyahId;
+  int? _highlightedSurahId;
   bool _isNightMode = false;
   double _fontSize = 24.0;
   double _fontWeightValue = 0.0;
@@ -175,17 +185,21 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     _clearSelection();
   }
 
-  // Authentic Medina Mushaf Colors from User's Reference Screenshots
-  static const Color paperBg = Color(0xFFFAF7EE);
-  static const Color paperBorder = Color(0xFFDFD4C0);
-  static const Color textDark = Color(0xFF1E1A17);
-  static const Color bronzeAccent = Color(0xFF7A583A);
-  static const Color goldAccent = Color(0xFFB89368);
+  // Authentic Medina Mushaf Colors (Exact Specifications)
+  static const Color paperBg = Color(0xFFF6F0E4);
+  static const Color paperBorder = Color(0xFFD8C7A8);
+  static const Color textDark = Color(0xFF302923);
+  static const Color bronzeAccent = Color(0xFF6F6255);
+  static const Color goldAccent = Color(0xFFB58A4A);
 
   // Night Mode Alternatives
   static const Color nightPaper = Color(0xFF1B201D);
   static const Color nightText = Color(0xFFE8E5DD);
   static const Color nightBronze = Color(0xFFD4AF37);
+
+  static const double kMushafPageWidth = SurahDetailPage.kMushafPageWidth;
+  static const double kMushafPageHeight = SurahDetailPage.kMushafPageHeight;
+  static const double kMushafAspectRatio = SurahDetailPage.kMushafAspectRatio;
 
   @override
   void initState() {
@@ -195,6 +209,8 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     _currentPage = targetPage.clamp(1, 604);
     _pageController = PageController(initialPage: _currentPage - 1);
     _highlightedAyahId = widget.initialAyah >= 1 ? widget.initialAyah : null;
+    _highlightedSurahId = widget.initialAyah >= 1 ? widget.surah.id : null;
+    QcfLayoutService.instance.loadPage(_currentPage);
 
     final qState = context.read<QuranBloc>().state;
     if (qState is QuranLoaded) {
@@ -284,7 +300,10 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   }
 
   void _showAyahActions(int surahId, String surahName, AyahModel ayah) {
-    setState(() => _highlightedAyahId = ayah.id);
+    setState(() {
+      _highlightedAyahId = ayah.id;
+      _highlightedSurahId = surahId;
+    });
 
     final isBookmarked = context.read<QuranBloc>().state is QuranLoaded &&
         (context.read<QuranBloc>().state as QuranLoaded)
@@ -531,7 +550,10 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
       ),
     ).whenComplete(() {
       if (mounted) {
-        setState(() => _highlightedAyahId = null);
+        setState(() {
+          _highlightedAyahId = null;
+          _highlightedSurahId = null;
+        });
       }
     });
   }
@@ -1351,8 +1373,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                 color: bronze.withValues(alpha: 0.8),
                               ),
                             ),
-                            const SizedBox(width: 3),
-                            Icon(Icons.keyboard_arrow_down_rounded, color: bronze, size: 16),
                           ],
                         ),
                       ),
@@ -1419,8 +1439,10 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
           setState(() {
             _currentPage = pageIndex + 1;
             _highlightedAyahId = null;
+            _highlightedSurahId = null;
           });
           _recordCurrentPageAsLastRead();
+          QcfLayoutService.instance.loadPage(_currentPage);
         },
         itemBuilder: (context, index) {
           final pageNum = index + 1;
@@ -1667,7 +1689,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     } else if (isHighlighted) {
       currentTextColor = _isNightMode ? const Color(0xFFFDE68A) : const Color(0xFF78350F);
     } else if (anyHighlighted) {
-      // Slightly dim non-highlighted text so the selected Ayah stands out clearly
       currentTextColor = _isNightMode ? nightText.withValues(alpha: 0.55) : textColor.withValues(alpha: 0.65);
     } else {
       currentTextColor = textColor;
@@ -1740,7 +1761,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
           },
           child: Container(
             color: currentBgColor,
-            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+            padding: const EdgeInsets.symmetric(horizontal: 1.0),
             child: isSelected
                 ? Container(
                     width: (pageFontSize * 1.15).clamp(20.0, 26.0),
@@ -1776,6 +1797,8 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                     textColor: isHighlighted
                         ? (_isNightMode ? const Color(0xFFFDE68A) : const Color(0xFF78350F))
                         : (_isNightMode ? nightText : const Color(0xFF4A341E)),
+                    highlightBgColor: currentBgColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 1.5),
                   ),
           ),
         ),
@@ -1788,100 +1811,169 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     final isCenteredPage = pageNum <= 2;
     final qState = context.watch<QuranBloc>().state;
     final bronze = _isNightMode ? nightBronze : bronzeAccent;
-    final bgCard = _isNightMode ? nightPaper : paperBg;
+    final repo = context.read<QuranRepository>();
 
-    // ── Seamless Fixed Mushaf Reading Surface ────────────────────────────────
-    // The entire reading area is one continuous Mushaf paper surface.
-    // No outer card container, no heavy borders, no floating shadows.
-    // Proportional scaling via FittedBox guarantees ZERO vertical scrolling
-    // and ZERO RenderFlex overflow on any device or viewport.
-    // ──────────────────────────────────────────────────────────────────────────
+    return FutureBuilder<QcfPageModel?>(
+      future: QcfLayoutService.instance.loadPage(pageNum),
+      initialData: QcfLayoutService.instance.getCachedPage(pageNum),
+      builder: (context, snapshot) {
+        final qcfPage = snapshot.data;
+        if (qcfPage != null) {
+          return QcfMushafPageRenderer(
+            pageModel: qcfPage,
+            isNightMode: _isNightMode,
+            highlightedAyahId: _highlightedAyahId,
+            highlightedSurahId: _highlightedSurahId,
+            selectedAyat: _selectedAyat,
+            bookmarks: qState is QuranLoaded ? qState.bookmarks : const {},
+            richBookmarks: qState is QuranLoaded ? qState.richBookmarks : const [],
+            juz: pageData.juz,
+            hizb: pageData.hizb,
+            surahName: pageData.surahName,
+            onAyahTap: ({required int surahId, required int ayahId}) {
+              final surah = repo.getSurahById(surahId);
+              if (surah == null) return;
+              final ayah = surah.verses.firstWhere(
+                (v) => v.id == ayahId,
+                orElse: () => surah.verses.first,
+              );
+              _onAyahTap(
+                surahId: surahId,
+                surahName: surah.name,
+                ayah: ayah,
+                page: pageNum,
+              );
+            },
+            onAyahLongPress: ({required int surahId, required int ayahId}) {
+              final surah = repo.getSurahById(surahId);
+              if (surah == null) return;
+              final ayah = surah.verses.firstWhere(
+                (v) => v.id == ayahId,
+                orElse: () => surah.verses.first,
+              );
+              _onAyahLongPress(
+                surahId: surahId,
+                surahName: surah.name,
+                ayah: ayah,
+              );
+            },
+            onPageTap: () {
+              if (!_isSelectionMode) {
+                setState(() => _showControls = !_showControls);
+              }
+            },
+            onPreviousPage: () {
+              if (_currentPage > 1) {
+                _pageController.previousPage(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                );
+              }
+            },
+            onNextPage: () {
+              if (_currentPage < 604) {
+                _pageController.nextPage(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                );
+              }
+            },
+          );
+        }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Stack(
-          children: [
-            // ── Primary Mushaf Reading Surface ─────────────────────────────
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  if (!_isSelectionMode) {
-                    setState(() => _showControls = !_showControls);
-                  }
-                },
-                child: Container(
-                  color: bgCard,
-                  child: Center(
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      alignment: Alignment.center,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          minWidth: 380.0,
-                          maxWidth: 380.0,
-                          minHeight: 610.0,
-                        ),
-                        child: _buildMushafPageContent(
-                          pageData: pageData,
-                          pageNum: pageNum,
-                          textColor: textColor,
-                          isCenteredPage: isCenteredPage,
-                          qState: qState,
-                          bronze: bronze,
-                        ),
-                      ),
+        return _buildLegacyMushafPage(pageData, pageNum, textColor, isCenteredPage, qState, bronze);
+      },
+    );
+  }
+
+  Widget _buildLegacyMushafPage(
+    MushafPageModel pageData,
+    int pageNum,
+    Color textColor,
+    bool isCenteredPage,
+    QuranState qState,
+    Color bronze,
+  ) {
+    final bgPaper = _isNightMode ? nightPaper : paperBg;
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              if (!_isSelectionMode) {
+                setState(() => _showControls = !_showControls);
+              }
+            },
+            child: Container(
+              color: bgPaper,
+              alignment: Alignment.center,
+              child: AspectRatio(
+                aspectRatio: kMushafAspectRatio,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: kMushafPageWidth,
+                    height: kMushafPageHeight,
+                    child: _buildMushafPageContent(
+                      pageData: pageData,
+                      pageNum: pageNum,
+                      textColor: textColor,
+                      isCenteredPage: isCenteredPage,
+                      qState: qState,
+                      bronze: bronze,
                     ),
                   ),
                 ),
               ),
             ),
+          ),
+        ),
 
-            // ── Page edge tap zones (navigation) ───────────────────────────
-            // Tap LEFT edge → previous page (RTL Mushaf: right-to-left)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 48,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  if (_currentPage > 1) {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 280),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                },
-              ),
-            ),
-            // Tap RIGHT edge → next page
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: 48,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  if (_currentPage < 604) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 280),
-                      curve: Curves.easeInOut,
-                    );
-                  }
-                },
-              ),
-            ),
-          ],
-        );
-      },
+        // Tap LEFT edge → previous page
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 48,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              if (_currentPage > 1) {
+                _pageController.previousPage(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                );
+              }
+            },
+          ),
+        ),
+        // Tap RIGHT edge → next page
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 48,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              if (_currentPage < 604) {
+                _pageController.nextPage(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                );
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 
   /// Builds the actual content of the fixed Mushaf page canvas.
-  /// This runs on a 380-wide logical canvas and is scaled proportionally by FittedBox.
+  /// This runs on a rigid 385 x 620 logical canvas and is scaled proportionally by FittedBox.
   Widget _buildMushafPageContent({
     required MushafPageModel pageData,
     required int pageNum,
@@ -1890,17 +1982,17 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     required QuranState qState,
     required Color bronze,
   }) {
-    final bgCard = _isNightMode ? nightPaper : paperBg;
+    final bgPaper = _isNightMode ? nightPaper : paperBg;
 
     return Container(
-      color: bgCard,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      color: bgPaper,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Upper content (Header + Golden line + Cartouche + Ayat) ──────
+          // ── Header: In-Page Surah Name + Juz + Ornamental Divider ──────────
           Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1915,45 +2007,68 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
-              for (final segment in pageData.segments) ...[
-                // Surah Header Banner
-                if (segment.startsSurah)
-                  _buildCompactSurahHeader(segment, pageData.juz),
-
-                // Bismillah calligraphic header
-                if (segment.startsSurah &&
-                    segment.surahId != 1 &&
-                    segment.surahId != 9)
-                  _buildCompactBismillah(),
-
-                // Ayah text spans
-                Directionality(
-                  textDirection: TextDirection.rtl,
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        for (final ayah in segment.verses)
-                          ..._buildAyahSpans(
-                            segment: segment,
-                            ayah: ayah,
-                            textColor: textColor,
-                            qState: qState,
-                          ),
-                      ],
-                    ),
-                    textAlign: isCenteredPage
-                        ? TextAlign.center
-                        : TextAlign.justify,
-                    textDirection: TextDirection.rtl,
-                    softWrap: true,
-                  ),
-                ),
-              ],
             ],
           ),
 
-          // ── Page Footer ───────────────────────────────────────────────────
+          // ── Center Reading Body: Surah Banners + Deterministic Verses ──────
+          Expanded(
+            child: Container(
+              alignment: isCenteredPage ? Alignment.center : Alignment.topCenter,
+              padding: EdgeInsets.symmetric(
+                vertical: isCenteredPage ? 20.0 : 2.0,
+                horizontal: isCenteredPage ? 14.0 : 0.0,
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: isCenteredPage ? Alignment.center : Alignment.topCenter,
+                child: SizedBox(
+                  width: kMushafPageWidth - 32.0, // Fixed 353.0 reading width
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final segment in pageData.segments) ...[
+                        // Surah Header Banner
+                        if (segment.startsSurah)
+                          _buildCompactSurahHeader(segment, pageData.juz),
+
+                        // Bismillah calligraphic header
+                        if (segment.startsSurah &&
+                            segment.surahId != 1 &&
+                            segment.surahId != 9)
+                          _buildCompactBismillah(),
+
+                        // Ayah text spans
+                        Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                for (final ayah in segment.verses)
+                                  ..._buildAyahSpans(
+                                    segment: segment,
+                                    ayah: ayah,
+                                    textColor: textColor,
+                                    qState: qState,
+                                  ),
+                              ],
+                            ),
+                            textAlign: isCenteredPage
+                                ? TextAlign.center
+                                : TextAlign.justify,
+                            textDirection: TextDirection.rtl,
+                            softWrap: true,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Footer: Ornamental Divider + Page Number ───────────────────────
           _buildInPageFooter(pageData, bronze),
         ],
       ),
