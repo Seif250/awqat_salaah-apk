@@ -117,10 +117,15 @@ class QcfFontService {
       // 3. Register font dynamically in Flutter's FontLoader
       final familyName = fontFamilyForPage(page);
       final fontLoader = FontLoader(familyName);
-      fontLoader.addFont(Future.value(ByteData.view(fontBytes.buffer)));
+      fontLoader.addFont(Future.value(ByteData.view(
+        fontBytes.buffer,
+        fontBytes.offsetInBytes,
+        fontBytes.lengthInBytes,
+      )));
       await fontLoader.load();
 
       _loadedPages.add(page);
+      fontLoadedNotifier.value = 0;
       fontLoadedNotifier.value = page;
       debugPrint('[QcfFontService] Successfully loaded QCF V2 font: $familyName');
       return true;

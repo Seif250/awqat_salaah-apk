@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/bookmark_model.dart';
 import '../../data/models/qcf_page_model.dart';
+import '../../services/qcf_font_service.dart';
 import 'ayah_gesture_recognizer.dart';
 import 'ayah_rosette.dart';
 
@@ -69,8 +70,40 @@ class QcfMushafPageRenderer extends StatefulWidget {
 
 class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
   @override
+  void initState() {
+    super.initState();
+    QcfFontService.instance.fontLoadedNotifier.addListener(_onFontLoaded);
+    _ensureFont();
+  }
+
+  @override
+  void didUpdateWidget(QcfMushafPageRenderer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pageModel.page != widget.pageModel.page) {
+      _ensureFont();
+    }
+  }
+
+  @override
+  void dispose() {
+    QcfFontService.instance.fontLoadedNotifier.removeListener(_onFontLoaded);
+    super.dispose();
+  }
+
+  void _onFontLoaded() {
+    if (QcfFontService.instance.isFontLoaded(widget.pageModel.page)) {
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _ensureFont() {
+    QcfFontService.instance.ensurePageFont(widget.pageModel.page);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final pageNum = widget.pageModel.page;
+    final isQcfLoaded = QcfFontService.instance.isFontLoaded(pageNum);
     final bgPaper = widget.isNightMode ? QcfMushafPageRenderer.nightPaper : QcfMushafPageRenderer.paperBg;
     final textDarkColor = widget.isNightMode ? QcfMushafPageRenderer.nightText : QcfMushafPageRenderer.textDark;
     final secondary = widget.isNightMode ? QcfMushafPageRenderer.nightSecondary : QcfMushafPageRenderer.secondaryText;
@@ -113,6 +146,7 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
                       gold,
                       readingWidth,
                       availableLinesHeight,
+                      isQcfLoaded,
                     ),
                   ),
                 ),
@@ -156,8 +190,12 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
     Color gold,
     double readingWidth,
     double availableLinesHeight,
+    bool isQcfLoaded,
   ) {
     final lines = widget.pageModel.lines;
+    final fontFamily = isQcfLoaded
+        ? QcfFontService.fontFamilyForPage(pageNum)
+        : 'AmiriQuran';
 
     // ── PAGE 1: Al-Fatihah ──────────────────────────────────────────────────
     // Authentic opening page: 7 lines, vertically centered with graceful breathing space
@@ -181,6 +219,8 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
                     gold,
                     readingWidth,
                     p1SlotHeight,
+                    isQcfLoaded,
+                    fontFamily,
                   ),
                 ),
               ),
@@ -213,6 +253,8 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
                     gold,
                     readingWidth,
                     p2SlotHeight,
+                    isQcfLoaded,
+                    fontFamily,
                   ),
                 ),
               ),
@@ -240,6 +282,8 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
               gold,
               readingWidth,
               lineSlotHeight,
+              isQcfLoaded,
+              fontFamily,
             ),
           ),
       ],
@@ -255,14 +299,25 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
     Color gold,
     double readingWidth,
     double slotHeight,
+    bool isQcfLoaded,
+    String fontFamily,
   ) {
     if (line.isSurahHeader) {
       return _buildSurahHeaderBanner(line, textDark, gold, readingWidth, slotHeight);
     }
     if (line.isBasmala) {
-      return _buildBasmalaLine(line, textDark, readingWidth, slotHeight);
+      return _buildBasmalaLine(line, pageNum, textDark, readingWidth, slotHeight, isQcfLoaded);
     }
-    return _buildTextLine(line, pageNum, textDark, gold, readingWidth, slotHeight);
+    return _buildTextLine(
+      line,
+      pageNum,
+      textDark,
+      gold,
+      readingWidth,
+      slotHeight,
+      isQcfLoaded,
+      fontFamily,
+    );
   }
 
   /// Calligraphic Surah Header Banner with traditional Islamic framing.
@@ -315,11 +370,15 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
   /// Calligraphic Basmalah Line
   Widget _buildBasmalaLine(
     QcfLineModel line,
+    int pageNum,
     Color textColor,
     double readingWidth,
     double slotHeight,
+    bool isQcfLoaded,
   ) {
-    const glyphText = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ';
+    final useQcf = isQcfLoaded && line.qpcV2 != null && line.qpcV2!.isNotEmpty;
+    final glyphText = useQcf ? line.qpcV2! : 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ';
+    final font = useQcf ? QcfFontService.fontFamilyForPage(pageNum) : 'AmiriQuran';
 
     return Center(
       child: FittedBox(
@@ -331,8 +390,8 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
             textAlign: TextAlign.center,
             textDirection: TextDirection.rtl,
             style: TextStyle(
-              fontFamily: 'AmiriQuran',
-              fontFamilyFallback: const ['Amiri', 'serif'],
+              fontFamily: font,
+              fontFamilyFallback: const ['AmiriQuran', 'Amiri', 'serif'],
               fontSize: (slotHeight * 0.58).clamp(22.0, 26.0),
               height: 1.3,
               color: textColor,
@@ -352,20 +411,21 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
     Color gold,
     double readingWidth,
     double slotHeight,
+    bool isQcfLoaded,
+    String fontFamily,
   ) {
     if (line.words.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    const fontFam = 'AmiriQuran';
-
     // Proportional font sizing:
-    // Opening pages 1 & 2 have generous, readable font size. Standard pages scale with readingWidth.
+    // Opening pages 1 & 2 have generous, readable font size.
+    // Standard pages scale with readingWidth matching reference canvas (353.0 px -> 22.0 px font size).
     final double wordFontSize = (pageNum == 1)
         ? 26.0
         : ((pageNum == 2)
             ? 25.0
-            : (readingWidth / 15.5).clamp(20.0, 25.0));
+            : ((readingWidth / 353.0) * 22.0).clamp(18.0, 26.0));
 
     // Line centering logic:
     // Page 1: all lines centered.
@@ -381,43 +441,29 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
       final word = line.words[i];
       spans.add(_buildWordSpan(
         word: word,
-        fontFamily: fontFam,
+        fontFamily: fontFamily,
         wordFontSize: wordFontSize,
         isLastWord: i == line.words.length - 1,
         goldColor: gold,
+        isQcfLoaded: isQcfLoaded,
       ));
     }
 
-    // Full lines: FittedBox.fitWidth scales text to exactly fill the
-    // available width. The text is unconstrained so FittedBox sees its
-    // true natural width and calculates the correct scale factor.
-    // Centered (short) lines: scaleDown so they don't get stretched.
-    if (isCentered) {
-      return FittedBox(
+    // In QCF mode, glyphs are naturally sized for the Mushaf line width.
+    // In both QCF and fallback mode, BoxFit.scaleDown ensures text scales to fit within readingWidth
+    // without inflating shorter lines into oversized or heavier text.
+    return Center(
+      child: FittedBox(
         fit: BoxFit.scaleDown,
-        alignment: Alignment.center,
+        alignment: isCentered ? Alignment.center : Alignment.centerRight,
         child: Directionality(
           textDirection: TextDirection.rtl,
           child: Text.rich(
             TextSpan(children: spans),
-            textAlign: TextAlign.center,
+            textAlign: isCentered ? TextAlign.center : TextAlign.right,
             textDirection: TextDirection.rtl,
             softWrap: false,
           ),
-        ),
-      );
-    }
-
-    return FittedBox(
-      fit: BoxFit.fitWidth,
-      alignment: Alignment.center,
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Text.rich(
-          TextSpan(children: spans),
-          textAlign: TextAlign.right,
-          textDirection: TextDirection.rtl,
-          softWrap: false,
         ),
       ),
     );
@@ -429,6 +475,7 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
     required double wordFontSize,
     required bool isLastWord,
     required Color goldColor,
+    required bool isQcfLoaded,
   }) {
     final surahId = word.surahId ?? 1;
     final ayahId = word.ayahId ?? 1;
@@ -485,7 +532,83 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
 
     final suffix = isLastWord ? '' : ' ';
 
-    // Word with Ayah end rosette:
+    // ── QCF V2 Font Mode (Pixel-perfect authentic Medina Mushaf) ──────────
+    if (isQcfLoaded) {
+      // In QCF V2, Ayah end words contain "[word_glyph] [ayah_marker_glyph]"
+      if (word.isAyahEnd) {
+        final qpcText = word.qpcV2.trim();
+        final spaceIdx = qpcText.indexOf(' ');
+        if (spaceIdx != -1) {
+          final wordGlyph = qpcText.substring(0, spaceIdx);
+          final markerGlyph = qpcText.substring(spaceIdx + 1);
+          return TextSpan(
+            children: [
+              TextSpan(
+                text: '$wordGlyph ',
+                recognizer: AyahGestureRecognizer()
+                  ..onTap = () {
+                    widget.onAyahTap(surahId: surahId, ayahId: ayahId);
+                  }
+                  ..onLongPress = () {
+                    widget.onAyahLongPress(surahId: surahId, ayahId: ayahId);
+                  },
+                style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontFamilyFallback: const ['AmiriQuran', 'serif'],
+                  fontSize: wordFontSize,
+                  fontWeight: FontWeight.w400,
+                  color: wordTextColor,
+                  backgroundColor: wordBgColor,
+                  height: 1.0,
+                ),
+              ),
+              TextSpan(
+                text: '$markerGlyph$suffix',
+                recognizer: AyahGestureRecognizer()
+                  ..onTap = () {
+                    widget.onAyahTap(surahId: surahId, ayahId: ayahId);
+                  }
+                  ..onLongPress = () {
+                    widget.onAyahLongPress(surahId: surahId, ayahId: ayahId);
+                  },
+                style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontFamilyFallback: const ['AmiriQuran', 'serif'],
+                  fontSize: wordFontSize,
+                  fontWeight: FontWeight.w400,
+                  color: goldColor,
+                  backgroundColor: wordBgColor,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          );
+        }
+      }
+
+      // Standard QCF word glyph
+      return TextSpan(
+        text: '${word.qpcV2}$suffix',
+        recognizer: AyahGestureRecognizer()
+          ..onTap = () {
+            widget.onAyahTap(surahId: surahId, ayahId: ayahId);
+          }
+          ..onLongPress = () {
+            widget.onAyahLongPress(surahId: surahId, ayahId: ayahId);
+          },
+        style: TextStyle(
+          fontFamily: fontFamily,
+          fontFamilyFallback: const ['AmiriQuran', 'serif'],
+          fontSize: wordFontSize,
+          fontWeight: FontWeight.w400,
+          color: wordTextColor,
+          backgroundColor: wordBgColor,
+          height: 1.0,
+        ),
+      );
+    }
+
+    // ── Fallback Mode: AmiriQuran + Uthmani Unicode text ───────────────────
     if (word.isAyahEnd) {
       final cleanWord = word.word.replaceAll(RegExp(r'[٠-٩0-9]+'), '').trim();
       return TextSpan(
@@ -536,7 +659,7 @@ class _QcfMushafPageRendererState extends State<QcfMushafPageRenderer> {
       );
     }
 
-    // Standard word rendering
+    // Standard fallback word rendering
     return TextSpan(
       text: '${word.word}$suffix',
       recognizer: AyahGestureRecognizer()

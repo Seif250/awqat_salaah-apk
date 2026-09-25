@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../data/models/qcf_page_model.dart';
+import 'qcf_font_service.dart';
 
 /// Service responsible for loading and caching the official 604-page
 /// deterministic QCF V2 layout models from assets.
@@ -19,6 +20,9 @@ class QcfLayoutService {
   /// Loads and parses the QCF page layout for [page] (1..604).
   Future<QcfPageModel?> loadPage(int page) async {
     if (page < 1 || page > 604) return null;
+
+    // Trigger font loading in parallel with layout loading
+    QcfFontService.instance.ensurePageFont(page);
 
     if (_cache.containsKey(page)) {
       _prefetchAdjacent(page);
