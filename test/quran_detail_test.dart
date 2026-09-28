@@ -53,6 +53,34 @@ void main() {
   }
 
   group('Quran Ayah Long-Press Bottom Sheet Tests', () {
+    testWidgets('Opening various Surahs (Al-Baqarah, Ali Imran, Al-Kahf, An-Nas) does not crash', (tester) async {
+      for (final surahId in [2, 3, 18, 114]) {
+        final surah = quranRepository.getSurahById(surahId)!;
+        await tester.pumpWidget(
+          MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<QuranRepository>.value(value: quranRepository),
+            ],
+            child: BlocProvider<QuranBloc>.value(
+              value: quranBloc,
+              child: MaterialApp(
+                theme: AppTheme.lightTheme,
+                home: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: SurahDetailPage(
+                    surah: surah,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull);
+      }
+    });
+
     testWidgets('Long press on verse opens refined Bottom Sheet with exact requested actions',
         (tester) async {
       await tester.pumpWidget(buildTestableWidget());
@@ -104,7 +132,7 @@ void main() {
       expect(find.text('تفسير الآية الكريمة'), findsOneWidget);
     });
 
-    testWidgets('Top toolbar and bottom progress control render with quiet, minimal hierarchy',
+    testWidgets('Top toolbar renders clean actions and bottom control bar is removed',
         (tester) async {
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
@@ -113,14 +141,14 @@ void main() {
       expect(find.textContaining('سورة الفاتحة'), findsWidgets);
       expect(find.textContaining('الجزء ١'), findsWidgets);
 
-      // Essential quiet icons in toolbar
+      // Essential quiet icons in toolbar: Index, Khatmah, Themes, Ribbons
       expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
       expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
       expect(find.byIcon(Icons.bookmark_border_rounded), findsOneWidget);
 
-      // Bottom progress control renders page metadata and progress indicator
-      expect(find.text('صفحة ١'), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      // Bottom progress bar is completely removed as requested
+      expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
     testWidgets('Tapping page background toggles progressive disclosure (show/hide controls)',
@@ -128,25 +156,72 @@ void main() {
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
 
-      // Initially controls are shown
+      // Initially toolbar is shown
       expect(find.byType(AppBar), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
 
       // Toggle controls via state
       final state = tester.state(find.byType(SurahDetailPage)) as dynamic;
       state.toggleControls();
       await tester.pumpAndSettle();
 
-      // Controls are hidden for full-screen immersive reading
+      // Toolbar is hidden for full-screen immersive reading
       expect(find.byType(AppBar), findsNothing);
-      expect(find.byType(LinearProgressIndicator), findsNothing);
 
       // Toggle back
       state.toggleControls();
       await tester.pumpAndSettle();
 
       expect(find.byType(AppBar), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('Reading themes options sheet renders the 3 paper themes without font sliders',
+        (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      // Open themes dialog
+      await tester.tap(find.byIcon(Icons.tune_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ثيمات ورق المصحف الشريف'), findsOneWidget);
+      expect(find.text('عاجي ملكي'), findsOneWidget);
+      expect(find.text('بيج تراثي'), findsOneWidget);
+      expect(find.text('ليلي هادئ'), findsOneWidget);
+
+      // Obsolete sliders must NOT be present
+      expect(find.text('حجم الخط'), findsNothing);
+      expect(find.text('سمك الخط'), findsNothing);
+    });
+
+    testWidgets('Quick Index sheet renders 3 tabs: Surahs, Ajzaa, and Pages',
+        (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      // Open quick index
+      await tester.tap(find.byIcon(Icons.grid_view_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('فهرس المصحف الشريف'), findsOneWidget);
+      expect(find.text('السور'), findsOneWidget);
+      expect(find.text('الأجزاء'), findsOneWidget);
+      expect(find.text('الصفحات'), findsOneWidget);
+    });
+
+    testWidgets('Bookmark ribbon picker displays the 4 colored ribbons',
+        (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      // Open ribbon picker
+      await tester.tap(find.byIcon(Icons.bookmark_border_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('فواصل المصحف الشريف الملونة'), findsOneWidget);
+      expect(find.text('الذهبية'), findsOneWidget);
+      expect(find.text('الخضراء'), findsOneWidget);
+      expect(find.text('الزرقاء'), findsOneWidget);
+      expect(find.text('الوردية'), findsOneWidget);
     });
 
     testWidgets('Bookmarked Ayah includes Ayah marker seamlessly in highlight area',

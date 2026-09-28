@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/prayer_constants.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -12,8 +13,10 @@ import '../../../azkar/presentation/bloc/azkar_bloc.dart';
 import '../../../azkar/presentation/bloc/azkar_event.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
 import '../../../quran/presentation/bloc/quran_bloc.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../quran/presentation/bloc/quran_state.dart';
 import '../../../quran/presentation/pages/surah_detail_page.dart';
+import '../../../quran/services/daily_ayah_service.dart';
 import '../../../settings/presentation/bloc/settings_bloc.dart';
 import '../../../settings/presentation/bloc/settings_state.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
@@ -52,6 +55,11 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -616,8 +624,9 @@ class _HomePageState extends State<HomePage> {
 
               return Expanded(
                 child: Container(
+                  alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  margin: const EdgeInsets.symmetric(horizontal: 1.5),
                   decoration: BoxDecoration(
                     color: isNext
                         ? (isDark
@@ -636,33 +645,45 @@ class _HomePageState extends State<HomePage> {
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        p.type.nameArabic,
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 12,
-                          fontWeight: isNext ? FontWeight.bold : FontWeight.w500,
-                          color: isNext
-                              ? (isDark ? AppColors.accentGoldLight : AppColors.primary)
-                              : (isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          p.type.nameArabic,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 11.5,
+                            fontWeight: isNext ? FontWeight.bold : FontWeight.w600,
+                            color: isNext
+                                ? (isDark ? AppColors.accentGoldLight : AppColors.primary)
+                                : (isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        timeFormatted,
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 12,
-                          fontWeight: isNext ? FontWeight.bold : FontWeight.w600,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                          color: isNext
-                              ? (isDark ? Colors.white : AppColors.textPrimaryLight)
-                              : (isDark
-                                  ? AppColors.textPrimaryDark.withValues(alpha: 0.8)
-                                  : AppColors.textPrimaryLight),
+                      const SizedBox(height: 3),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          timeFormatted,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 11.5,
+                            fontWeight: isNext ? FontWeight.bold : FontWeight.w600,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                            color: isNext
+                                ? (isDark ? Colors.white : AppColors.textPrimaryLight)
+                                : (isDark
+                                    ? AppColors.textPrimaryDark.withValues(alpha: 0.85)
+                                    : AppColors.textPrimaryLight),
+                          ),
                         ),
                       ),
                     ],
@@ -878,8 +899,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// LEVEL 3: Daily Ayah Reflection (Calm, elegant surface near the bottom)
+  /// LEVEL 3: Daily Ayah Reflection (Dynamic, changing every single day)
   Widget _buildDailyAyahSection(BuildContext context, bool isDark) {
+    final dailyAyah = DailyAyahService.instance.getTodayAyah();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -894,81 +917,141 @@ class _HomePageState extends State<HomePage> {
       ),
       child: Column(
         children: [
-          Text(
-            'آية اليوم',
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.accentGoldLight : AppColors.accentGold,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'آية اليوم',
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.accentGoldLight : AppColors.accentGold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: (isDark ? AppColors.accentGold : AppColors.primary).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  dailyAyah.theme,
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            '﴿ أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ ﴾',
+          const SizedBox(height: 10),
+          Text(
+            '﴿ ${dailyAyah.text} ﴾',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: 'Cairo',
-              fontSize: 16.5,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               height: 1.7,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
-            'سورة الرعد • الآية ٢٨',
+            'سورة ${dailyAyah.surahName} • الآية ${toArabicDigits(dailyAyah.ayahId)} • صفحة ${toArabicDigits(dailyAyah.page)}',
             style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 11.5,
               color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
             ),
           ),
-          const SizedBox(height: 8),
-          InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: () {
-              final quranState = context.read<QuranBloc>().state;
-              if (quranState is QuranLoaded) {
-                final surahRad = quranState.allSurahs.firstWhere(
-                  (s) => s.id == 13,
-                  orElse: () => quranState.allSurahs.first,
-                );
-                Navigator.push(
-                  context,
-                  FadeSlidePageRoute(
-                    page: SurahDetailPage(
-                      surah: surahRad,
-                      initialAyah: 28,
-                    ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 1. Open in Mushaf
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  final quranState = context.read<QuranBloc>().state;
+                  if (quranState is QuranLoaded) {
+                    final surah = quranState.allSurahs.firstWhere(
+                      (s) => s.id == dailyAyah.surahId,
+                      orElse: () => quranState.allSurahs.first,
+                    );
+                    Navigator.push(
+                      context,
+                      FadeSlidePageRoute(
+                        page: SurahDetailPage(
+                          surah: surah,
+                          initialAyah: dailyAyah.ayahId,
+                        ),
+                      ),
+                    );
+                  } else {
+                    _navigateToTab(1);
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.menu_book_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'فتح في المصحف',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              } else {
-                _navigateToTab(1);
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'فتح السورة في المصحف',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.accentGoldLight : AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 10,
-                    color: isDark ? AppColors.accentGoldLight : AppColors.primary,
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              // 2. Share Ayah
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  final shareText = '﴿ ${dailyAyah.text} ﴾\n[سورة ${dailyAyah.surahName}: الآية ${dailyAyah.ayahId}]\n\nتطبيق وِرد - صلاتك، قرآنك، ذكرك';
+                  Share.share(shareText);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.share_outlined,
+                        size: 14,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'مشاركة الآية',
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

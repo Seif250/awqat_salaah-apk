@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../utils/page_transitions.dart';
 import 'app_colors.dart';
 
@@ -46,6 +47,11 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
         iconTheme: const IconThemeData(color: AppColors.textPrimaryLight),
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: AppColors.textPrimaryLight,
@@ -112,6 +118,11 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
         iconTheme: const IconThemeData(color: AppColors.textPrimaryDark),
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: AppColors.textPrimaryDark,

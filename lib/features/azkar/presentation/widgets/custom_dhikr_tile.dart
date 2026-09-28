@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 import '../../data/models/azkar_item_model.dart';
@@ -44,7 +45,12 @@ class CustomDhikrTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onIncrement,
+          onTap: onIncrement != null
+              ? () {
+                  HapticFeedback.selectionClick();
+                  onIncrement!();
+                }
+              : null,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

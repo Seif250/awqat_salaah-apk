@@ -223,6 +223,11 @@ class _AzkarPageState extends State<AzkarPage>
 
     return Scaffold(
       appBar: AppBar(
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        ),
         elevation: 0,
         scrolledUnderElevation: 0,
         toolbarHeight: 52,
@@ -442,7 +447,7 @@ class _AzkarPageState extends State<AzkarPage>
             context.read<AzkarBloc>().add(IncrementZikrCountEvent(
                   id: item.id,
                   targetCount: item.targetCount,
-                  category: item.category,
+                  category: state.selectedCategory,
                 ));
           },
           onReset: () {
@@ -508,24 +513,28 @@ class _AzkarPageState extends State<AzkarPage>
         },
         itemBuilder: (context, index) {
           final item = state.currentItems[index];
-          return AzkarCard(
+          return ReorderableDelayedDragStartListener(
             key: ValueKey(item.id),
-            item: item,
-            onIncrement: () {
-              context.read<AzkarBloc>().add(IncrementZikrCountEvent(
-                    id: item.id,
-                    targetCount: item.targetCount,
-                    category: item.category,
-                  ));
-            },
-            onToggleComplete: () {
-              context.read<AzkarBloc>().add(ToggleZikrCompletionEvent(
-                    id: item.id,
-                    targetCount: item.targetCount,
-                    category: item.category,
-                  ));
-            },
-            onEdit: () => _openEditDhikr(context, item),
+            index: index,
+            child: AzkarCard(
+              item: item,
+              reorderIndex: index,
+              onIncrement: () {
+                context.read<AzkarBloc>().add(IncrementZikrCountEvent(
+                      id: item.id,
+                      targetCount: item.targetCount,
+                      category: state.selectedCategory,
+                    ));
+              },
+              onToggleComplete: () {
+                context.read<AzkarBloc>().add(ToggleZikrCompletionEvent(
+                      id: item.id,
+                      targetCount: item.targetCount,
+                      category: state.selectedCategory,
+                    ));
+              },
+              onEdit: () => _openEditDhikr(context, item),
+            ),
           );
         },
       ),

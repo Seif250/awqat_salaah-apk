@@ -14,6 +14,7 @@ import 'package:awqat_salaah/features/settings/presentation/bloc/settings_bloc.d
 import 'package:awqat_salaah/features/settings/presentation/bloc/settings_state.dart';
 import 'package:awqat_salaah/features/azkar/presentation/bloc/azkar_bloc.dart';
 import 'package:awqat_salaah/features/azkar/presentation/bloc/azkar_state.dart';
+import 'package:awqat_salaah/features/quran/services/daily_ayah_service.dart';
 
 class FakePrayerBloc extends Cubit<PrayerState> implements PrayerBloc {
   FakePrayerBloc(super.initialState);
@@ -135,8 +136,8 @@ void main() {
 
     // 8. Level 3: Daily Ayah
     expect(find.text('آية اليوم'), findsOneWidget);
-    expect(find.text('﴿ أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ ﴾'), findsOneWidget);
-    expect(find.text('سورة الرعد • الآية ٢٨'), findsOneWidget);
-    expect(find.text('فتح السورة في المصحف'), findsOneWidget);
+    final dailyAyah = DailyAyahService.instance.getTodayAyah();
+    expect(find.text('﴿ ${dailyAyah.text} ﴾'), findsOneWidget);
+    expect(find.text('فتح في المصحف'), findsOneWidget);
   });
 }

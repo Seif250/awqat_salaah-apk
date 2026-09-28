@@ -94,7 +94,7 @@ class AzkarCardHeader extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Cairo',
                     fontWeight: FontWeight.w600,
-                    fontSize: 14.5,
+                    fontSize: 13.5,
                     color: isCompleted
                         ? AppColors.primary
                         : (isDark ? Colors.white70 : const Color(0xFF4B5563)),
@@ -135,7 +135,7 @@ class AzkarCardHeader extends StatelessWidget {
         ] else ...[
           // Subtle Repetition Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
             decoration: BoxDecoration(
               color: isCompleted
                   ? (isDark ? AppColors.primary.withValues(alpha: 0.15) : const Color(0xFFE8F5E9))
@@ -198,13 +198,13 @@ class AzkarCardBody extends StatelessWidget {
       children: [
         // Arabic Dhikr Text (THE HERO - large readable font, comfortable line height)
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 2),
           child: Text(
             item.arabicText,
             style: TextStyle(
               fontFamily: 'Cairo',
-              fontSize: 19.5,
-              height: 1.9,
+              fontSize: 17.0,
+              height: 1.62,
               fontWeight: FontWeight.w500,
               color: isDark ? AppColors.azkarTextDark : AppColors.azkarTextLight,
             ),
@@ -215,14 +215,14 @@ class AzkarCardBody extends StatelessWidget {
 
         // Reference & Reward (Subtle, visually separated)
         if (item.reward != null || item.reference != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 7),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.03)
                   : const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isDark ? Colors.white10 : const Color(0xFFE5E7EB),
                 width: 0.6,
@@ -235,14 +235,14 @@ class AzkarCardBody extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('✨ ', style: TextStyle(fontSize: 12)),
+                      const Text('✨ ', style: TextStyle(fontSize: 11)),
                       Expanded(
                         child: Text(
                           item.reward!,
                           style: TextStyle(
                             fontFamily: 'Cairo',
-                            fontSize: 12,
-                            height: 1.5,
+                            fontSize: 11.5,
+                            height: 1.45,
                             color: isDark
                                 ? AppColors.textSecondaryDark
                                 : AppColors.textSecondaryLight,
@@ -254,23 +254,23 @@ class AzkarCardBody extends StatelessWidget {
                   ),
                 ],
                 if (item.reference != null) ...[
-                  if (item.reward != null) const SizedBox(height: 4),
+                  if (item.reward != null) const SizedBox(height: 3),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.menu_book_outlined,
-                        size: 13,
+                        size: 12,
                         color: AppColors.accentGold.withValues(alpha: 0.8),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           item.reference!,
                           style: TextStyle(
                             fontFamily: 'Cairo',
-                            fontSize: 11,
-                            height: 1.4,
+                            fontSize: 10.5,
+                            height: 1.35,
                             color: isDark
                                 ? AppColors.textSecondaryDark
                                 : const Color(0xFF6B7280),
@@ -332,7 +332,7 @@ class AzkarCardProgressFooter extends StatelessWidget {
               child: ScaleTransition(
                 scale: scaleAnimation,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: isCompleted
                         ? (isDark
@@ -354,18 +354,18 @@ class AzkarCardProgressFooter extends StatelessWidget {
                     children: [
                       Icon(
                         isCompleted ? Icons.check_rounded : Icons.fingerprint_rounded,
-                        size: 14,
+                        size: 13,
                         color: isCompleted
                             ? AppColors.primary
                             : (isDark ? Colors.white60 : const Color(0xFF6B7280)),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Text(
                         '${item.currentCount}/${item.targetCount}',
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
+                          fontSize: 12,
                           fontFeatures: const [FontFeature.tabularFigures()],
                           color: isCompleted
                               ? AppColors.primary
@@ -387,7 +387,7 @@ class AzkarCardProgressFooter extends StatelessWidget {
                     : '${item.currentCount} من أصل ${item.targetCount}',
                 style: TextStyle(
                   fontFamily: 'Cairo',
-                  fontSize: 11.5,
+                  fontSize: 11,
                   color: isCompleted
                       ? AppColors.primary
                       : (isDark ? Colors.white38 : const Color(0xFF9CA3AF)),
@@ -402,11 +402,11 @@ class AzkarCardProgressFooter extends StatelessWidget {
                 color: isCompleted
                     ? AppColors.primary
                     : (isDark ? Colors.white24 : const Color(0xFFD1D5DB)),
-                size: 20,
+                size: 19,
               ),
               tooltip: isCompleted ? 'إلغاء التحديد' : 'تحديد كمقروء',
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              padding: const EdgeInsets.all(3),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               onPressed: isReorderMode
                   ? null
                   : () {
@@ -417,9 +417,9 @@ class AzkarCardProgressFooter extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
 
-        // Slim, Subtle Linear Progress Line (3px)
+        // Slim, Subtle Linear Progress Line (2.5px)
         ClipRRect(
           borderRadius: BorderRadius.circular(2),
           child: TweenAnimationBuilder<double>(
@@ -429,7 +429,7 @@ class AzkarCardProgressFooter extends StatelessWidget {
             builder: (context, value, _) {
               return LinearProgressIndicator(
                 value: value,
-                minHeight: 3.0,
+                minHeight: 2.5,
                 backgroundColor: isDark
                     ? Colors.white.withValues(alpha: 0.06)
                     : const Color(0xFFF3F4F6),

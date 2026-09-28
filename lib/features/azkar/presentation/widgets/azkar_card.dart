@@ -91,7 +91,7 @@ class _AzkarCardState extends State<AzkarCard>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: isCompleted
               ? (isDark ? const Color(0xFF0F2218) : const Color(0xFFF3F9F5))
@@ -130,7 +130,7 @@ class _AzkarCardState extends State<AzkarCard>
                   : null,
               borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -145,14 +145,14 @@ class _AzkarCardState extends State<AzkarCard>
                       onMoveDown: widget.onMoveDown,
                       onEdit: widget.onEdit,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
 
                     // Body: Arabic Dhikr text (Hero) and reward / reference
                     AzkarCardBody(
                       item: widget.item,
                       isDark: isDark,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     // Footer: Animated progress bar, counter pill, complete toggle
                     AzkarCardProgressFooter(

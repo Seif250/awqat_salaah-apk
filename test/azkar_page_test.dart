@@ -149,5 +149,21 @@ void main() {
       expect(find.text('1/1'), findsOneWidget);
       expect(find.text('33/100'), findsOneWidget);
     });
+
+    testWidgets('Azkar cards are wrapped in ReorderableDelayedDragStartListener for long-press moving', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      // Verify that every AzkarCard is wrapped in a ReorderableDelayedDragStartListener
+      final listenerFinder = find.byType(ReorderableDelayedDragStartListener);
+      expect(listenerFinder, findsNWidgets(3));
+    });
   });
 }

@@ -20,6 +20,10 @@ class QuranRepository {
   static const String _keyBookmarks = 'quran_bookmarks';
   static const String _keyRichBookmarks = 'quran_rich_bookmarks';
   static const String _keyCollections = 'quran_bookmark_collections';
+  static const String _keyMushafTheme = 'mushaf_reading_theme';
+  static const String _keyKhatmahCheckpoint = 'khatmah_checkpoint_page';
+  static const String _keyKhatmahTargetDays = 'khatmah_target_days';
+  static const String _keyKhatmahStartDate = 'khatmah_start_date';
 
   static final List<BookmarkCollectionModel> _defaultCollections = [
     BookmarkCollectionModel(
@@ -245,6 +249,43 @@ class QuranRepository {
 
   Future<void> setContinuousMode(bool value) async {
     await _prefs.setBool(_keyContinuousMode, value);
+  }
+
+  /// Mushaf reading theme ('ivory', 'sepia', 'night')
+  String getMushafTheme() {
+    return _prefs.getString(_keyMushafTheme) ?? 'ivory';
+  }
+
+  Future<void> setMushafTheme(String theme) async {
+    await _prefs.setString(_keyMushafTheme, theme);
+  }
+
+  /// Khatmah Tracker checkpoint page (1 - 604)
+  int getKhatmahCheckpoint() {
+    return _prefs.getInt(_keyKhatmahCheckpoint) ?? 1;
+  }
+
+  Future<void> setKhatmahCheckpoint(int page) async {
+    await _prefs.setInt(_keyKhatmahCheckpoint, page.clamp(1, 604));
+  }
+
+  /// Khatmah target days (30, 60, 90)
+  int getKhatmahTargetDays() {
+    return _prefs.getInt(_keyKhatmahTargetDays) ?? 30;
+  }
+
+  Future<void> setKhatmahTargetDays(int days) async {
+    await _prefs.setInt(_keyKhatmahTargetDays, days);
+  }
+
+  /// Khatmah start date
+  DateTime? getKhatmahStartDate() {
+    final str = _prefs.getString(_keyKhatmahStartDate);
+    return str != null ? DateTime.tryParse(str) : null;
+  }
+
+  Future<void> setKhatmahStartDate(DateTime date) async {
+    await _prefs.setString(_keyKhatmahStartDate, date.toIso8601String());
   }
 
   /// Legacy bookmarks (surahId:ayahId).

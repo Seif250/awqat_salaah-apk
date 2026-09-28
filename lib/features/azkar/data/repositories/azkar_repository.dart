@@ -178,6 +178,24 @@ class AzkarRepository {
       } else if (progress.completedItemIds.contains(key)) {
         isDone = true;
         count = item.targetCount;
+      } else if (item.isCustom || category == AzkarCategory.custom) {
+        // Fallback for custom azkar: check custom category key or any assigned categories
+        final customKey = scopedKey(item.id, AzkarCategory.custom);
+        if (progress.itemCounts.containsKey(customKey)) {
+          count = progress.itemCounts[customKey] ?? 0;
+          isDone = progress.completedItemIds.contains(customKey) ||
+              (item.targetCount > 0 && count >= item.targetCount);
+        } else {
+          for (final c in item.effectiveCategories) {
+            final cKey = scopedKey(item.id, c);
+            if (progress.itemCounts.containsKey(cKey)) {
+              count = progress.itemCounts[cKey] ?? 0;
+              isDone = progress.completedItemIds.contains(cKey) ||
+                  (item.targetCount > 0 && count >= item.targetCount);
+              break;
+            }
+          }
+        }
       } else if (item.effectiveCategories.length <= 1) {
         // Fallback for single-category legacy data
         count = progress.itemCounts[item.id] ?? 0;
