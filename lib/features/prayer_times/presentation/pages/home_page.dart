@@ -53,7 +53,8 @@ class _HomePageState extends State<HomePage> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
@@ -70,7 +71,9 @@ class _HomePageState extends State<HomePage> {
                 fontFamily: 'Cairo',
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
             Text(
@@ -151,7 +154,9 @@ class _HomePageState extends State<HomePage> {
               return RefreshIndicator(
                 color: AppColors.accentGold,
                 onRefresh: () async {
-                  context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+                  context
+                      .read<PrayerBloc>()
+                      .add(const RefreshPrayerTimesEvent());
                 },
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -234,7 +239,8 @@ class _HomePageState extends State<HomePage> {
     required VoidCallback onLocationTap,
   }) {
     final now = DateTime.now();
-    final gregorianDate = DateUtilsHelper.getGregorianDateFormatted(now, locale: 'ar');
+    final gregorianDate =
+        DateUtilsHelper.getGregorianDateFormatted(now, locale: 'ar');
     final hijriDate = DateUtilsHelper.getHijriDateFormatted(now, locale: 'ar');
 
     return Padding(
@@ -244,39 +250,54 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // City Selector
-          InkWell(
-            onTap: onLocationTap,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    size: 16,
-                    color: AppColors.accentGold,
+          Expanded(
+            child: Semantics(
+              button: true,
+              label: 'تغيير الموقع، $cityName، $countryName',
+              child: InkWell(
+                onTap: onLocationTap,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 16,
+                        color: AppColors.accentGold,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '$cityName، $countryName',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 18,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$cityName، $countryName',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 18,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
+          const SizedBox(width: 12),
 
           // Hijri and Gregorian Dates
           Column(
@@ -298,7 +319,9 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 11,
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                 ),
               ),
             ],
@@ -314,7 +337,8 @@ class _HomePageState extends State<HomePage> {
     required QuranState quranState,
     required bool isDark,
   }) {
-    final hasLastRead = quranState is QuranLoaded && quranState.lastRead != null;
+    final hasLastRead =
+        quranState is QuranLoaded && quranState.lastRead != null;
     final lastRead = hasLastRead ? quranState.lastRead : null;
     final page = lastRead?.page ?? 1;
     final progress = (page / 604.0).clamp(0.0, 1.0);
@@ -334,14 +358,17 @@ class _HomePageState extends State<HomePage> {
                   fontFamily: 'Cairo',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ),
               ),
               InkWell(
                 onTap: () => _navigateToTab(1),
                 borderRadius: BorderRadius.circular(6),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -351,14 +378,18 @@ class _HomePageState extends State<HomePage> {
                           fontFamily: 'Cairo',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                          color: isDark
+                              ? AppColors.accentGoldLight
+                              : AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 11,
-                        color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                        color: isDark
+                            ? AppColors.accentGoldLight
+                            : AppColors.primary,
                       ),
                     ],
                   ),
@@ -423,13 +454,16 @@ class _HomePageState extends State<HomePage> {
                           decoration: BoxDecoration(
                             color: isDark
                                 ? AppColors.primary.withValues(alpha: 0.25)
-                                : AppColors.primaryContainer.withValues(alpha: 0.5),
+                                : AppColors.primaryContainer
+                                    .withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
                             Icons.menu_book_rounded,
                             size: 22,
-                            color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                            color: isDark
+                                ? AppColors.accentGoldLight
+                                : AppColors.primary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -471,7 +505,8 @@ class _HomePageState extends State<HomePage> {
 
                         // Primary Action
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? AppColors.primaryLight.withValues(alpha: 0.2)
@@ -493,14 +528,18 @@ class _HomePageState extends State<HomePage> {
                                   fontFamily: 'Cairo',
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.bold,
-                                  color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                                  color: isDark
+                                      ? AppColors.accentGoldLight
+                                      : AppColors.primary,
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Icon(
                                 Icons.arrow_back_ios_new_rounded,
                                 size: 10,
-                                color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                                color: isDark
+                                    ? AppColors.accentGoldLight
+                                    : AppColors.primary,
                               ),
                             ],
                           ),
@@ -560,14 +599,17 @@ class _HomePageState extends State<HomePage> {
                   fontFamily: 'Cairo',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ),
               ),
               InkWell(
                 onTap: () => _navigateToTab(2),
                 borderRadius: BorderRadius.circular(6),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -577,14 +619,18 @@ class _HomePageState extends State<HomePage> {
                           fontFamily: 'Cairo',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                          color: isDark
+                              ? AppColors.accentGoldLight
+                              : AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 11,
-                        color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                        color: isDark
+                            ? AppColors.accentGoldLight
+                            : AppColors.primary,
                       ),
                     ],
                   ),
@@ -625,7 +671,8 @@ class _HomePageState extends State<HomePage> {
               return Expanded(
                 child: Container(
                   alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
                   margin: const EdgeInsets.symmetric(horizontal: 1.5),
                   decoration: BoxDecoration(
                     color: isNext
@@ -657,9 +704,12 @@ class _HomePageState extends State<HomePage> {
                           style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 11.5,
-                            fontWeight: isNext ? FontWeight.bold : FontWeight.w600,
+                            fontWeight:
+                                isNext ? FontWeight.bold : FontWeight.w600,
                             color: isNext
-                                ? (isDark ? AppColors.accentGoldLight : AppColors.primary)
+                                ? (isDark
+                                    ? AppColors.accentGoldLight
+                                    : AppColors.primary)
                                 : (isDark
                                     ? AppColors.textSecondaryDark
                                     : AppColors.textSecondaryLight),
@@ -676,12 +726,16 @@ class _HomePageState extends State<HomePage> {
                           style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 11.5,
-                            fontWeight: isNext ? FontWeight.bold : FontWeight.w600,
+                            fontWeight:
+                                isNext ? FontWeight.bold : FontWeight.w600,
                             fontFeatures: const [FontFeature.tabularFigures()],
                             color: isNext
-                                ? (isDark ? Colors.white : AppColors.textPrimaryLight)
+                                ? (isDark
+                                    ? Colors.white
+                                    : AppColors.textPrimaryLight)
                                 : (isDark
-                                    ? AppColors.textPrimaryDark.withValues(alpha: 0.85)
+                                    ? AppColors.textPrimaryDark
+                                        .withValues(alpha: 0.85)
                                     : AppColors.textPrimaryLight),
                           ),
                         ),
@@ -736,14 +790,17 @@ class _HomePageState extends State<HomePage> {
                   fontFamily: 'Cairo',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ),
               ),
               InkWell(
                 onTap: () => _navigateToTab(3),
                 borderRadius: BorderRadius.circular(6),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -753,14 +810,18 @@ class _HomePageState extends State<HomePage> {
                           fontFamily: 'Cairo',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                          color: isDark
+                              ? AppColors.accentGoldLight
+                              : AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 11,
-                        color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                        color: isDark
+                            ? AppColors.accentGoldLight
+                            : AppColors.primary,
                       ),
                     ],
                   ),
@@ -777,9 +838,11 @@ class _HomePageState extends State<HomePage> {
             return Expanded(
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () => _navigateToAzkarCategory(item['cat'] as AzkarCategory),
+                onTap: () =>
+                    _navigateToAzkarCategory(item['cat'] as AzkarCategory),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Column(
                     children: [
                       Container(
@@ -800,7 +863,9 @@ class _HomePageState extends State<HomePage> {
                         child: Icon(
                           item['icon'] as IconData,
                           size: 20,
-                          color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                          color: isDark
+                              ? AppColors.accentGoldLight
+                              : AppColors.primary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -813,7 +878,9 @@ class _HomePageState extends State<HomePage> {
                           fontFamily: 'Cairo',
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
                         ),
                       ),
                     ],
@@ -863,7 +930,9 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'اتجاه القبلة',
@@ -871,16 +940,21 @@ class _HomePageState extends State<HomePage> {
                           fontFamily: 'Cairo',
                           fontSize: 13.5,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Text(
-                        '•  بوصلة تحديد مسار الكعبة',
+                        'بوصلة تحديد مسار الكعبة',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 11.5,
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                         ),
                       ),
                     ],
@@ -889,7 +963,9 @@ class _HomePageState extends State<HomePage> {
                 Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 12,
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                 ),
               ],
             ),
@@ -926,14 +1002,16 @@ class _HomePageState extends State<HomePage> {
                   fontFamily: 'Cairo',
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? AppColors.accentGoldLight : AppColors.accentGold,
+                  color:
+                      isDark ? AppColors.accentGoldLight : AppColors.accentGold,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: (isDark ? AppColors.accentGold : AppColors.primary).withValues(alpha: 0.12),
+                  color: (isDark ? AppColors.accentGold : AppColors.primary)
+                      .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -942,7 +1020,8 @@ class _HomePageState extends State<HomePage> {
                     fontFamily: 'Cairo',
                     fontSize: 10.5,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                    color:
+                        isDark ? AppColors.accentGoldLight : AppColors.primary,
                   ),
                 ),
               ),
@@ -965,7 +1044,9 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 11.5,
-              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
             ),
           ),
           const SizedBox(height: 12),
@@ -996,14 +1077,17 @@ class _HomePageState extends State<HomePage> {
                   }
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.menu_book_rounded,
                         size: 14,
-                        color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                        color: isDark
+                            ? AppColors.accentGoldLight
+                            : AppColors.primary,
                       ),
                       const SizedBox(width: 5),
                       Text(
@@ -1012,7 +1096,9 @@ class _HomePageState extends State<HomePage> {
                           fontFamily: 'Cairo',
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                          color: isDark
+                              ? AppColors.accentGoldLight
+                              : AppColors.primary,
                         ),
                       ),
                     ],
@@ -1024,11 +1110,13 @@ class _HomePageState extends State<HomePage> {
               InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () {
-                  final shareText = '﴿ ${dailyAyah.text} ﴾\n[سورة ${dailyAyah.surahName}: الآية ${dailyAyah.ayahId}]\n\nتطبيق وِرد - صلاتك، قرآنك، ذكرك';
-                  Share.share(shareText);
+                  final shareText =
+                      '﴿ ${dailyAyah.text} ﴾\n[سورة ${dailyAyah.surahName}: الآية ${dailyAyah.ayahId}]\n\nتطبيق وِرد - صلاتك، قرآنك، ذكرك';
+                  SharePlus.instance.share(ShareParams(text: shareText));
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

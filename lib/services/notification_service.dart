@@ -498,7 +498,7 @@ class NotificationService {
         playSound: true,
         sound: RawResourceAndroidNotificationSound(soundCfg['soundResource']!),
         enableVibration: true,
-        autoCancel: true,
+        autoCancel: false,
         icon: '@mipmap/ic_launcher',
         color: const Color(0xFFB58A4A),
         category: AndroidNotificationCategory.alarm,
@@ -579,7 +579,7 @@ class NotificationService {
             ? RawResourceAndroidNotificationSound(soundCfg['soundResource']!)
             : null,
         enableVibration: isSoundEnabled,
-        autoCancel: true,
+        autoCancel: false,
         icon: '@mipmap/ic_launcher',
         color: const Color(0xFFB58A4A),
         category: AndroidNotificationCategory.alarm,
@@ -902,7 +902,7 @@ class NotificationService {
           ? RawResourceAndroidNotificationSound(soundCfg['soundResource']!)
           : null,
       enableVibration: isSoundEnabled,
-      autoCancel: true,
+      autoCancel: false,
       icon: '@mipmap/ic_launcher',
       color: const Color(0xFFB58A4A),
       category: AndroidNotificationCategory.alarm,

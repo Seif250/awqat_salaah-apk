@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 import '../../../../core/utils/page_transitions.dart';
+import '../../../../core/utils/skeleton_loading.dart';
 import '../../data/repositories/quran_repository.dart';
 import '../bloc/quran_bloc.dart';
 import '../bloc/quran_event.dart';
@@ -20,14 +21,16 @@ class QuranPage extends StatefulWidget {
   State<QuranPage> createState() => _QuranPageState();
 }
 
-class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMixin {
+class _QuranPageState extends State<QuranPage>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this); // 3 tabs: سور, أجزاء, علامات
+    _tabController =
+        TabController(length: 3, vsync: this); // 3 tabs: سور, أجزاء, علامات
 
     // Ensure Quran is loaded
     final bloc = context.read<QuranBloc>();
@@ -51,9 +54,11 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
     final bookmarksCount = qState is QuranLoaded ? qState.bookmarks.length : 0;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        backgroundColor:
+            isDark ? AppColors.darkSurface : AppColors.lightSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
@@ -75,7 +80,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
             fontFamily: 'Cairo',
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           ),
         ),
         bottom: PreferredSize(
@@ -85,9 +91,7 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF14241B)
-                  : const Color(0xFFE9F0EC),
+              color: isDark ? const Color(0xFF14241B) : const Color(0xFFE9F0EC),
               borderRadius: BorderRadius.circular(10),
             ),
             child: TabBar(
@@ -115,7 +119,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                       ],
               ),
               dividerColor: Colors.transparent,
-              labelColor: isDark ? AppColors.accentGoldLight : AppColors.primary,
+              labelColor:
+                  isDark ? AppColors.accentGoldLight : AppColors.primary,
               unselectedLabelColor: isDark
                   ? AppColors.textSecondaryDark
                   : AppColors.textSecondaryLight,
@@ -145,23 +150,7 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
       body: BlocBuilder<QuranBloc, QuranState>(
         builder: (context, state) {
           if (state is QuranLoading || state is QuranInitial) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: AppColors.accentGold),
-                  const SizedBox(height: 16),
-                  Text(
-                    'جارٍ تحميل المصحف الشريف...',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 14,
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                    ),
-                  ),
-                ],
-              ),
-            );
+            return const _QuranPageSkeleton();
           }
 
           if (state is QuranError) {
@@ -171,7 +160,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+                    const Icon(Icons.error_outline_rounded,
+                        size: 48, color: Colors.redAccent),
                     const SizedBox(height: 16),
                     Text(
                       state.message,
@@ -186,7 +176,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                       ),
-                      child: const Text('إعادة المحاولة', style: TextStyle(fontFamily: 'Cairo')),
+                      child: const Text('إعادة المحاولة',
+                          style: TextStyle(fontFamily: 'Cairo')),
                     ),
                   ],
                 ),
@@ -245,43 +236,54 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
               style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 13.5,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
               decoration: InputDecoration(
                 hintText: 'ابحث عن سورة بالاسم أو الرقم...',
                 hintStyle: TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 13,
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                 ),
                 prefixIcon: Icon(
                   Icons.search_rounded,
                   size: 19,
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                 ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear_rounded, size: 16),
                         onPressed: () {
                           _searchController.clear();
-                          context.read<QuranBloc>().add(const SearchQuranEvent(''));
+                          context
+                              .read<QuranBloc>()
+                              .add(const SearchQuranEvent(''));
                         },
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
                 filled: true,
                 fillColor: isDark ? AppColors.darkCard : Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     width: 0.8,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     width: 0.8,
                   ),
                 ),
@@ -315,7 +317,9 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 14,
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
                         ),
                       ),
                     ],
@@ -323,7 +327,10 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                 )
               : ListView.builder(
                   padding: const EdgeInsets.only(top: 4, bottom: 88),
-                  itemCount: state.filteredSurahs.length + (state.lastRead != null && state.searchQuery.isEmpty ? 1 : 0),
+                  itemCount: state.filteredSurahs.length +
+                      (state.lastRead != null && state.searchQuery.isEmpty
+                          ? 1
+                          : 0),
                   itemBuilder: (context, index) {
                     // Show LastReadCard as first item if available
                     if (state.lastRead != null && state.searchQuery.isEmpty) {
@@ -418,7 +425,9 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
               child: Icon(
                 Icons.bookmark_outline_rounded,
                 size: 32,
-                color: isDark ? AppColors.accentGold.withValues(alpha: 0.5) : AppColors.primary.withValues(alpha: 0.4),
+                color: isDark
+                    ? AppColors.accentGold.withValues(alpha: 0.5)
+                    : AppColors.primary.withValues(alpha: 0.4),
               ),
             ),
             const SizedBox(height: 16),
@@ -428,7 +437,9 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                 fontFamily: 'Cairo',
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
             const SizedBox(height: 6),
@@ -437,7 +448,9 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
               style: TextStyle(
                 fontFamily: 'Cairo',
                 fontSize: 13,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
             const SizedBox(height: 16),
@@ -446,7 +459,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                 side: BorderSide(
                   color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                 ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () {
                 Navigator.push(
@@ -454,7 +468,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                   FadeSlidePageRoute(page: const BookmarksPage()),
                 );
               },
-              icon: const Icon(Icons.folder_special_rounded, color: AppColors.accentGold, size: 18),
+              icon: const Icon(Icons.folder_special_rounded,
+                  color: AppColors.accentGold, size: 18),
               label: Text(
                 'عرض المجموعات والمجلدات',
                 style: TextStyle(
@@ -491,9 +506,7 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                     : const Color(0xFFF0F4F2),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isDark
-                      ? AppColors.darkBorder
-                      : AppColors.lightBorder,
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                   width: 0.8,
                 ),
               ),
@@ -501,7 +514,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                 children: [
                   Icon(
                     Icons.folder_special_rounded,
-                    color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                    color:
+                        isDark ? AppColors.accentGoldLight : AppColors.primary,
                     size: 18,
                   ),
                   const SizedBox(width: 10),
@@ -512,14 +526,18 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                         fontFamily: 'Cairo',
                         fontWeight: FontWeight.w600,
                         fontSize: 12.5,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ),
                     ),
                   ),
                   Icon(
                     Icons.arrow_back_ios_new_rounded,
                     size: 12,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                   ),
                 ],
               ),
@@ -551,7 +569,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                   child: Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
                         child: Row(
                           children: [
                             // Bookmark Icon
@@ -565,7 +584,8 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: isDark
-                                      ? AppColors.darkBorder.withValues(alpha: 0.6)
+                                      ? AppColors.darkBorder
+                                          .withValues(alpha: 0.6)
                                       : AppColors.lightBorder,
                                   width: 0.8,
                                 ),
@@ -573,7 +593,9 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                               child: Icon(
                                 Icons.bookmark_rounded,
                                 size: 18,
-                                color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                                color: isDark
+                                    ? AppColors.accentGoldLight
+                                    : AppColors.primary,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -590,7 +612,9 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                                       fontFamily: 'Cairo',
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.bold,
-                                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                      color: isDark
+                                          ? AppColors.textPrimaryDark
+                                          : AppColors.textPrimaryLight,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -599,7 +623,9 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
                                     style: TextStyle(
                                       fontFamily: 'Cairo',
                                       fontSize: 11.5,
-                                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                      color: isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight,
                                     ),
                                   ),
                                 ],
@@ -646,3 +672,30 @@ class _QuranPageState extends State<QuranPage> with SingleTickerProviderStateMix
   }
 }
 
+class _QuranPageSkeleton extends StatelessWidget {
+  const _QuranPageSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWrap(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        children: const [
+          ShimmerBox(height: 44, borderRadius: 12),
+          SizedBox(height: 16),
+          ShimmerBox(height: 88, borderRadius: 16),
+          SizedBox(height: 20),
+          ShimmerBox(width: 110, height: 18, borderRadius: 6),
+          SizedBox(height: 12),
+          ShimmerBox(height: 72, borderRadius: 14),
+          SizedBox(height: 10),
+          ShimmerBox(height: 72, borderRadius: 14),
+          SizedBox(height: 10),
+          ShimmerBox(height: 72, borderRadius: 14),
+          SizedBox(height: 10),
+          ShimmerBox(height: 72, borderRadius: 14),
+        ],
+      ),
+    );
+  }
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../azkar/presentation/pages/azkar_page.dart';
 import '../../../quran/presentation/pages/quran_page.dart';
@@ -36,6 +37,7 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
 
   void navigateToPage(int index) {
     if (_currentIndex == index) return;
+    HapticFeedback.selectionClick();
     setState(() {
       _currentIndex = index;
       _isNavBarVisible = true;
@@ -175,54 +177,67 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     final isSelected = _currentIndex == index;
 
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => navigateToPage(index),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary.withValues(alpha: isDark ? 0.45 : 0.14)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
-                    border: isSelected
-                        ? Border.all(
-                            color: AppColors.accentGold.withValues(alpha: isDark ? 0.4 : 0.5),
-                            width: 1,
-                          )
-                        : null,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: '$label${isSelected ? '، الصفحة الحالية' : ''}',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => navigateToPage(index),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary
+                              .withValues(alpha: isDark ? 0.45 : 0.14)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      border: isSelected
+                          ? Border.all(
+                              color: AppColors.accentGold
+                                  .withValues(alpha: isDark ? 0.4 : 0.5),
+                              width: 1,
+                            )
+                          : null,
+                    ),
+                    child: Icon(
+                      isSelected ? selectedIcon : icon,
+                      color: isSelected
+                          ? (isDark
+                              ? AppColors.accentGoldLight
+                              : AppColors.primary)
+                          : (isDark ? Colors.white60 : Colors.black54),
+                      size: 22,
+                    ),
                   ),
-                  child: Icon(
-                    isSelected ? selectedIcon : icon,
-                    color: isSelected
-                        ? (isDark ? AppColors.accentGoldLight : AppColors.primary)
-                        : (isDark ? Colors.white60 : Colors.black54),
-                    size: 22,
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontSize: 11,
+                      color: isSelected
+                          ? (isDark
+                              ? AppColors.accentGoldLight
+                              : AppColors.primary)
+                          : (isDark ? Colors.white60 : Colors.black54),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    fontSize: 11,
-                    color: isSelected
-                        ? (isDark ? AppColors.accentGoldLight : AppColors.primary)
-                        : (isDark ? Colors.white60 : Colors.black54),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

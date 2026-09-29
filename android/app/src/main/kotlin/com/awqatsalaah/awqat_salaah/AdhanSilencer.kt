@@ -44,6 +44,40 @@ object AdhanSilencer {
     )
 
     private val handler = Handler(Looper.getMainLooper())
+    private val lastVolumeLevels = mutableMapOf<Int, Int>()
+
+    private fun snapshotCurrentVolumes(context: Context) {
+        val am = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
+        val streams = intArrayOf(
+            AudioManager.STREAM_RING,
+            AudioManager.STREAM_NOTIFICATION,
+            AudioManager.STREAM_MUSIC,
+            AudioManager.STREAM_ALARM
+        )
+        for (stream in streams) {
+            lastVolumeLevels[stream] = am.getStreamVolume(stream)
+        }
+    }
+
+    private fun checkVolumeChanged(context: Context): Boolean {
+        val am = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
+        val streams = intArrayOf(
+            AudioManager.STREAM_RING,
+            AudioManager.STREAM_NOTIFICATION,
+            AudioManager.STREAM_MUSIC,
+            AudioManager.STREAM_ALARM
+        )
+        var changed = false
+        for (stream in streams) {
+            val current = am.getStreamVolume(stream)
+            val prev = lastVolumeLevels[stream]
+            if (prev != null && prev != current) {
+                changed = true
+            }
+            lastVolumeLevels[stream] = current
+        }
+        return changed
+    }
 
     /**
      * Initializes global broadcast receivers and content observers on the Application context.
@@ -53,10 +87,12 @@ object AdhanSilencer {
         isInitialized = true
 
         try {
-            // 1. Receiver for Screen Off, Screen On, Volume Changed, and Ringer Mode Changed
+            snapshotCurrentVolumes(appContext)
+
+            // 1. Receiver for Screen Off (Power button click), Volume Changed, and Ringer Mode Changed
+            // Note: ACTION_SCREEN_ON is omitted intentionally so waking screen or pulling notification panel never silences Adhan.
             val filter = IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_OFF)
-                addAction(Intent.ACTION_SCREEN_ON)
                 addAction("android.media.VOLUME_CHANGED_ACTION")
                 addAction("android.media.RINGER_MODE_CHANGED_ACTION")
             }
@@ -65,7 +101,28 @@ object AdhanSilencer {
                 override fun onReceive(context: Context, intent: Intent?) {
                     val action = intent?.action ?: return
                     WidgetDiagnostics.log(context, "AdhanSilencer: Broadcast received: $action")
-                    silenceAdhan(context)
+                    when (action) {
+                        Intent.ACTION_SCREEN_OFF -> {
+                            // Hardware Power button pressed while screen was on
+                            silenceAdhan(context)
+                        }
+                        "android.media.VOLUME_CHANGED_ACTION" -> {
+                            val prevVal = intent.getIntExtra("android.media.EXTRA_PREV_VOLUME_STREAM_VALUE", -1)
+                            val newVal = intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_VALUE", -1)
+                            val actuallyChanged = if (prevVal != -1 && newVal != -1) {
+                                prevVal != newVal
+                            } else {
+                                checkVolumeChanged(context)
+                            }
+                            if (actuallyChanged) {
+                                WidgetDiagnostics.log(context, "AdhanSilencer: Real volume change detected ($prevVal -> $newVal)")
+                                silenceAdhan(context)
+                            }
+                        }
+                        "android.media.RINGER_MODE_CHANGED_ACTION" -> {
+                            silenceAdhan(context)
+                        }
+                    }
                 }
             }
 
@@ -76,9 +133,9 @@ object AdhanSilencer {
                 appContext.registerReceiver(receiver, filter)
             }
 
-            // 2. ContentObserver on system volume settings for hardware Volume Up/Down clicks
+            // 2. ContentObserver only on specific volume settings (excluding general Settings.System.CONTENT_URI
+            // to avoid false positives when status bar/notification shade is expanded)
             val volumeUris = listOf(
-                Settings.System.CONTENT_URI,
                 Settings.System.getUriFor("volume_alarm"),
                 Settings.System.getUriFor("volume_ring"),
                 Settings.System.getUriFor("volume_music"),
@@ -90,12 +147,14 @@ object AdhanSilencer {
                     try {
                         appContext.contentResolver.registerContentObserver(
                             uri,
-                            true,
+                            false,
                             object : ContentObserver(handler) {
                                 override fun onChange(selfChange: Boolean) {
                                     super.onChange(selfChange)
-                                    WidgetDiagnostics.log(appContext, "AdhanSilencer: ContentObserver triggered on $uri")
-                                    silenceAdhan(appContext)
+                                    if (checkVolumeChanged(appContext)) {
+                                        WidgetDiagnostics.log(appContext, "AdhanSilencer: ContentObserver triggered on $uri with actual volume change")
+                                        silenceAdhan(appContext)
+                                    }
                                 }
                             }
                         )
