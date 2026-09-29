@@ -112,7 +112,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                 ),
               ),
               const SizedBox(height: 42),
-              // Animated Mushaf emblem
+              // Animated Logo emblem
               AnimatedBuilder(
                 animation: _controller,
                 builder: (context, child) {
@@ -121,32 +121,28 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                     child: Opacity(
                       opacity: _fadeAnimation.value,
                       child: Container(
-                        width: 108,
-                        height: 108,
+                        width: 114,
+                        height: 114,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(28),
-                          color: isDark
-                              ? AppColors.darkCard
-                              : AppColors.lightCardElevated,
-                          border: Border.all(
-                            color: AppColors.accentGold.withValues(alpha: 0.7),
-                            width: 1.5,
-                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.accentGold.withValues(
-                                alpha: isDark ? 0.25 : 0.15,
-                              ),
-                              blurRadius: 22,
-                              spreadRadius: 2,
+                              color: (isDark
+                                      ? const Color(0xFF2EC486)
+                                      : AppColors.primary)
+                                  .withValues(alpha: isDark ? 0.35 : 0.2),
+                              blurRadius: 28,
+                              spreadRadius: 3,
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_book_rounded,
-                            size: 54,
-                            color: AppColors.accentGold,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(28),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            width: 114,
+                            height: 114,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
@@ -156,7 +152,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
               ),
               const SizedBox(height: 26),
 
-              // Animated App Title & Ayah
+              // Animated App Title & Ayah with brand green typography
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: SlideTransition(
@@ -167,11 +163,11 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         'وِرد',
                         style: TextStyle(
                           fontFamily: 'Cairo',
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 38,
+                          fontWeight: FontWeight.w800,
                           color: isDark
-                              ? AppColors.textPrimaryDark
-                              : AppColors.textPrimaryLight,
+                              ? const Color(0xFF2EC486)
+                              : AppColors.primary,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -180,9 +176,12 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         'صلاتك، قرآنك، ذكرك',
                         style: TextStyle(
                           fontFamily: 'Cairo',
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.accentGold,
+                          color: isDark
+                              ? const Color(0xFF8FD8B4)
+                              : AppColors.primaryLight,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ],
@@ -192,32 +191,34 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
               const Spacer(flex: 3),
 
-              // Quiet loading indicator
+              // Quiet loading indicator in brand green
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(
-                      width: 22,
-                      height: 22,
+                    SizedBox(
+                      width: 24,
+                      height: 24,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: 2.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.accentGold,
+                          isDark
+                              ? const Color(0xFF2EC486)
+                              : AppColors.primary,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Text(
                       'نُهَيِّئ لك وردك',
                       style: TextStyle(
                         fontFamily: 'Cairo',
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondaryLight,
+                            ? const Color(0xFFA5C4B4)
+                            : AppColors.primary.withValues(alpha: 0.85),
                       ),
                     ),
                   ],

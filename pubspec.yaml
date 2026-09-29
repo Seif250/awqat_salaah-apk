@@ -58,6 +58,7 @@ flutter:
   generate: true
 
   assets:
+    - assets/images/
     - assets/data/
     - assets/data/qcf_pages/
     - assets/fonts/

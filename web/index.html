@@ -47,17 +47,196 @@
       src: url('fonts/AmiriQuran-Regular.ttf') format('truetype');
       font-display: swap;
     }
+
+    /* Web Loading Screen Styles */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(ellipse at 50% 38%, #152B20 0%, #0B1410 70%, #060B08 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+      transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.45s;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+      direction: rtl;
+    }
+
+    .loading-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      animation: fadeInContent 0.8s ease-out forwards;
+    }
+
+    .logo-container {
+      position: relative;
+      margin-bottom: 24px;
+      animation: floatLogo 3.2s ease-in-out infinite;
+    }
+
+    .logo-glow {
+      position: absolute;
+      inset: -12px;
+      border-radius: 36px;
+      background: radial-gradient(circle, rgba(46, 196, 134, 0.4) 0%, rgba(15, 81, 50, 0.1) 60%, transparent 80%);
+      filter: blur(14px);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .logo-img {
+      position: relative;
+      z-index: 2;
+      width: 112px;
+      height: 112px;
+      border-radius: 28px;
+      object-fit: cover;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 0 1.5px rgba(46, 196, 134, 0.35);
+    }
+
+    .app-title {
+      margin: 0;
+      font-size: 38px;
+      font-weight: 800;
+      color: #2EC486;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+      text-shadow: 0 2px 16px rgba(46, 196, 134, 0.25);
+    }
+
+    .app-subtitle {
+      margin: 8px 0 32px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #A5C4B4;
+      letter-spacing: 0.2px;
+    }
+
+    .loader-track {
+      width: 140px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 14px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .loader-progress {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 45%;
+      background: linear-gradient(90deg, #0F5132, #2EC486, #D4AF37);
+      border-radius: 999px;
+      box-shadow: 0 0 8px rgba(46, 196, 134, 0.6);
+      animation: progressSweep 1.6s ease-in-out infinite;
+    }
+
+    .loading-hint {
+      font-size: 13px;
+      font-weight: 500;
+      color: #749685;
+      letter-spacing: 0.2px;
+    }
+
+    @keyframes floatLogo {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
+    @keyframes progressSweep {
+      0% {
+        left: -45%;
+        width: 30%;
+      }
+      50% {
+        width: 50%;
+      }
+      100% {
+        left: 100%;
+        width: 30%;
+      }
+    }
+
+    @keyframes fadeInContent {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
   </style>
 </head>
-<body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+<body style="margin: 0; padding: 0; background-color: #0B1410;">
+  <!-- Branded Web Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-content">
+      <div class="logo-container">
+        <div class="logo-glow"></div>
+        <img class="logo-img" src="icons/Icon-192.png" alt="شعار وِرد" />
+      </div>
+      <h1 class="app-title">وِرد</h1>
+      <p class="app-subtitle">صلاتك، قرآنك، ذكرك</p>
+      <div class="loader-track">
+        <div class="loader-progress"></div>
+      </div>
+      <span class="loading-hint">نُهَيِّئ لك وردك...</span>
+    </div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    (function() {
+      let isHidden = false;
+      function hideLoadingScreen() {
+        if (isHidden) return;
+        const screen = document.getElementById('loading-screen');
+        if (!screen) return;
+        isHidden = true;
+        screen.style.opacity = '0';
+        screen.style.visibility = 'hidden';
+        setTimeout(function() {
+          if (screen.parentNode) {
+            screen.parentNode.removeChild(screen);
+          }
+        }, 460);
+      }
+
+      // 1. Flutter standard first-frame event
+      window.addEventListener('flutter-first-frame', hideLoadingScreen);
+
+      // 2. Fallback: Observe DOM mutations when Flutter view or glasspane is attached
+      const observer = new MutationObserver(function() {
+        if (document.querySelector('flutter-view') || document.querySelector('flt-glass-pane') || document.querySelector('flt-scene')) {
+          // Give flutter a tiny fraction to finish rendering the first paint
+          setTimeout(hideLoadingScreen, 200);
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      // 3. Safety timeout fallback
+      setTimeout(hideLoadingScreen, 8000);
+    })();
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
