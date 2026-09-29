@@ -4,21 +4,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:awqat_salaah/core/theme/app_theme.dart';
 import 'package:awqat_salaah/features/quran/data/repositories/quran_repository.dart';
+import 'package:awqat_salaah/features/quran/data/repositories/tafsir_repository.dart';
 import 'package:awqat_salaah/features/quran/presentation/bloc/quran_bloc.dart';
 import 'package:awqat_salaah/features/quran/presentation/bloc/quran_event.dart';
 import 'package:awqat_salaah/features/quran/presentation/pages/surah_detail_page.dart';
+import 'package:awqat_salaah/features/quran/presentation/pages/tafsir_screen.dart';
 import 'package:awqat_salaah/features/quran/presentation/widgets/qcf_mushaf_page_renderer.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late QuranRepository quranRepository;
+  late TafsirRepository tafsirRepository;
   late QuranBloc quranBloc;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     quranRepository = QuranRepository(prefs);
+    tafsirRepository = TafsirRepositoryImpl(prefs);
     await quranRepository.loadQuran();
     quranBloc = QuranBloc(repository: quranRepository);
     quranBloc.add(const LoadQuranEvent());
@@ -35,6 +39,7 @@ void main() {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<QuranRepository>.value(value: quranRepository),
+        RepositoryProvider<TafsirRepository>.value(value: tafsirRepository),
       ],
       child: BlocProvider<QuranBloc>.value(
         value: quranBloc,
@@ -116,7 +121,7 @@ void main() {
       expect(find.byIcon(Icons.translate_rounded), findsNothing);
     });
 
-    testWidgets('Tapping Tafsir action opens Tafsir sheet', (tester) async {
+    testWidgets('Tapping Tafsir action opens Tafsir screen', (tester) async {
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
 
@@ -126,10 +131,11 @@ void main() {
 
       // Tap Tafsir button
       await tester.tap(find.text('تفسير'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      // Verify Tafsir sheet is displayed
-      expect(find.text('تفسير الآية الكريمة'), findsOneWidget);
+      // Verify TafsirScreen is displayed
+      expect(find.byType(TafsirScreen), findsOneWidget);
     });
 
     testWidgets('Top toolbar renders clean actions and bottom control bar is removed',

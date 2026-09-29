@@ -19,9 +19,11 @@ import '../../data/models/bookmark_model.dart';
 import '../widgets/bookmark_collection_dialog.dart';
 import '../widgets/quran_share_composer_dialog.dart';
 import '../../data/models/qcf_page_model.dart';
+import '../../data/models/quran_display_mode.dart';
 import '../../services/mushaf_image_service.dart';
 import '../../services/qcf_layout_service.dart';
 import '../widgets/qcf_mushaf_page_renderer.dart';
+import 'tafsir_screen.dart';
 
 class SurahDetailPage extends StatefulWidget {
   final SurahModel surah;
@@ -49,9 +51,12 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   int? _highlightedAyahId;
   int? _highlightedSurahId;
   MushafThemeMode _themeMode = MushafThemeMode.ivory;
+  AyahHighlightColor _highlightColor = AyahHighlightColor.goldenAmber;
+  bool _useTransliteratedHeader = false;
   bool _isNightMode = false;
   double _fontSize = 24.0;
   double _fontWeightValue = 0.0;
+  FontWeight _mushafFontWeight = FontWeight.w500;
 
   bool _showControls = true;
 
@@ -188,11 +193,11 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   }
 
   // 1. Royal Ivory Theme (عاجي ملكي) - Classic Medina Mushaf
-  static const Color paperBg = Color(0xFFFAF6EE);
-  static const Color paperBorder = Color(0xFFD8C7A8);
-  static const Color textDark = Color(0xFF231F1B);
+  static const Color paperBg = Color(0xFFF6F0E4);
+  static const Color paperBorder = Color(0xFFD8C5A5);
+  static const Color textDark = Color(0xFF302923);
   static const Color bronzeAccent = Color(0xFF7A6B5B);
-  static const Color goldAccent = Color(0xFFB38938);
+  static const Color goldAccent = Color(0xFFB58A4A);
 
   // 2. Antique Sepia Theme (بيج تراثي)
   static const Color sepiaPaper = Color(0xFFF3EBD9);
@@ -201,7 +206,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   static const Color sepiaBronze = Color(0xFF73604C);
 
   // 3. Quiet Night Theme (ليلي هادئ)
-  static const Color nightPaper = Color(0xFF121714);
+  static const Color nightPaper = Color(0xFF1B201D);
   static const Color nightBorder = Color(0xFF38433D);
   static const Color nightText = Color(0xFFECE8DF);
   static const Color nightBronze = Color(0xFFD4AF37);
@@ -275,10 +280,32 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     }
     _isNightMode = _themeMode == MushafThemeMode.night;
 
+    final savedHighlight = repo.getAyahHighlightColor();
+    if (savedHighlight == 'coralPeach') {
+      _highlightColor = AyahHighlightColor.coralPeach;
+    } else if (savedHighlight == 'emeraldMint') {
+      _highlightColor = AyahHighlightColor.emeraldMint;
+    } else if (savedHighlight == 'skyBlue') {
+      _highlightColor = AyahHighlightColor.skyBlue;
+    } else {
+      _highlightColor = AyahHighlightColor.goldenAmber;
+    }
+
+    _useTransliteratedHeader = repo.getUseTransliteratedHeader();
+
     final qState = context.read<QuranBloc>().state;
     if (qState is QuranLoaded) {
       _fontSize = qState.fontSize;
       _fontWeightValue = qState.fontWeightValue;
+    }
+
+    final savedWeight = repo.getMushafFontWeight();
+    if (savedWeight == 400) {
+      _mushafFontWeight = FontWeight.w400;
+    } else if (savedWeight == 700) {
+      _mushafFontWeight = FontWeight.w700;
+    } else {
+      _mushafFontWeight = FontWeight.w500;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -295,6 +322,31 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
         ? 'sepia'
         : (mode == MushafThemeMode.night ? 'night' : 'ivory');
     context.read<QuranRepository>().setMushafTheme(themeStr);
+  }
+
+  void _setAyahHighlightColor(AyahHighlightColor color) {
+    setState(() {
+      _highlightColor = color;
+    });
+    context.read<QuranRepository>().setAyahHighlightColor(color.name);
+  }
+
+  void _setUseTransliteratedHeader(bool val) {
+    setState(() {
+      _useTransliteratedHeader = val;
+    });
+    context.read<QuranRepository>().setUseTransliteratedHeader(val);
+  }
+
+  void _setMushafFontWeight(FontWeight weight) {
+    setState(() {
+      _mushafFontWeight = weight;
+    });
+    final int weightInt = weight == FontWeight.w400
+        ? 400
+        : (weight == FontWeight.w700 ? 700 : 500);
+    context.read<QuranRepository>().setMushafFontWeight(weightInt);
+    context.read<QuranBloc>().add(ChangeMushafFontWeightEvent(weightInt));
   }
 
   @override
@@ -510,7 +562,13 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                       label: 'تفسير',
                       onTap: () {
                         Navigator.pop(ctx);
-                        _showTafsirSheet(context, surahId, surahName, ayah);
+                        TafsirScreen.push(
+                          context,
+                          verseKey: '$surahId:${ayah.id}',
+                          surahName: surahName,
+                          ayahNumber: ayah.id,
+                          ayahText: ayah.text,
+                        );
                       },
                     ),
                     const SizedBox(width: 10),
@@ -629,200 +687,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
         });
       }
     });
-  }
-
-  void _showTafsirSheet(BuildContext context, int surahId, String surahName, AyahModel ayah) {
-    final tafsirText =
-        'قوله تعالى في سورة $surahName، الآية ${toArabicDigits(ayah.id)}:\n'
-        '﴿ ${ayah.text} ﴾\n\n'
-        'هذه الآية الكريمة من كتاب الله المحكم، تبيّن معالم الهداية ودلائل الإيمان، وتدعو المؤمن للتدبر في كلام رب العالمين واستشعار عظمته وتطبيق أوامره واجتناب نواهيه.';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Material(
-        color: _currentBgColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.72,
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: _currentAccentColor.withValues(alpha: 0.5),
-                width: 1.5,
-              ),
-            ),
-          ),
-          child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: _themeMode == MushafThemeMode.night ? Colors.white24 : Colors.black12,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'تفسير الآية الكريمة',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _currentAccentColor,
-                    ),
-                  ),
-                  Text(
-                    'سورة $surahName • آية ${toArabicDigits(ayah.id)}',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: _currentTextColor.withValues(alpha: 0.65),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: _themeMode == MushafThemeMode.night ? Colors.white.withValues(alpha: 0.05) : Colors.white60,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: _currentBorderColor.withValues(alpha: 0.7),
-                  ),
-                ),
-                child: Text(
-                  '﴿ ${ayah.text} ﴾',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'UthmanicHafs',
-                    fontFamilyFallback: const ['AmiriQuran', 'Cairo', 'serif'],
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    height: 1.8,
-                    color: _currentTextColor,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _themeMode == MushafThemeMode.night ? Colors.white.withValues(alpha: 0.04) : Colors.white70,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: _currentAccentColor.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.menu_book_rounded,
-                              size: 18,
-                              color: _currentAccentColor,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'التفسير الميسر',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: _currentAccentColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          tafsirText,
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 14,
-                            height: 1.8,
-                            color: _currentTextColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: Icon(Icons.copy_rounded, size: 17, color: _currentAccentColor),
-                      label: Text(
-                        'نسخ التفسير',
-                        style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: _currentAccentColor),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: _currentAccentColor.withValues(alpha: 0.5)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                      ),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(
-                          text: '﴿ ${ayah.text} ﴾\n\nتفسير الآية:\n$tafsirText',
-                        ));
-                        AppSnackBar.showSuccess(context, 'تم نسخ تفسير الآية بنجاح');
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.share_rounded, size: 17),
-                      label: const Text(
-                        'مشاركة التفسير',
-                        style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _currentAccentColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        QuranShareComposerDialog.show(
-                          context,
-                          surahId: surahId,
-                          surahName: surahName,
-                          initialStartAyah: ayah.id,
-                          initialEndAyah: ayah.id,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
   }
 
   Widget _buildAyahSheetActionButton({
@@ -1921,6 +1785,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   void _showReaderOptionsMenu() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
@@ -1928,22 +1793,27 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
             color: _currentBgColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             clipBehavior: Clip.antiAlias,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 26),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: _currentAccentColor.withValues(alpha: 0.5),
-                    width: 1.5,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.88,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: _currentAccentColor.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
                   ),
                 ),
-              ),
-              child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+                child: SafeArea(
+                  top: false,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   Center(
                     child: Container(
                       width: 40,
@@ -2025,27 +1895,272 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 14),
+
+                  // ── ألوان أحكام التجويد (QCF Tajweed V4) ──
+                  Builder(
+                    builder: (context) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _currentBgColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _currentBorderColor.withValues(alpha: 0.5),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: _currentAccentColor.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(Icons.palette_outlined, size: 20, color: _currentAccentColor),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ألوان التجويد',
+                                      style: TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: _currentTextColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      'مصحف التجويد الملون هو نمط القراءة المعتمد',
+                                      style: TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontSize: 11,
+                                        color: _currentTextColor.withValues(alpha: 0.65),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Icon(Icons.check_circle_rounded,
+                                color: _currentAccentColor, size: 24),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── وضوح وسُمْك الرسم القرآني ──
+                  Text(
+                    'وضوح وسُمْك الرسم القرآني',
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: _currentAccentColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Builder(
+                    builder: (context) {
+                      final qState = context.watch<QuranBloc>().state;
+                      final effectiveWeight = qState is QuranLoaded
+                          ? (qState.mushafFontWeight == 400
+                              ? FontWeight.w400
+                              : (qState.mushafFontWeight == 700
+                                  ? FontWeight.w700
+                                  : FontWeight.w500))
+                          : _mushafFontWeight;
+
+                      return Row(
+                        children: [
+                          _buildWeightOption(
+                            title: 'عادي',
+                            weightNumber: '٤٠٠',
+                            weight: FontWeight.w400,
+                            isSelected: effectiveWeight == FontWeight.w400,
+                            onTap: () {
+                              _setMushafFontWeight(FontWeight.w400);
+                              setSheetState(() {});
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildWeightOption(
+                            title: 'متوسط',
+                            weightNumber: '٥٠٠',
+                            weight: FontWeight.w500,
+                            isSelected: effectiveWeight == FontWeight.w500,
+                            onTap: () {
+                              _setMushafFontWeight(FontWeight.w500);
+                              setSheetState(() {});
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildWeightOption(
+                            title: 'عريض',
+                            weightNumber: '٧٠٠',
+                            weight: FontWeight.w700,
+                            isSelected: effectiveWeight == FontWeight.w700,
+                            onTap: () {
+                              _setMushafFontWeight(FontWeight.w700);
+                              setSheetState(() {});
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── لون تظليل الآيات ──
+                  Text(
+                    'لون تظليل الآية المحددة',
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: _currentAccentColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildHighlightOption(
+                        title: 'عنبري',
+                        color: const Color(0xFFFBF0B9),
+                        isSelected: _highlightColor == AyahHighlightColor.goldenAmber,
+                        onTap: () {
+                          _setAyahHighlightColor(AyahHighlightColor.goldenAmber);
+                          setSheetState(() {});
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildHighlightOption(
+                        title: 'مرجاني',
+                        color: const Color(0xFFFDE2DC),
+                        isSelected: _highlightColor == AyahHighlightColor.coralPeach,
+                        onTap: () {
+                          _setAyahHighlightColor(AyahHighlightColor.coralPeach);
+                          setSheetState(() {});
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildHighlightOption(
+                        title: 'زمردي',
+                        color: const Color(0xFFDCF5E8),
+                        isSelected: _highlightColor == AyahHighlightColor.emeraldMint,
+                        onTap: () {
+                          _setAyahHighlightColor(AyahHighlightColor.emeraldMint);
+                          setSheetState(() {});
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildHighlightOption(
+                        title: 'سماوي',
+                        color: const Color(0xFFE3F2FD),
+                        isSelected: _highlightColor == AyahHighlightColor.skyBlue,
+                        onTap: () {
+                          _setAyahHighlightColor(AyahHighlightColor.skyBlue);
+                          setSheetState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── نمط ترويسة الصفحة ──
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _currentBgColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _currentBorderColor.withValues(alpha: 0.5),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: _currentAccentColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(Icons.language_rounded, size: 20, color: _currentAccentColor),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ترويسة الصفحة باللاتينية',
+                                  style: TextStyle(
+                                    fontFamily: 'Cairo',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: _currentTextColor,
+                                  ),
+                                ),
+                                Text(
+                                  _useTransliteratedHeader
+                                      ? 'مفعّلة (Ibrāhīm • Part 13)'
+                                      : 'معطّلة (بالعربية: سورة وحزب)',
+                                  style: TextStyle(
+                                    fontFamily: 'Cairo',
+                                    fontSize: 11,
+                                    color: _currentTextColor.withValues(alpha: 0.65),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: _useTransliteratedHeader,
+                          activeThumbColor: _currentAccentColor,
+                          activeTrackColor: _currentAccentColor.withValues(alpha: 0.35),
+                          onChanged: (val) {
+                            _setUseTransliteratedHeader(val);
+                            setSheetState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   // Quick links: Tajweed Stop signs & Dua Khatm
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: Icon(Icons.menu_book_rounded, size: 17, color: _currentAccentColor),
+                        child: FilledButton.tonalIcon(
+                          icon: Icon(Icons.menu_book_rounded, size: 18, color: _currentAccentColor),
                           label: Text(
                             'علامات الوقف',
                             style: TextStyle(
                               fontFamily: 'Cairo',
-                              fontSize: 12,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.bold,
                               color: _currentAccentColor,
                             ),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: _currentAccentColor.withValues(alpha: 0.4)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _currentAccentColor.withValues(alpha: 0.12),
+                            foregroundColor: _currentAccentColor,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           onPressed: () {
                             Navigator.pop(ctx);
@@ -2053,23 +2168,25 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: Icon(Icons.auto_stories_rounded, size: 17, color: _currentAccentColor),
+                        child: FilledButton.tonalIcon(
+                          icon: Icon(Icons.auto_stories_rounded, size: 18, color: _currentAccentColor),
                           label: Text(
                             'دعاء الختم',
                             style: TextStyle(
                               fontFamily: 'Cairo',
-                              fontSize: 12,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.bold,
                               color: _currentAccentColor,
                             ),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: _currentAccentColor.withValues(alpha: 0.4)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _currentAccentColor.withValues(alpha: 0.12),
+                            foregroundColor: _currentAccentColor,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           onPressed: () {
                             Navigator.pop(ctx);
@@ -2083,7 +2200,9 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
         },
       ),
     );
@@ -2174,6 +2293,126 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     );
   }
 
+  Widget _buildWeightOption({
+    required String title,
+    required String weightNumber,
+    required FontWeight weight,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? _currentAccentColor.withValues(alpha: _isNightMode ? 0.25 : 0.12)
+                : (_isNightMode
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03)),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? _currentAccentColor
+                  : _currentBorderColor.withValues(alpha: 0.4),
+              width: isSelected ? 1.8 : 1.0,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'القرآن',
+                style: TextStyle(
+                  fontFamily: 'Amiri',
+                  fontSize: 15,
+                  fontWeight: weight,
+                  color: isSelected ? _currentAccentColor : _currentTextColor,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected
+                      ? _currentAccentColor
+                      : _currentTextColor.withValues(alpha: 0.8),
+                ),
+              ),
+              Text(
+                weightNumber,
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 9.5,
+                  color: isSelected
+                      ? _currentAccentColor.withValues(alpha: 0.9)
+                      : _currentTextColor.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHighlightOption({
+    required String title,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: _isNightMode ? 0.35 : 0.85),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? _currentAccentColor : Colors.black12,
+              width: isSelected ? 2.0 : 1.0,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color,
+                  border: Border.all(color: Colors.black26, width: 0.8),
+                ),
+                child: isSelected
+                    ? const Icon(Icons.check_rounded, size: 12, color: Colors.black87)
+                    : null,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: _isNightMode ? nightText : textDark,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // Compatibility delegates
   @visibleForTesting
   void showSurahPicker() => _showQuickIndexSheet(context, initialTabIndex: 0);
@@ -2218,10 +2457,10 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
       backgroundColor: bgColor,
       appBar: (_showControls || _isSelectionMode)
           ? AppBar(
-              backgroundColor: pageCardColor,
+              backgroundColor: Colors.transparent,
               elevation: 0,
               scrolledUnderElevation: 0,
-              toolbarHeight: 46,
+              toolbarHeight: 40,
               leadingWidth: 42,
               titleSpacing: 2,
               centerTitle: true,
@@ -2229,12 +2468,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                 statusBarColor: Colors.transparent,
                 statusBarIconBrightness: _isNightMode ? Brightness.light : Brightness.dark,
                 statusBarBrightness: _isNightMode ? Brightness.dark : Brightness.light,
-              ),
-              shape: Border(
-                bottom: BorderSide(
-                  color: _currentBorderColor.withValues(alpha: 0.45),
-                  width: 0.6,
-                ),
               ),
               leading: _isSelectionMode
                   ? IconButton(
@@ -2282,7 +2515,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '• الجزء ${toArabicDigits(pageJuz)}',
+                                '• الجزء ${toArabicDigits(pageJuz)} • الحزب ${toArabicDigits(currentPageData?.hizb ?? 1)}',
                                 style: TextStyle(
                                   fontFamily: 'Cairo',
                                   fontSize: 11,
@@ -2636,10 +2869,24 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
       builder: (context, snapshot) {
         final qcfPage = snapshot.data;
         if (qcfPage != null) {
+          // Tajweed is the only reader style exposed by the application.
+          const displayMode = QuranDisplayMode.tajweed;
+          final effectiveWeight = qState is QuranLoaded
+              ? (qState.mushafFontWeight == 400
+                  ? FontWeight.w400
+                  : (qState.mushafFontWeight == 700
+                      ? FontWeight.w700
+                      : FontWeight.w500))
+              : _mushafFontWeight;
+
           return QcfMushafPageRenderer(
             pageModel: qcfPage,
             isNightMode: _isNightMode,
             themeMode: _themeMode,
+            displayMode: displayMode,
+            highlightColor: _highlightColor,
+            useTransliteratedHeader: _useTransliteratedHeader,
+            fontWeight: effectiveWeight,
             highlightedAyahId: _highlightedAyahId,
             highlightedSurahId: _highlightedSurahId,
             selectedAyat: _selectedAyat,
@@ -2676,14 +2923,13 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
               );
             },
             onPageTap: () {
-              // Keep top & bottom bars permanently visible.
-              // Tapping the page clears any highlighted ayah.
               if (_highlightedAyahId != null) {
                 setState(() {
                   _highlightedAyahId = null;
                   _highlightedSurahId = null;
                 });
               }
+              // Top bar remains persistently visible even on page taps as requested
             },
             onPreviousPage: () {
               if (_currentPage > 1) {
@@ -2734,12 +2980,12 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
             },
             child: Container(
               color: bgPaper,
-              alignment: Alignment.center,
+              alignment: Alignment.topCenter,
               child: AspectRatio(
                 aspectRatio: kMushafAspectRatio,
                 child: FittedBox(
                   fit: BoxFit.contain,
-                  alignment: Alignment.center,
+                  alignment: Alignment.topCenter,
                   child: SizedBox(
                     width: kMushafPageWidth,
                     height: kMushafPageHeight,
@@ -2755,43 +3001,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                 ),
               ),
             ),
-          ),
-        ),
-
-        // Tap LEFT edge → previous page
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 48,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (_currentPage > 1) {
-                _pageController.previousPage(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeInOut,
-                );
-              }
-            },
-          ),
-        ),
-        // Tap RIGHT edge → next page
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: 48,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (_currentPage < 604) {
-                _pageController.nextPage(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeInOut,
-                );
-              }
-            },
           ),
         ),
       ],
@@ -3132,6 +3341,3 @@ class AyahGestureRecognizer extends LongPressGestureRecognizer {
   @override
   String get debugDescription => 'AyahGestureRecognizer';
 }
-
-
-

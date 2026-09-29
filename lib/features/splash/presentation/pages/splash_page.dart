@@ -25,7 +25,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1200),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.75, end: 1.0).animate(
@@ -57,8 +57,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   Future<void> _navigateToNext() async {
-    // Show splash for 1.8 seconds so user can enjoy the smooth animation
-    await Future.delayed(const Duration(milliseconds: 1800));
+    await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
 
     final targetPage = widget.storageService.isFirstLaunch
@@ -85,19 +84,17 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+          gradient: RadialGradient(
+            center: const Alignment(0, -0.35),
+            radius: 1.15,
             colors: isDark
                 ? [
-                    AppColors.darkBackground,
-                    AppColors.darkSurface,
-                    AppColors.primaryDark.withValues(alpha: 0.3),
+                    const Color(0xFF263B32),
+                    const Color(0xFF101914),
                   ]
               : [
-                    AppColors.lightBackground,
-                    AppColors.lightSurface,
-                    AppColors.primaryContainer.withValues(alpha: 0.2),
+                    const Color(0xFFFFFCF4),
+                    const Color(0xFFF0E7D4),
                   ],
           ),
         ),
@@ -106,7 +103,16 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 3),
-              // Animated Mosque Emblem
+              Text(
+                'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                style: TextStyle(
+                  fontFamily: 'AmiriQuran',
+                  fontSize: 19,
+                  color: AppColors.accentGold.withValues(alpha: 0.9),
+                ),
+              ),
+              const SizedBox(height: 42),
+              // Animated Mushaf emblem
               AnimatedBuilder(
                 animation: _controller,
                 builder: (context, child) {
@@ -115,31 +121,31 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                     child: Opacity(
                       opacity: _fadeAnimation.value,
                       child: Container(
-                        width: 120,
-                        height: 120,
+                        width: 108,
+                        height: 108,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+                          borderRadius: BorderRadius.circular(28),
                           color: isDark
                               ? AppColors.darkCard
                               : AppColors.lightCardElevated,
                           border: Border.all(
                             color: AppColors.accentGold.withValues(alpha: 0.7),
-                            width: 2.5,
+                            width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.accentGold.withValues(
                                 alpha: isDark ? 0.25 : 0.15,
                               ),
-                              blurRadius: 28,
-                              spreadRadius: 4,
+                              blurRadius: 22,
+                              spreadRadius: 2,
                             ),
                           ],
                         ),
                         child: const Center(
                           child: Icon(
-                            Icons.mosque_rounded,
-                            size: 64,
+                            Icons.menu_book_rounded,
+                            size: 54,
                             color: AppColors.accentGold,
                           ),
                         ),
@@ -148,7 +154,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   );
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 26),
 
               // Animated App Title & Ayah
               FadeTransition(
@@ -161,7 +167,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         'وِرد',
                         style: TextStyle(
                           fontFamily: 'Cairo',
-                          fontSize: 34,
+                          fontSize: 36,
                           fontWeight: FontWeight.bold,
                           color: isDark
                               ? AppColors.textPrimaryDark
@@ -179,21 +185,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                           color: AppColors.accentGold,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Text(
-                          '« إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا »',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 13,
-                            color: AppColors.accentGold,
-                            fontWeight: FontWeight.w600,
-                            height: 1.6,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -201,18 +192,35 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
               const Spacer(flex: 3),
 
-              // Subtle bottom loading indicator
+              // Quiet loading indicator
               FadeTransition(
                 opacity: _fadeAnimation,
-                child: const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.accentGold,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.accentGold,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'نُهَيِّئ لك وردك',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 36),

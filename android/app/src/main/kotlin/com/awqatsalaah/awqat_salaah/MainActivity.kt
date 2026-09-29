@@ -42,7 +42,9 @@ class MainActivity : FlutterActivity() {
             when (event.keyCode) {
                 KeyEvent.KEYCODE_VOLUME_UP,
                 KeyEvent.KEYCODE_VOLUME_DOWN,
-                KeyEvent.KEYCODE_POWER -> {
+                KeyEvent.KEYCODE_VOLUME_MUTE,
+                KeyEvent.KEYCODE_POWER,
+                KeyEvent.KEYCODE_HEADSETHOOK -> {
                     if (AdhanSilencer.silenceAdhan(this)) {
                         return true // Silenced Adhan
                     }
@@ -53,11 +55,15 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || 
-            keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || 
-            keyCode == KeyEvent.KEYCODE_POWER) {
-            if (AdhanSilencer.silenceAdhan(this)) {
-                return true
+        when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_MUTE,
+            KeyEvent.KEYCODE_POWER,
+            KeyEvent.KEYCODE_HEADSETHOOK -> {
+                if (AdhanSilencer.silenceAdhan(this)) {
+                    return true
+                }
             }
         }
         return super.onKeyDown(keyCode, event)

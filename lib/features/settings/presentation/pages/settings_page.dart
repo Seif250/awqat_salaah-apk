@@ -7,6 +7,10 @@ import '../../../../core/constants/prayer_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_state.dart';
+import '../../../quran/presentation/bloc/quran_bloc.dart';
+import '../../../quran/presentation/bloc/quran_event.dart';
+import '../../../quran/presentation/bloc/quran_state.dart';
+import '../../../quran/data/repositories/tafsir_repository.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_state.dart';
 import '../widgets/settings_section_card.dart';
@@ -76,6 +80,268 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDefaultTafsirDialog(BuildContext context, int currentId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final list = TafsirRepositoryImpl.defaultArabicTafsirs;
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.55,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1B201D) : const Color(0xFFFAF6EE),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4.5,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Text(
+                'اختر التفسير الافتراضي',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: list.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    color: (isDark ? Colors.white12 : Colors.black12),
+                  ),
+                  itemBuilder: (ctx, index) {
+                    final res = list[index];
+                    final isSelected = res.id == currentId;
+                    return ListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: isSelected
+                            ? AppColors.accentGold
+                            : (isDark ? Colors.white38 : Colors.black38),
+                      ),
+                      title: Text(
+                        res.name,
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 14,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.accentGold
+                              : (isDark ? Colors.white : Colors.black87),
+                        ),
+                      ),
+                      subtitle: res.authorName.isNotEmpty
+                          ? Text(
+                              res.authorName,
+                              style: TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 11.5,
+                                color: isDark ? Colors.white54 : Colors.black54,
+                              ),
+                            )
+                          : null,
+                      onTap: () {
+                        context
+                            .read<QuranBloc>()
+                            .add(SetDefaultTafsirEvent(res.id));
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showMushafFontWeightDialog(BuildContext context, int currentWeight) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final options = [
+          (
+            weight: 400,
+            title: 'عادي (٤٠٠)',
+            subtitle: 'السُّمك القياسي للخط العثماني لمصحف المدينة',
+            fontWeight: FontWeight.w400,
+          ),
+          (
+            weight: 500,
+            title: 'متوسط (٥٠٠) - موصى به',
+            subtitle: 'سُمْك متوازن ومريح لقراءة واضحة للشاشات الحديثة',
+            fontWeight: FontWeight.w500,
+          ),
+          (
+            weight: 700,
+            title: 'عريض (٧٠٠)',
+            subtitle: 'سُمْك بارز وواضح جداً لأفضل قراءة وتحديد',
+            fontWeight: FontWeight.w700,
+          ),
+        ];
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1B201D) : const Color(0xFFFAF6EE),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4.5,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Text(
+                'اختر سُمْك الرسم القرآني',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'يتحكم في درجة وضوح وسُمْك الخط داخل صفحات المصحف الشريف',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 12,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ...options.map((opt) {
+                final isSelected = opt.weight == currentWeight;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.accentGold.withValues(alpha: isDark ? 0.18 : 0.12)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.black.withValues(alpha: 0.02)),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.accentGold
+                          : (isDark ? Colors.white12 : Colors.black12),
+                      width: isSelected ? 1.8 : 1.0,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    child: ListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: isSelected
+                            ? AppColors.accentGold
+                            : (isDark ? Colors.white38 : Colors.black38),
+                      ),
+                      title: Text(
+                        opt.title,
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 14,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.accentGold
+                              : (isDark ? Colors.white : Colors.black87),
+                        ),
+                      ),
+                      subtitle: Text(
+                        opt.subtitle,
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 11.5,
+                          color: isDark ? Colors.white54 : Colors.black54,
+                        ),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white10
+                              : Colors.black.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'القرآن',
+                          style: TextStyle(
+                            fontFamily: 'Amiri',
+                            fontSize: 16,
+                            fontWeight: opt.fontWeight,
+                            color: isSelected
+                                ? AppColors.accentGold
+                                : (isDark ? Colors.white70 : Colors.black87),
+                          ),
+                        ),
+                      ),
+                      onTap: () {
+                        context
+                            .read<QuranBloc>()
+                            .add(ChangeMushafFontWeightEvent(opt.weight));
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -185,7 +451,58 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
 
-                  // 3. المظهر والتشغيل
+                  // 3. القرآن الكريم والمصحف
+                  BlocBuilder<QuranBloc, QuranState>(
+                    builder: (context, qState) {
+                      final isLoaded = qState is QuranLoaded;
+                      final defaultTafsirId =
+                          isLoaded ? qState.defaultTafsirResourceId : 16;
+                      final tafsirMatch = TafsirRepositoryImpl.defaultArabicTafsirs
+                          .where((r) => r.id == defaultTafsirId);
+                      final tafsirName = tafsirMatch.isNotEmpty
+                          ? tafsirMatch.first.name
+                          : 'التفسير الميسر';
+                      final currentWeight =
+                          isLoaded ? qState.mushafFontWeight : 500;
+                      final weightLabel = currentWeight == 400
+                          ? 'عادي (٤٠٠)'
+                          : (currentWeight == 700
+                              ? 'عريض (٧٠٠)'
+                              : 'متوسط (٥٠٠)');
+
+                      return SettingsSectionCard(
+                        title: 'القرآن الكريم والمصحف',
+                        children: [
+                          SettingsTile(
+                            icon: Icons.palette_outlined,
+                            title: 'ألوان التجويد',
+                            subtitle: 'مصحف التجويد الملون هو نمط العرض المعتمد',
+                            showDivider: true,
+                            trailing: const Icon(Icons.check_circle_rounded,
+                                color: AppColors.accentGold),
+                          ),
+                          SettingsTile(
+                            icon: Icons.format_paint_outlined,
+                            title: 'سُمْك الرسم القرآني',
+                            subtitle: weightLabel,
+                            showDivider: true,
+                            onTap: () => _showMushafFontWeightDialog(
+                                context, currentWeight),
+                          ),
+                          SettingsTile(
+                            icon: Icons.menu_book_outlined,
+                            title: 'التفسير الافتراضي',
+                            subtitle: tafsirName,
+                            showDivider: false,
+                            onTap: () =>
+                                _showDefaultTafsirDialog(context, defaultTafsirId),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  // 4. المظهر والتشغيل
                   SettingsSectionCard(
                     title: 'المظهر والتشغيل',
                     children: [

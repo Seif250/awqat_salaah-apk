@@ -3,6 +3,7 @@ import '../../data/models/surah_model.dart';
 import '../../data/models/last_read_model.dart';
 import '../../data/models/bookmark_model.dart';
 import '../../data/models/bookmark_collection_model.dart';
+import '../../data/models/quran_display_mode.dart';
 
 abstract class QuranState extends Equatable {
   const QuranState();
@@ -27,6 +28,9 @@ class QuranLoaded extends QuranState {
   final double fontSize;
   final double fontWeightValue; // 0.0 = normal, 1.0 = bold
   final bool continuousMode;
+  final QuranDisplayMode displayMode;
+  final int defaultTafsirResourceId;
+  final int mushafFontWeight;
   final Set<String> bookmarks;
   final List<BookmarkModel> richBookmarks;
   final List<BookmarkCollectionModel> collections;
@@ -39,6 +43,9 @@ class QuranLoaded extends QuranState {
     this.fontSize = 23.0,
     this.fontWeightValue = 0.0,
     this.continuousMode = true,
+    this.displayMode = QuranDisplayMode.tajweed,
+    this.defaultTafsirResourceId = 16,
+    this.mushafFontWeight = 500,
     this.bookmarks = const {},
     this.richBookmarks = const [],
     this.collections = const [],
@@ -53,6 +60,9 @@ class QuranLoaded extends QuranState {
     double? fontSize,
     double? fontWeightValue,
     bool? continuousMode,
+    QuranDisplayMode? displayMode,
+    int? defaultTafsirResourceId,
+    int? mushafFontWeight,
     Set<String>? bookmarks,
     List<BookmarkModel>? richBookmarks,
     List<BookmarkCollectionModel>? collections,
@@ -65,6 +75,10 @@ class QuranLoaded extends QuranState {
       fontSize: fontSize ?? this.fontSize,
       fontWeightValue: fontWeightValue ?? this.fontWeightValue,
       continuousMode: continuousMode ?? this.continuousMode,
+      displayMode: displayMode ?? this.displayMode,
+      defaultTafsirResourceId:
+          defaultTafsirResourceId ?? this.defaultTafsirResourceId,
+      mushafFontWeight: mushafFontWeight ?? this.mushafFontWeight,
       bookmarks: bookmarks ?? this.bookmarks,
       richBookmarks: richBookmarks ?? this.richBookmarks,
       collections: collections ?? this.collections,
@@ -80,6 +94,9 @@ class QuranLoaded extends QuranState {
         fontSize,
         fontWeightValue,
         continuousMode,
+        displayMode,
+        defaultTafsirResourceId,
+        mushafFontWeight,
         bookmarks,
         richBookmarks,
         collections,
@@ -93,4 +110,3 @@ class QuranError extends QuranState {
   @override
   List<Object?> get props => [message];
 }
-

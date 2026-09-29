@@ -7,6 +7,7 @@ import 'features/azkar/data/repositories/azkar_repository.dart';
 import 'features/azkar/presentation/bloc/azkar_bloc.dart';
 import 'features/azkar/presentation/bloc/azkar_event.dart';
 import 'features/quran/data/repositories/quran_repository.dart';
+import 'features/quran/data/repositories/tafsir_repository.dart';
 import 'features/quran/presentation/bloc/quran_bloc.dart';
 import 'features/quran/presentation/bloc/quran_event.dart';
 import 'features/location/data/repositories/location_repository_impl.dart';
@@ -39,11 +40,13 @@ class AwqatSalaahApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final azkarRepository = AzkarRepository(storageService.prefs);
     final quranRepository = QuranRepository(storageService.prefs);
+    final tafsirRepository = TafsirRepositoryImpl(storageService.prefs);
 
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<AzkarRepository>.value(value: azkarRepository),
         RepositoryProvider<QuranRepository>.value(value: quranRepository),
+        RepositoryProvider<TafsirRepository>.value(value: tafsirRepository),
       ],
       child: MultiBlocProvider(
         providers: [

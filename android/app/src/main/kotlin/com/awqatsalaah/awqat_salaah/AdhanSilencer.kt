@@ -21,9 +21,11 @@ import com.awqatsalaah.awqat_salaah.widget.WidgetDiagnostics
  * sound and notifications whenever the user presses:
  * 1. Hardware Volume Up button
  * 2. Hardware Volume Down button
- * 3. Hardware Power button (Screen Off / Lock)
+ * 3. Hardware Power button (Screen Off / Screen On / Lock)
+ * 4. Mute / Headset keys
  *
- * Works in foreground, background, and on the lock screen.
+ * Works reliably across Android 8 through Android 14+ in foreground, background,
+ * and on the lock screen.
  */
 object AdhanSilencer {
     private var isInitialized = false
@@ -36,7 +38,9 @@ object AdhanSilencer {
         "prayer_channel_takbeer_v1",
         "prayer_times_azan_channel_v9",
         "prayer_times_default_sound",
-        "prayer_times_channel_sound"
+        "prayer_times_channel_sound",
+        "prayer_channel_azan",
+        "prayer_channel_takbeer"
     )
 
     private val handler = Handler(Looper.getMainLooper())
@@ -49,34 +53,56 @@ object AdhanSilencer {
         isInitialized = true
 
         try {
-            // 1. Receiver for Screen Off (Power button pressed) and Volume Changed Action
+            // 1. Receiver for Screen Off, Screen On, Volume Changed, and Ringer Mode Changed
             val filter = IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_SCREEN_ON)
                 addAction("android.media.VOLUME_CHANGED_ACTION")
+                addAction("android.media.RINGER_MODE_CHANGED_ACTION")
             }
-            appContext.registerReceiver(object : BroadcastReceiver() {
+
+            val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent?) {
                     val action = intent?.action ?: return
                     WidgetDiagnostics.log(context, "AdhanSilencer: Broadcast received: $action")
                     silenceAdhan(context)
                 }
-            }, filter)
+            }
+
+            // Android 13/14+ requires explicit RECEIVER_EXPORTED flag for system broadcasts
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                appContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+            } else {
+                appContext.registerReceiver(receiver, filter)
+            }
 
             // 2. ContentObserver on system volume settings for hardware Volume Up/Down clicks
-            try {
-                val observer = object : ContentObserver(handler) {
-                    override fun onChange(selfChange: Boolean) {
-                        super.onChange(selfChange)
-                        silenceAdhan(appContext)
+            val volumeUris = listOf(
+                Settings.System.CONTENT_URI,
+                Settings.System.getUriFor("volume_alarm"),
+                Settings.System.getUriFor("volume_ring"),
+                Settings.System.getUriFor("volume_music"),
+                Settings.System.getUriFor("volume_notification")
+            )
+
+            for (uri in volumeUris) {
+                if (uri != null) {
+                    try {
+                        appContext.contentResolver.registerContentObserver(
+                            uri,
+                            true,
+                            object : ContentObserver(handler) {
+                                override fun onChange(selfChange: Boolean) {
+                                    super.onChange(selfChange)
+                                    WidgetDiagnostics.log(appContext, "AdhanSilencer: ContentObserver triggered on $uri")
+                                    silenceAdhan(appContext)
+                                }
+                            }
+                        )
+                    } catch (e: Exception) {
+                        WidgetDiagnostics.log(appContext, "ContentObserver registration error for $uri: ${e.message}")
                     }
                 }
-                appContext.contentResolver.registerContentObserver(
-                    Settings.System.CONTENT_URI,
-                    true,
-                    observer
-                )
-            } catch (e: Exception) {
-                WidgetDiagnostics.log(appContext, "ContentObserver registration error: ${e.message}")
             }
 
             WidgetDiagnostics.log(appContext, "AdhanSilencer fully initialized with Volume & Power listeners")
@@ -100,9 +126,12 @@ object AdhanSilencer {
                     } else null
 
                     val id = sbn.id
-                    val isPrayerId = (id in 10000..99999) || id == 8888 || (id in 100..106)
+                    val isPrayerId = (id in 10000..99999) || id == 8888 || id == 888 || (id in 100..106)
                     val isPrayerChannel = channelId != null && (
-                        PRAYER_CHANNELS.contains(channelId) || channelId.startsWith("prayer_")
+                        PRAYER_CHANNELS.contains(channelId) ||
+                        channelId.startsWith("prayer_") ||
+                        channelId.contains("azan") ||
+                        channelId.contains("takbeer")
                     )
 
                     if (isPrayerId || isPrayerChannel) {
@@ -130,16 +159,19 @@ object AdhanSilencer {
 
         WidgetDiagnostics.log(context, "AdhanSilencer: Silencing Adhan via hardware key (hasNotif=$hasActiveNotification, hasPlayer=$hasActivePlayer)")
 
-        // 1. Cancel prayer notifications to immediately stop notification sound playback
+        // 1. Cancel prayer notifications to immediately dismiss the notification
         try {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && nm != null) {
                 for (sbn in nm.activeNotifications) {
                     val id = sbn.id
                     val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) sbn.notification.channelId else null
-                    val isPrayerId = (id in 10000..99999) || id == 8888 || (id in 100..106)
+                    val isPrayerId = (id in 10000..99999) || id == 8888 || id == 888 || (id in 100..106)
                     val isPrayerChannel = channelId != null && (
-                        PRAYER_CHANNELS.contains(channelId) || channelId.startsWith("prayer_")
+                        PRAYER_CHANNELS.contains(channelId) ||
+                        channelId.startsWith("prayer_") ||
+                        channelId.contains("azan") ||
+                        channelId.contains("takbeer")
                     )
 
                     if (isPrayerId || isPrayerChannel) {
@@ -154,7 +186,7 @@ object AdhanSilencer {
             WidgetDiagnostics.log(context, "AdhanSilencer: Notification cancel error: ${e.message}")
         }
 
-        // 2. Stop any active MediaPlayer
+        // 2. Stop any active preview MediaPlayer
         try {
             activePlayer?.apply {
                 if (isPlaying) {
@@ -168,12 +200,19 @@ object AdhanSilencer {
             WidgetDiagnostics.log(context, "AdhanSilencer: MediaPlayer stop error: ${e.message}")
         }
 
-        // 3. Transient audio focus request to immediately cut off any ongoing hardware alarm stream
+        // 3. Instantly mute audio streams and claim exclusive transient audio focus
+        // This cuts off playing system ringtones/sound tracks on STREAM_ALARM & STREAM_NOTIFICATION
         try {
             val am = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
             if (am != null) {
+                // Immediate hardware mute on alarm & notification streams
+                try {
+                    am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_MUTE, 0)
+                    am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0)
+                } catch (_: Exception) {}
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
                         .setAudioAttributes(
                             AudioAttributes.Builder()
                                 .setUsage(AudioAttributes.USAGE_ALARM)
@@ -182,25 +221,31 @@ object AdhanSilencer {
                         )
                         .build()
                     am.requestAudioFocus(focusRequest)
-                    // Release immediately so system audio returns to normal state
+
+                    // Unmute and release focus after 400ms so system audio returns to normal
                     handler.postDelayed({
                         try {
+                            am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_UNMUTE, 0)
+                            am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0)
                             am.abandonAudioFocusRequest(focusRequest)
                         } catch (_: Exception) {}
-                    }, 500)
+                    }, 400)
                 } else {
                     @Suppress("DEPRECATION")
-                    am.requestAudioFocus(null, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    am.requestAudioFocus(null, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
                     handler.postDelayed({
                         try {
                             @Suppress("DEPRECATION")
+                            am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_UNMUTE, 0)
+                            am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0)
+                            @Suppress("DEPRECATION")
                             am.abandonAudioFocus(null)
                         } catch (_: Exception) {}
-                    }, 500)
+                    }, 400)
                 }
             }
         } catch (e: Exception) {
-            WidgetDiagnostics.log(context, "AdhanSilencer: Audio focus request error: ${e.message}")
+            WidgetDiagnostics.log(context, "AdhanSilencer: Audio focus/mute error: ${e.message}")
         }
 
         return true

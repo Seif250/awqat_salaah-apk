@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../data/models/last_read_model.dart';
 import '../../data/models/bookmark_model.dart';
 import '../../data/models/bookmark_collection_model.dart';
+import '../../data/models/quran_display_mode.dart';
 
 abstract class QuranEvent extends Equatable {
   const QuranEvent();
@@ -160,4 +161,29 @@ class DeleteBookmarkCollectionEvent extends QuranEvent {
   @override
   List<Object?> get props => [collectionId];
 }
+
+class ToggleQuranDisplayModeEvent extends QuranEvent {
+  final QuranDisplayMode mode;
+  const ToggleQuranDisplayModeEvent(this.mode);
+
+  @override
+  List<Object?> get props => [mode];
+}
+
+class SetDefaultTafsirEvent extends QuranEvent {
+  final int resourceId;
+  const SetDefaultTafsirEvent(this.resourceId);
+
+  @override
+  List<Object?> get props => [resourceId];
+}
+
+class ChangeMushafFontWeightEvent extends QuranEvent {
+  final int weight;
+  const ChangeMushafFontWeightEvent(this.weight);
+
+  @override
+  List<Object?> get props => [weight];
+}
+
 

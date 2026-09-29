@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +13,12 @@ import '../../../../core/utils/arabic_numbers.dart';
 import '../../data/models/ayah_model.dart';
 import '../../data/models/surah_model.dart';
 import '../../data/repositories/quran_repository.dart';
-import 'ayah_rosette.dart';
+import 'share/quran_share_renderer.dart';
+import 'share/share_layout_calculator.dart';
+
+export 'share/quran_share_layout_engine.dart';
+export 'share/quran_share_renderer.dart';
+export 'share/share_layout_calculator.dart';
 
 enum QuranShareTheme {
   medina,
@@ -89,15 +93,33 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
   List<AyahModel> _selectedVerses = [];
 
   QuranShareTheme _theme = QuranShareTheme.medina;
-  double _fontSize = 22.0;
   bool _isGeneratingImage = false;
+  int _currentPreviewPageIndex = 0;
+  late ShareLayoutResult _cachedLayoutResult;
+
+  String? get _crossSurahLabel {
+    if (widget.items != null && widget.items!.isNotEmpty) {
+      final surahIds = widget.items!.map((e) => e.surahId).toSet();
+      if (surahIds.length > 1) {
+        final first = widget.items!.first;
+        final last = widget.items!.last;
+        return 'سورة ${first.surahName} (${toArabicDigits(first.ayah.id)}) – سورة ${last.surahName} (${toArabicDigits(last.ayah.id)})';
+      }
+    }
+    return null;
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    final repo = context.read<QuranRepository>();
+    QuranRepository? repo;
+    try {
+      repo = context.read<QuranRepository>();
+    } catch (_) {
+      repo = null;
+    }
 
     // Determine initial surah
     if (widget.surahId != null) {
@@ -108,14 +130,18 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
       _surahId = 1;
     }
 
-    final surah = repo.getSurahById(_surahId);
-    _surahName = widget.surahName ?? surah?.name ?? (widget.items?.isNotEmpty == true ? widget.items!.first.surahName : '');
-    _totalVerses = surah?.totalVerses ?? (surah?.verses.length ?? (widget.items?.length ?? 7));
+    final surah = repo?.getSurahById(_surahId);
+    _surahName = widget.surahName ??
+        surah?.name ??
+        (widget.items?.isNotEmpty == true ? widget.items!.first.surahName : '');
+    _totalVerses = surah?.totalVerses ??
+        (surah?.verses.length ?? (widget.items?.length ?? 7));
 
     // Determine initial range
     if (widget.initialStartAyah != null) {
       _startAyah = widget.initialStartAyah!.clamp(1, _totalVerses);
-      _endAyah = (widget.initialEndAyah ?? widget.initialStartAyah!).clamp(_startAyah, _totalVerses);
+      _endAyah = (widget.initialEndAyah ?? widget.initialStartAyah!)
+          .clamp(_startAyah, _totalVerses);
     } else if (widget.items != null && widget.items!.isNotEmpty) {
       final ids = widget.items!.map((e) => e.ayah.id).toList()..sort();
       _startAyah = ids.first.clamp(1, _totalVerses);
@@ -126,10 +152,21 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
     }
 
     _loadSelectedVerses(surah);
+    _cachedLayoutResult = QuranShareLayoutEngine.calculate(
+      surahName: _surahName,
+      verses: _selectedVerses,
+    );
   }
 
   void _loadSelectedVerses([SurahModel? surahModel]) {
-    final surah = surahModel ?? context.read<QuranRepository>().getSurahById(_surahId);
+    SurahModel? surah = surahModel;
+    if (surah == null) {
+      try {
+        surah = context.read<QuranRepository>().getSurahById(_surahId);
+      } catch (_) {
+        surah = null;
+      }
+    }
     if (surah != null && surah.verses.isNotEmpty) {
       _selectedVerses = surah.verses
           .where((v) => v.id >= _startAyah && v.id <= _endAyah)
@@ -137,7 +174,8 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
         ..sort((a, b) => a.id.compareTo(b.id));
     } else if (widget.items != null && widget.items!.isNotEmpty) {
       _selectedVerses = widget.items!
-          .where((item) => item.ayah.id >= _startAyah && item.ayah.id <= _endAyah)
+          .where((item) =>
+              item.ayah.id >= _startAyah && item.ayah.id <= _endAyah)
           .map((item) => item.ayah)
           .toList()
         ..sort((a, b) => a.id.compareTo(b.id));
@@ -146,6 +184,7 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
 
   void _updateRange({int? start, int? end}) {
     setState(() {
+      _currentPreviewPageIndex = 0;
       if (start != null) {
         _startAyah = start.clamp(1, _totalVerses);
         if (_startAyah > _endAyah) {
@@ -156,6 +195,10 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
         _endAyah = end.clamp(_startAyah, _totalVerses);
       }
       _loadSelectedVerses();
+      _cachedLayoutResult = QuranShareLayoutEngine.calculate(
+        surahName: _surahName,
+        verses: _selectedVerses,
+      );
     });
   }
 
@@ -166,8 +209,6 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
   }
 
   /// Generates continuous text flow for sharing as text.
-  /// No repeated surah name or metadata between verses.
-  /// All verses flow seamlessly in Uthmani text with single metadata footer.
   String _generateTextPayload() {
     final buffer = StringBuffer();
     buffer.write('﴿ ');
@@ -186,7 +227,8 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
     if (_startAyah == _endAyah) {
       buffer.writeln('سورة $_surahName • الآية ${toArabicDigits(_startAyah)}');
     } else {
-      buffer.writeln('سورة $_surahName • الآيات ${toArabicDigits(_startAyah)}–${toArabicDigits(_endAyah)}');
+      buffer.writeln(
+          'سورة $_surahName • الآيات ${toArabicDigits(_startAyah)}–${toArabicDigits(_endAyah)}');
     }
     buffer.writeln('تطبيق وِرد • صلاتك، قرآنك، ذكرك');
     return buffer.toString().trim();
@@ -210,7 +252,8 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
     final text = _generateTextPayload();
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
-      AppSnackBar.showSuccess(context, 'تم نسخ الآيات الكريمة بنص متواصل بنجاح');
+      AppSnackBar.showSuccess(
+          context, 'تم نسخ الآيات الكريمة بنص متواصل بنجاح');
     }
   }
 
@@ -220,48 +263,84 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
     setState(() => _isGeneratingImage = true);
 
     try {
-      final boundary =
-          _previewKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) {
-        throw Exception('عنصر المعاينة غير متاح');
-      }
+      final layoutResult = _cachedLayoutResult;
+      final allFiles = <XFile>[];
 
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final pngBytes = byteData?.buffer.asUint8List();
+      if (layoutResult.totalPages == 1) {
+        final boundary = _previewKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
+        if (boundary == null) {
+          throw Exception('عنصر المعاينة غير متاح');
+        }
 
-      if (pngBytes == null || pngBytes.isEmpty) {
-        throw Exception('فشل تحويل الصورة إلى بايتات');
-      }
+        final image = await boundary.toImage(pixelRatio: 1.0);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        final pngBytes = byteData?.buffer.asUint8List();
 
-      final fileName = 'quran_${_surahId}_${_startAyah}_${_endAyah}_${DateTime.now().millisecondsSinceEpoch}.png';
+        if (pngBytes == null || pngBytes.isEmpty) {
+          throw Exception('فشل تحويل الصورة إلى بايتات');
+        }
 
-      if (!kIsWeb) {
-        final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/$fileName');
-        await file.writeAsBytes(pngBytes, flush: true);
+        final fileName =
+            'quran_${_surahId}_${_startAyah}_${_endAyah}_${DateTime.now().millisecondsSinceEpoch}.png';
 
-        final xFile = XFile(file.path, mimeType: 'image/png', name: fileName);
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [xFile],
-            subject: 'سورة $_surahName (${toArabicDigits(_startAyah)}–${toArabicDigits(_endAyah)})',
-            text: _generateTextPayload(),
-          ),
-        );
+        if (!kIsWeb) {
+          final tempDir = await getTemporaryDirectory();
+          final file = File('${tempDir.path}/$fileName');
+          await file.writeAsBytes(pngBytes, flush: true);
+          allFiles.add(XFile(file.path, mimeType: 'image/png', name: fileName));
+        } else {
+          allFiles.add(
+              XFile.fromData(pngBytes, mimeType: 'image/png', name: fileName));
+        }
       } else {
-        final xFile = XFile.fromData(
-          pngBytes,
-          mimeType: 'image/png',
-          name: fileName,
-        );
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [xFile],
-            text: _generateTextPayload(),
-          ),
-        );
+        final originalPageIndex = _currentPreviewPageIndex;
+        for (int i = 0; i < layoutResult.totalPages; i++) {
+          setState(() => _currentPreviewPageIndex = i);
+          await WidgetsBinding.instance.endOfFrame;
+          await Future.delayed(const Duration(milliseconds: 60));
+
+          final boundary = _previewKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+          if (boundary != null) {
+            final image = await boundary.toImage(pixelRatio: 1.0);
+            final byteData =
+                await image.toByteData(format: ui.ImageByteFormat.png);
+            final pngBytes = byteData?.buffer.asUint8List();
+            if (pngBytes != null && pngBytes.isNotEmpty) {
+              final fileName =
+                  'quran_${_surahId}_page_${i + 1}_${DateTime.now().millisecondsSinceEpoch}.png';
+              if (!kIsWeb) {
+                final tempDir = await getTemporaryDirectory();
+                final file = File('${tempDir.path}/$fileName');
+                await file.writeAsBytes(pngBytes, flush: true);
+                allFiles.add(
+                    XFile(file.path, mimeType: 'image/png', name: fileName));
+              } else {
+                allFiles.add(XFile.fromData(pngBytes,
+                    mimeType: 'image/png', name: fileName));
+              }
+            }
+          }
+        }
+
+        if (mounted) {
+          setState(() => _currentPreviewPageIndex = originalPageIndex);
+        }
       }
+
+      if (allFiles.isEmpty) {
+        throw Exception('فشل إنشاء صور المشاركة');
+      }
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: allFiles,
+          subject:
+              'سورة $_surahName (${toArabicDigits(_startAyah)}–${toArabicDigits(_endAyah)})',
+          text: null,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         AppSnackBar.showError(context, 'فشل إنشاء ومشاركة الصورة: $e');
@@ -276,9 +355,11 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF1B201D) : const Color(0xFFFAF7EE);
+    final dialogBg = isDark ? const Color(0xFF1B201D) : const Color(0xFFF6F0E4);
     final textThemeColor = isDark ? Colors.white : const Color(0xFF1E1A17);
     final bronze = isDark ? const Color(0xFFD4AF37) : const Color(0xFF7A583A);
+    final cardBg = isDark ? const Color(0xFF141815) : Colors.white;
+    final borderColor = isDark ? Colors.white12 : const Color(0xFFDFD4C0);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.92,
@@ -308,30 +389,23 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
             ),
           ),
 
-          // Header
+          // Minimal Header with Theme Selector
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGold.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.share_rounded,
-                    color: AppColors.accentGold,
-                    size: 22,
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 22),
+                  onPressed: () => Navigator.pop(context),
+                  tooltip: 'إغلاق',
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'مشاركة الآيات الكريمة',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 16,
@@ -340,33 +414,37 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
                         ),
                       ),
                       Text(
-                        'سورة $_surahName • ${_startAyah == _endAyah ? "من آية ${toArabicDigits(_startAyah)} إلى آية ${toArabicDigits(_endAyah)}" : "من آية ${toArabicDigits(_startAyah)} إلى آية ${toArabicDigits(_endAyah)} (${toArabicDigits(_selectedVerses.length)} آيات)"}',
+                        _crossSurahLabel != null
+                            ? 'سورة $_surahName • (${_startAyah == _endAyah ? "الآية ${toArabicDigits(_startAyah)}" : "الآيات ${toArabicDigits(_startAyah)} إلى ${toArabicDigits(_endAyah)}"}) ($_crossSurahLabel)'
+                            : 'سورة $_surahName • ${_startAyah == _endAyah ? "الآية ${toArabicDigits(_startAyah)}" : "الآيات ${toArabicDigits(_startAyah)} إلى ${toArabicDigits(_endAyah)}"}',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 12,
                           color: isDark ? Colors.white70 : Colors.black87,
                           fontWeight: FontWeight.w600,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.pop(context),
-                ),
+                const SizedBox(width: 8),
+                _buildThemeSelectorButton(isDark),
               ],
             ),
           ),
 
-          // ── Interactive Ayah Range Selector ──────────────────────────────
-          _buildRangeSelectorCard(isDark, bronze),
+          // Hero Ayah Range Selector (Large, Prominent, Islamic Styling)
+          _buildHeroRangeSelector(isDark, bronze, cardBg, borderColor),
 
           // Tabs: [ صورة ] [ نص ]
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.05),
+              color: isDark
+                  ? Colors.black26
+                  : Colors.black.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(14),
             ),
             child: TabBar(
@@ -411,78 +489,185 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
     );
   }
 
-  /// Compact, intuitive range selector card with step controls & quick chips
-  Widget _buildRangeSelectorCard(bool isDark, Color bronze) {
-    final cardBg = isDark ? const Color(0xFF141815) : Colors.white;
-    final borderColor = isDark ? Colors.white12 : const Color(0xFFDFD4C0);
+  /// Compact, elegant Theme Selector button in top bar
+  Widget _buildThemeSelectorButton(bool isDark) {
+    Color activeColor;
+    switch (_theme) {
+      case QuranShareTheme.medina:
+        activeColor = const Color(0xFFF6F0E4);
+        break;
+      case QuranShareTheme.emerald:
+        activeColor = const Color(0xFF0F2D1F);
+        break;
+      case QuranShareTheme.amoled:
+        activeColor = const Color(0xFF101412);
+        break;
+    }
 
+    return PopupMenuButton<QuranShareTheme>(
+      tooltip: 'مظهر المشاركة',
+      initialValue: _theme,
+      onSelected: (theme) => setState(() => _theme = theme),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: isDark ? const Color(0xFF1E2420) : const Color(0xFFFDFBF7),
+      itemBuilder: (ctx) => [
+        _buildThemePopupItem(
+            QuranShareTheme.medina, 'المدينة', const Color(0xFFF6F0E4), isDark),
+        _buildThemePopupItem(
+            QuranShareTheme.emerald, 'زمردي', const Color(0xFF0F2D1F), isDark),
+        _buildThemePopupItem(
+            QuranShareTheme.amoled, 'أسود', const Color(0xFF101412), isDark),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border:
+              Border.all(color: AppColors.accentGold.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: activeColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.accentGold, width: 1.5),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.palette_outlined,
+              size: 16,
+              color: AppColors.accentGold,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PopupMenuItem<QuranShareTheme> _buildThemePopupItem(
+    QuranShareTheme theme,
+    String label,
+    Color color,
+    bool isDark,
+  ) {
+    final isSelected = _theme == theme;
+    return PopupMenuItem<QuranShareTheme>(
+      value: theme,
+      child: Row(
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected ? AppColors.accentGold : Colors.grey,
+                width: isSelected ? 2.0 : 1.0,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Cairo',
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected
+                  ? AppColors.accentGold
+                  : (isDark ? Colors.white : Colors.black87),
+            ),
+          ),
+          if (isSelected) ...[
+            const Spacer(),
+            const Icon(Icons.check_rounded,
+                size: 18, color: AppColors.accentGold),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Large, dignified Hero Range Selector
+  Widget _buildHeroRangeSelector(
+      bool isDark, Color bronze, Color cardBg, Color borderColor) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: borderColor, width: 1.2),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              // Start Ayah Stepper
-              Expanded(
-                child: _buildStepperItem(
-                  label: 'من آية',
-                  value: _startAyah,
-                  onDecrease: _startAyah > 1 ? () => _updateRange(start: _startAyah - 1) : null,
-                  onIncrease: _startAyah < _totalVerses ? () => _updateRange(start: _startAyah + 1) : null,
-                  onTapValue: () => _pickAyahDialog(isStart: true),
-                  bronze: bronze,
-                  isDark: isDark,
-                ),
-              ),
-              Container(
-                width: 1.2,
-                height: 36,
-                color: borderColor,
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-              ),
-              // End Ayah Stepper
-              Expanded(
-                child: _buildStepperItem(
-                  label: 'إلى آية',
-                  value: _endAyah,
-                  onDecrease: _endAyah > _startAyah ? () => _updateRange(end: _endAyah - 1) : null,
-                  onIncrease: _endAyah < _totalVerses ? () => _updateRange(end: _endAyah + 1) : null,
-                  onTapValue: () => _pickAyahDialog(isStart: false),
-                  bronze: bronze,
-                  isDark: isDark,
-                ),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: 8),
-          // Quick Range Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildQuickChip('آية واحدة', _startAyah == _endAyah, () {
-                  _updateRange(end: _startAyah);
-                }, isDark),
-                const SizedBox(width: 6),
-                _buildQuickChip('+3 آيات', _endAyah == math.min(_totalVerses, _startAyah + 2), () {
-                  _updateRange(end: math.min(_totalVerses, _startAyah + 2));
-                }, isDark),
-                const SizedBox(width: 6),
-                _buildQuickChip('+5 آيات', _endAyah == math.min(_totalVerses, _startAyah + 4), () {
-                  _updateRange(end: math.min(_totalVerses, _startAyah + 4));
-                }, isDark),
-                const SizedBox(width: 6),
-                _buildQuickChip('+10 آيات', _endAyah == math.min(_totalVerses, _startAyah + 9), () {
-                  _updateRange(end: math.min(_totalVerses, _startAyah + 9));
-                }, isDark),
-              ],
+        ],
+      ),
+      child: Row(
+        children: [
+          // Start Ayah (من آية)
+          Expanded(
+            child: _buildAyahRangeSection(
+              label: 'مِنْ آيَة',
+              value: _startAyah,
+              onDecrease: _startAyah > 1
+                  ? () => _updateRange(start: _startAyah - 1)
+                  : null,
+              onIncrease: _startAyah < _totalVerses
+                  ? () => _updateRange(start: _startAyah + 1)
+                  : null,
+              onTapValue: () => _pickAyahDialog(isStart: true),
+              bronze: bronze,
+              isDark: isDark,
+            ),
+          ),
+
+          // Central Decorative Divider with Ayah Count Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: AppColors.accentGold.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: AppColors.accentGold.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              _selectedVerses.length == 1
+                  ? 'آية واحدة'
+                  : '${toArabicDigits(_selectedVerses.length)} آيات',
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: bronze,
+              ),
+            ),
+          ),
+
+          // End Ayah (إِلَى آيَة)
+          Expanded(
+            child: _buildAyahRangeSection(
+              label: 'إِلَى آيَة',
+              value: _endAyah,
+              onDecrease: _endAyah > _startAyah
+                  ? () => _updateRange(end: _endAyah - 1)
+                  : null,
+              onIncrease: _endAyah < _totalVerses
+                  ? () => _updateRange(end: _endAyah + 1)
+                  : null,
+              onTapValue: () => _pickAyahDialog(isStart: false),
+              bronze: bronze,
+              isDark: isDark,
             ),
           ),
         ],
@@ -490,7 +675,7 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
     );
   }
 
-  Widget _buildStepperItem({
+  Widget _buildAyahRangeSection({
     required String label,
     required int value,
     required VoidCallback? onDecrease,
@@ -499,106 +684,105 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
     required Color bronze,
     required bool isDark,
   }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
           style: TextStyle(
             fontFamily: 'Cairo',
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white70 : Colors.black87,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white60 : Colors.black54,
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: onDecrease,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.remove_rounded,
-                  size: 16,
-                  color: onDecrease != null ? bronze : Colors.grey,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            InkWell(
-              onTap: onTapValue,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.accentGold.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.4)),
-                ),
-                child: Text(
-                  toArabicDigits(value),
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: bronze,
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Minus Button
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: onDecrease,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white10
+                        : Colors.black.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.remove_rounded,
+                    size: 16,
+                    color: onDecrease != null
+                        ? bronze
+                        : Colors.grey.withValues(alpha: 0.5),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 6),
-            InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: onIncrease,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 16,
-                  color: onIncrease != null ? bronze : Colors.grey,
+              const SizedBox(width: 5),
+
+              // Number Button (Large Arabic numeral)
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: onTapValue,
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 38),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGold.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppColors.accentGold.withValues(alpha: 0.4)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      toArabicDigits(value),
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: bronze,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+              const SizedBox(width: 5),
 
-  Widget _buildQuickChip(String label, bool isSelected, VoidCallback onTap, bool isDark) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.accentGold
-              : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: isSelected
-                ? const Color(0xFF1E1A17)
-                : (isDark ? Colors.white70 : Colors.black87),
+              // Plus Button
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: onIncrease,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white10
+                        : Colors.black.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: 16,
+                    color: onIncrease != null
+                        ? bronze
+                        : Colors.grey.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -613,7 +797,8 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
         title: Text(
           isStart ? 'اختر بداية النطاق' : 'اختر نهاية النطاق',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+          style:
+              const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -631,7 +816,8 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 filled: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],
@@ -657,7 +843,9 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
               }
               Navigator.pop(ctx);
             },
-            child: const Text('تأكيد', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            child: const Text('تأكيد',
+                style: TextStyle(
+                    fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -665,68 +853,90 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
   }
 
   Widget _buildImageComposerTab(bool isDark) {
+    final layoutResult = _cachedLayoutResult;
+    final clampedPageIndex =
+        _currentPreviewPageIndex.clamp(0, layoutResult.totalPages - 1);
+    final currentPageData = layoutResult.pages[clampedPageIndex];
+
     return Column(
       children: [
-        // Controls Row: Themes & Font Size
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
-            children: [
-              _buildThemeButton(QuranShareTheme.medina, 'المدينة', const Color(0xFFFAF7EE)),
-              const SizedBox(width: 8),
-              _buildThemeButton(QuranShareTheme.emerald, 'زمردي', const Color(0xFF0F2D1F)),
-              const SizedBox(width: 8),
-              _buildThemeButton(QuranShareTheme.amoled, 'أسود', const Color(0xFF121614)),
-              const Spacer(),
-
-              // Font Size Selector
-              IconButton(
-                icon: const Icon(Icons.text_decrease_rounded, size: 18),
-                tooltip: 'تصغير الخط',
-                onPressed: () {
-                  if (_fontSize > 16.0) setState(() => _fontSize -= 2.0);
-                },
-              ),
-              Text(
-                toArabicDigits(_fontSize.toInt()),
-                style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(Icons.text_increase_rounded, size: 18),
-                tooltip: 'تكبير الخط',
-                onPressed: () {
-                  if (_fontSize < 30.0) setState(() => _fontSize += 2.0);
-                },
-              ),
-            ],
+        // Multi-page Pagination Selector (ONLY if content spans multiple pages)
+        if (layoutResult.totalPages > 1)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward_ios_rounded, size: 15),
+                  onPressed: clampedPageIndex > 0
+                      ? () => setState(() =>
+                          _currentPreviewPageIndex = clampedPageIndex - 1)
+                      : null,
+                  tooltip: 'الصفحة السابقة',
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white10
+                        : Colors.black.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                    ),
+                  ),
+                  child: Text(
+                    'صفحة ${toArabicDigits(clampedPageIndex + 1)} من ${toArabicDigits(layoutResult.totalPages)}',
+                    style: const TextStyle(
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_rounded, size: 15),
+                  onPressed: clampedPageIndex < layoutResult.totalPages - 1
+                      ? () => setState(() =>
+                          _currentPreviewPageIndex = clampedPageIndex + 1)
+                      : null,
+                  tooltip: 'الصفحة التالية',
+                ),
+              ],
+            ),
           ),
-        ),
 
-        // Live Scrollable Preview Container
+        // Live Preview Container (Maximized to occupy available viewport)
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Center(
-              child: RepaintBoundary(
-                key: _previewKey,
-                child: QuranShareRenderer(
-                  surahName: _surahName,
-                  startAyah: _startAyah,
-                  endAyah: _endAyah,
-                  verses: _selectedVerses,
-                  theme: _theme,
-                  fontSize: _fontSize,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: currentPageData.canvasWidth,
+                  height: currentPageData.canvasHeight,
+                  child: RepaintBoundary(
+                    key: _previewKey,
+                    child: QuranShareRenderer(
+                      pageData: currentPageData,
+                      theme: _theme,
+                      crossSurahLabel: _crossSurahLabel,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ),
 
-        // Bottom Action Button
+        // Bottom Action Button: «مشاركة الصورة بجودة عالية»
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF141815) : Colors.white,
+            color: isDark ? const Color(0xFF141815) : const Color(0xFFF6F0E4),
             border: Border(
               top: BorderSide(
                 color: isDark ? Colors.white12 : Colors.black12,
@@ -759,7 +969,11 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
                       )
                     : const Icon(Icons.share_rounded, size: 20),
                 label: Text(
-                  _isGeneratingImage ? 'جاري تجهيز الصورة...' : 'مشاركة الصورة بجودة فائقة',
+                  _isGeneratingImage
+                      ? 'جاري تجهيز الصورة...'
+                      : (layoutResult.totalPages > 1
+                          ? 'مشاركة الصور (${toArabicDigits(layoutResult.totalPages)})'
+                          : 'مشاركة الصورة'),
                   style: const TextStyle(
                     fontFamily: 'Cairo',
                     fontWeight: FontWeight.bold,
@@ -771,34 +985,6 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildThemeButton(QuranShareTheme theme, String label, Color previewColor) {
-    final isSelected = _theme == theme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: () => setState(() => _theme = theme),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: previewColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? AppColors.accentGold : Colors.grey.withValues(alpha: 0.4),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: theme == QuranShareTheme.medina ? const Color(0xFF1E1A17) : Colors.white,
-          ),
-        ),
-      ),
     );
   }
 
@@ -849,7 +1035,8 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
                     ),
                   ),
                   onPressed: _copyText,
-                  icon: const Icon(Icons.copy_rounded, color: AppColors.accentGold, size: 20),
+                  icon: const Icon(Icons.copy_rounded,
+                      color: AppColors.accentGold, size: 20),
                   label: const Text(
                     'نسخ النص',
                     style: TextStyle(
@@ -881,206 +1068,6 @@ class _QuranShareComposerDialogState extends State<QuranShareComposerDialog>
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Dedicated, standalone Quran Share Image Renderer.
-///
-/// Features:
-/// - Independent layout (not tied to Mushaf reader widget or screen size)
-/// - Top: Application Name + Surah Name (No "أعوذ بالله" by default)
-/// - Body: Continuous Quran text flow with inline rosettes
-/// - Footer: Single Surah/Ayah range specification
-/// - Auto-expanding dynamic height
-class QuranShareRenderer extends StatelessWidget {
-  final String surahName;
-  final int startAyah;
-  final int endAyah;
-  final List<AyahModel> verses;
-  final QuranShareTheme theme;
-  final double fontSize;
-  final String appName;
-
-  const QuranShareRenderer({
-    super.key,
-    required this.surahName,
-    required this.startAyah,
-    required this.endAyah,
-    required this.verses,
-    required this.theme,
-    required this.fontSize,
-    this.appName = 'تطبيق وِرد',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Color cardBg;
-    Color borderColor;
-    Color textColor;
-    Color bronze;
-
-    switch (theme) {
-      case QuranShareTheme.medina:
-        cardBg = const Color(0xFFFAF7EE);
-        borderColor = const Color(0xFFDFD4C0);
-        textColor = const Color(0xFF1E1A17);
-        bronze = const Color(0xFF7A583A);
-        break;
-      case QuranShareTheme.emerald:
-        cardBg = const Color(0xFF0F2D1F);
-        borderColor = const Color(0xFF1F4D36);
-        textColor = const Color(0xFFF0EAD6);
-        bronze = const Color(0xFFD4AF37);
-        break;
-      case QuranShareTheme.amoled:
-        cardBg = const Color(0xFF121614);
-        borderColor = const Color(0xFF2C352E);
-        textColor = const Color(0xFFE6E1D5);
-        bronze = const Color(0xFFE5C158);
-        break;
-    }
-
-    return Container(
-      width: 460,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: borderColor, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── TOP HEADER: Application Name & Surah Name ─────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(width: 28, height: 1, color: bronze.withValues(alpha: 0.5)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  appName,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: bronze.withValues(alpha: 0.85),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              Container(width: 28, height: 1, color: bronze.withValues(alpha: 0.5)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
-              decoration: BoxDecoration(
-                color: bronze.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: bronze.withValues(alpha: 0.35), width: 1),
-              ),
-              child: Text(
-                'سُورَةُ $surahName',
-                style: TextStyle(
-                  fontFamily: 'UthmanicHafs',
-                  fontFamilyFallback: const ['AmiriQuran', 'Cairo', 'serif'],
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: bronze,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-          Divider(color: bronze.withValues(alpha: 0.25), thickness: 0.8),
-          const SizedBox(height: 14),
-
-          // ── BODY: Continuous Quran Text Flow ───────────────────────────────
-          Directionality(
-            textDirection: TextDirection.rtl,
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  for (final ayah in verses) ...[
-                    TextSpan(
-                      text: '${ayah.text} ',
-                      style: TextStyle(
-                        fontFamily: 'UthmanicHafs',
-                        fontFamilyFallback: const ['AmiriQuran', 'Cairo', 'serif'],
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.w600,
-                        height: 2.15,
-                        color: textColor,
-                      ),
-                    ),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: AyahRosette(
-                        ayahNumber: ayah.id,
-                        size: (fontSize * 1.1).clamp(20.0, 28.0),
-                        borderColor: bronze,
-                        fillColor: bronze.withValues(alpha: 0.15),
-                        textColor: textColor,
-                      ),
-                    ),
-                    const TextSpan(text: ' '),
-                  ],
-                ],
-              ),
-              textAlign: TextAlign.center,
-              textDirection: TextDirection.rtl,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-          Divider(color: bronze.withValues(alpha: 0.30), thickness: 1),
-          const SizedBox(height: 8),
-
-          // ── FOOTER: Surah Name & Selected Ayah Range ───────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                startAyah == endAyah
-                    ? 'سورة $surahName • الآية ${toArabicDigits(startAyah)}'
-                    : 'سورة $surahName • الآيات ${toArabicDigits(startAyah)}–${toArabicDigits(endAyah)}',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: bronze,
-                ),
-              ),
-              Row(
-                children: [
-                  Icon(Icons.mosque_rounded, size: 14, color: bronze),
-                  const SizedBox(width: 4),
-                  Text(
-                    'تطبيق وِرد',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 11,
-                      color: bronze.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),

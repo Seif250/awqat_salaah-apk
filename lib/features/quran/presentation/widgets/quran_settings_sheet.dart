@@ -5,23 +5,29 @@ import '../../../../core/utils/arabic_numbers.dart';
 class QuranSettingsSheet extends StatelessWidget {
   final double currentFontSize;
   final bool isContinuousMode;
+  final bool isTajweedMode;
   final ValueChanged<double> onFontSizeChanged;
   final ValueChanged<bool> onContinuousModeChanged;
+  final ValueChanged<bool>? onTajweedModeChanged;
 
   const QuranSettingsSheet({
     super.key,
     required this.currentFontSize,
     required this.isContinuousMode,
+    this.isTajweedMode = false,
     required this.onFontSizeChanged,
     required this.onContinuousModeChanged,
+    this.onTajweedModeChanged,
   });
 
   static Future<void> show(
     BuildContext context, {
     required double currentFontSize,
     required bool isContinuousMode,
+    bool isTajweedMode = false,
     required ValueChanged<double> onFontSizeChanged,
     required ValueChanged<bool> onContinuousModeChanged,
+    ValueChanged<bool>? onTajweedModeChanged,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -30,8 +36,10 @@ class QuranSettingsSheet extends StatelessWidget {
       builder: (context) => QuranSettingsSheet(
         currentFontSize: currentFontSize,
         isContinuousMode: isContinuousMode,
+        isTajweedMode: isTajweedMode,
         onFontSizeChanged: onFontSizeChanged,
         onContinuousModeChanged: onContinuousModeChanged,
+        onTajweedModeChanged: onTajweedModeChanged,
       ),
     );
   }
@@ -209,6 +217,58 @@ class QuranSettingsSheet extends StatelessWidget {
                 ],
               ),
             ),
+            if (onTajweedModeChanged != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ألوان التجويد',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight,
+                          ),
+                        ),
+                        Text(
+                          isTajweedMode
+                              ? 'إظهار أحكام التجويد بألوان مصحف التجويد'
+                              : 'المصحف العادي باللون الأحادي',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 11,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Switch(
+                      value: isTajweedMode,
+                      activeThumbColor: AppColors.accentGold,
+                      activeTrackColor: AppColors.primary,
+                      onChanged: onTajweedModeChanged,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -25,14 +25,14 @@ class AyahRosette extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const defaultBorder = Color(0xFFB89368);
-    const defaultFill = Color(0xFFF6EEDB);
-    const defaultText = Color(0xFF4A341E);
+    const defaultBorder = Color(0xFFA67C4A);
+    const defaultFill = Color(0xFFF7F1E1);
+    const defaultText = Color(0xFF382A1B);
 
     final border = borderColor ?? defaultBorder;
     final fill = fillColor ?? defaultFill;
     final text = textColor ?? defaultText;
-    final contentPadding = padding ?? const EdgeInsets.symmetric(horizontal: 3.0);
+    final contentPadding = padding ?? const EdgeInsets.symmetric(horizontal: 1.5);
 
     Widget rosetteWidget = Padding(
       padding: contentPadding,
@@ -49,11 +49,12 @@ class AyahRosette extends StatelessWidget {
             child: Text(
               toArabicDigits(ayahNumber),
               style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: size * 0.42,
+                fontFamily: 'Amiri',
+                fontFamilyFallback: const ['Cairo', 'serif'],
+                fontSize: size * 0.44,
                 fontWeight: FontWeight.bold,
                 color: text,
-                height: 1.1,
+                height: 1.05,
               ),
             ),
           ),
@@ -96,20 +97,20 @@ class _RosettePainter extends CustomPainter {
       ..color = borderColor
       ..style = PaintingStyle.fill;
 
-    // Paint for inner rings
+    // Paint for outer ring
     final strokePaint = Paint()
       ..color = borderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = 0.9;
 
     // 1. Draw outer 8 floral points (petals)
     const int petalCount = 8;
-    final petalRadius = radius * 0.95;
+    final petalRadius = radius * 0.92;
     for (int i = 0; i < petalCount; i++) {
       final angle = (i * 2 * math.pi) / petalCount;
       final x = center.dx + petalRadius * math.cos(angle);
       final y = center.dy + petalRadius * math.sin(angle);
-      canvas.drawCircle(Offset(x, y), size.width * 0.08, petalPaint);
+      canvas.drawCircle(Offset(x, y), size.width * 0.075, petalPaint);
     }
 
     // 2. Draw circular medallion base
@@ -120,9 +121,9 @@ class _RosettePainter extends CustomPainter {
 
     // 4. Draw inner decorative ring
     final innerStrokePaint = Paint()
-      ..color = borderColor.withValues(alpha: 0.6)
+      ..color = borderColor.withValues(alpha: 0.65)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.6;
+      ..strokeWidth = 0.55;
     canvas.drawCircle(center, radius * 0.65, innerStrokePaint);
   }
 

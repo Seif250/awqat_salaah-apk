@@ -7,6 +7,7 @@ import '../models/last_read_model.dart';
 import '../models/mushaf_page_model.dart';
 import '../models/bookmark_model.dart';
 import '../models/bookmark_collection_model.dart';
+import '../models/quran_display_mode.dart';
 
 class QuranRepository {
   final SharedPreferences _prefs;
@@ -17,6 +18,8 @@ class QuranRepository {
   static const String _keyFontSize = 'quran_font_size';
   static const String _keyFontWeight = 'quran_font_weight';
   static const String _keyContinuousMode = 'quran_continuous_mode';
+  static const String _keyQuranDisplayMode = 'quran_display_mode';
+  static const String _keyDefaultTafsirResource = 'quran_default_tafsir_resource';
   static const String _keyBookmarks = 'quran_bookmarks';
   static const String _keyRichBookmarks = 'quran_rich_bookmarks';
   static const String _keyCollections = 'quran_bookmark_collections';
@@ -242,6 +245,18 @@ class QuranRepository {
     await _prefs.setDouble(_keyFontWeight, weight.clamp(0.0, 1.0));
   }
 
+  static const String _keyMushafFontWeight = 'mushaf_font_weight_int';
+
+  /// Mushaf reader font weight (400=عادي, 500=متوسط, 700=عريض). Default: 500.
+  int getMushafFontWeight() {
+    return _prefs.getInt(_keyMushafFontWeight) ?? 500;
+  }
+
+  Future<void> setMushafFontWeight(int weight) async {
+    await _prefs.setInt(_keyMushafFontWeight, weight);
+  }
+
+
   /// Continuous Mushaf style vs Ayah card style (default: true).
   bool isContinuousMode() {
     return _prefs.getBool(_keyContinuousMode) ?? true;
@@ -251,6 +266,23 @@ class QuranRepository {
     await _prefs.setBool(_keyContinuousMode, value);
   }
 
+  /// The reader uses the coloured Tajweed Mushaf exclusively.
+  QuranDisplayMode getQuranDisplayMode() {
+    return QuranDisplayMode.tajweed;
+  }
+
+  Future<void> setQuranDisplayMode(QuranDisplayMode _) async {
+    await _prefs.setString(_keyQuranDisplayMode, QuranDisplayMode.tajweed.name);
+  }
+
+  /// Default Tafsir scholarly resource ID (default: 16 = التفسير الميسر).
+  int get defaultTafsirResourceId =>
+      _prefs.getInt(_keyDefaultTafsirResource) ?? 16;
+
+  Future<void> setDefaultTafsirResourceId(int id) async {
+    await _prefs.setInt(_keyDefaultTafsirResource, id);
+  }
+
   /// Mushaf reading theme ('ivory', 'sepia', 'night')
   String getMushafTheme() {
     return _prefs.getString(_keyMushafTheme) ?? 'ivory';
@@ -258,6 +290,25 @@ class QuranRepository {
 
   Future<void> setMushafTheme(String theme) async {
     await _prefs.setString(_keyMushafTheme, theme);
+  }
+
+  static const String _keyAyahHighlightColor = 'quran_ayah_highlight_color';
+  static const String _keyUseTransliteratedHeader = 'quran_transliterated_header';
+
+  String getAyahHighlightColor() {
+    return _prefs.getString(_keyAyahHighlightColor) ?? 'goldenAmber';
+  }
+
+  Future<void> setAyahHighlightColor(String color) async {
+    await _prefs.setString(_keyAyahHighlightColor, color);
+  }
+
+  bool getUseTransliteratedHeader() {
+    return _prefs.getBool(_keyUseTransliteratedHeader) ?? false;
+  }
+
+  Future<void> setUseTransliteratedHeader(bool value) async {
+    await _prefs.setBool(_keyUseTransliteratedHeader, value);
   }
 
   /// Khatmah Tracker checkpoint page (1 - 604)
@@ -553,4 +604,3 @@ class QuranRepository {
         .toLowerCase();
   }
 }
-

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -51,7 +52,10 @@ class NotificationService {
       await _notificationsPlugin.initialize(
         initSettings,
         onDidReceiveNotificationResponse: (details) {
-          _log('Notification tapped: id=${details.id}');
+          _log('Notification tapped: id=${details.id}, actionId=${details.actionId}');
+          if (details.actionId == 'stop_adhan') {
+            silenceAdhan();
+          }
         },
       );
       _log('Plugin initialized successfully');
@@ -396,6 +400,63 @@ class NotificationService {
     }
   }
 
+  /// Silences active adhan sound, closes media player, and invokes native silencer
+  Future<void> silenceAdhan() async {
+    try {
+      await stopAudioPreview();
+      await _nativeChannel.invokeMethod('silenceAdhan');
+      _log('Adhan silenced via native method');
+    } catch (e) {
+      _log('silenceAdhan error: $e');
+    }
+  }
+
+  /// Distinct evocative title for each prayer
+  String getPrayerNotificationTitle(PrayerType type, bool isArabic) {
+    if (!isArabic) {
+      return '${type.nameEnglish} Prayer Time';
+    }
+    switch (type) {
+      case PrayerType.fajr:
+        return '🕌 أذان الفجر • الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ';
+      case PrayerType.dhuhr:
+        return '🕌 أذان الظهر • حَانَ وَقْتُ الصَّلَاةِ';
+      case PrayerType.asr:
+        return '🕌 أذان العصر • حَافِظُوا عَلَى الصَّلَاةِ الْوُسْطَى';
+      case PrayerType.maghrib:
+        return '🕌 أذان المغرب • أَقِمِ الصَّلَاةَ لِدُلُوكِ الشَّمْسِ';
+      case PrayerType.isha:
+        return '🕌 أذان العشاء • خَاتِمَةُ صَلَوَاتِ النَّهَارِ';
+      default:
+        return '🕌 حان موعد صلاة ${type.nameArabic}';
+    }
+  }
+
+  /// Distinct spiritual body message for each prayer
+  String getPrayerNotificationBody(
+    PrayerType type,
+    String iqamahInfo,
+    bool isArabic,
+  ) {
+    if (!isArabic) {
+      return '${type.nameEnglish} time has started.$iqamahInfo';
+    }
+    switch (type) {
+      case PrayerType.fajr:
+        return 'دخل الآن وقت صلاة الفجر$iqamahInfo • استفتح يومك بنور الصلاة، بورك لمن صلى الفجر فهو في ذمة الله.';
+      case PrayerType.dhuhr:
+        return 'دخل الآن وقت صلاة الظهر$iqamahInfo • استراحة المؤمن وسكينة القلب بين مشاغل الدنيا للقاء رب العالمين.';
+      case PrayerType.asr:
+        return 'دخل الآن وقت صلاة العصر$iqamahInfo • أقبل على صلاتك بخشوع، تنعم ببركة يومك وسعة رزقك.';
+      case PrayerType.maghrib:
+        return 'غربت الشمس وحان الآن أذان المغرب$iqamahInfo • تقبل الله طاعتكم وصالح أعمالكم ودعائكم.';
+      case PrayerType.isha:
+        return 'دخل الآن وقت صلاة العشاء$iqamahInfo • اختم يومك بسجدة خاشعة بين يدي أرحم الراحمين.';
+      default:
+        return 'دخل الآن وقت صلاة ${type.nameArabic}$iqamahInfo';
+    }
+  }
+
   /// Map sound type key to channel ID, channel name, and sound raw resource name
   Map<String, String> getSoundConfig(String soundType) {
     switch (soundType) {
@@ -439,9 +500,24 @@ class NotificationService {
         enableVibration: true,
         autoCancel: true,
         icon: '@mipmap/ic_launcher',
+        color: const Color(0xFFB58A4A),
         category: AndroidNotificationCategory.alarm,
         audioAttributesUsage: AudioAttributesUsage.alarm,
         visibility: NotificationVisibility.public,
+        subText: 'وِرد • تجربة الصوت',
+        styleInformation: BigTextStyleInformation(
+          'التنبيه يعمل بصوت (${soundCfg["displayName"]}) بنجاح والحمد لله.\nيمكنك إسكات الصوت بالضغط على زر (🔕 إيقاف الأذان) أدناه أو عبر أزرار الصوت ومفتاح التشغيل.',
+          contentTitle: '🕌 تجربة صوت الأذان — ${soundCfg["displayName"]}',
+          summaryText: 'تجربة الصوت • وِرد',
+        ),
+        actions: const [
+          AndroidNotificationAction(
+            'stop_adhan',
+            '🔕 إيقاف الأذان',
+            showsUserInterface: false,
+            cancelNotification: true,
+          ),
+        ],
       );
 
       final details = NotificationDetails(android: androidDetails);
@@ -505,9 +581,26 @@ class NotificationService {
         enableVibration: isSoundEnabled,
         autoCancel: true,
         icon: '@mipmap/ic_launcher',
+        color: const Color(0xFFB58A4A),
         category: AndroidNotificationCategory.alarm,
         audioAttributesUsage: AudioAttributesUsage.alarm,
         visibility: NotificationVisibility.public,
+        subText: 'وِرد • تجربة المنبه',
+        styleInformation: BigTextStyleInformation(
+          'نجحت تجربة المنبه المجدول بصوت (${soundCfg["displayName"]}) والحمد لله!\nيمكنك إسكات الأذان عبر زر (🔕 إيقاف الأذان) أدناه أو أزرار الصوت والتشغيل.',
+          contentTitle: 'الله أكبر — تجربة أذان (${soundCfg["displayName"]})',
+          summaryText: 'المنبه المجدول • وِرد',
+        ),
+        actions: isSoundEnabled
+            ? const [
+                AndroidNotificationAction(
+                  'stop_adhan',
+                  '🔕 إيقاف الأذان',
+                  showsUserInterface: false,
+                  cancelNotification: true,
+                ),
+              ]
+            : null,
       );
 
       final details = NotificationDetails(android: androidDetails);
@@ -674,35 +767,49 @@ class NotificationService {
           final offset = notificationOffsets[k];
           final notifId = 10000 + (dayOffset * 1000) + (prayerIndex * 100) + (k + 1);
 
+          final prayerType = prayer.type;
           DateTime alertTime;
           String title;
           String body;
-          final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
+          String subText;
 
           if (offset <= 0) {
             final minutesBefore = -offset;
             alertTime = prayer.time.subtract(Duration(minutes: minutesBefore));
 
             if (offset == 0) {
-              title = isArabic ? 'الله أكبر — حان موعد صلاة $prayerName' : '$prayerName Prayer Time';
               final iqamahInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0)
                   ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة' : '';
-              body = isArabic ? 'دخل الآن وقت صلاة $prayerName$iqamahInfo' : '$prayerName time has started.';
+              title = getPrayerNotificationTitle(prayerType, isArabic);
+              body = getPrayerNotificationBody(prayerType, iqamahInfo, isArabic);
+              subText = isArabic ? 'أذان الصلاة' : 'Adhan';
             } else {
-              title = isArabic ? 'اقتراب موعد صلاة $prayerName' : '$prayerName Prayer Upcoming';
-              body = isArabic ? 'متبقي $minutesBefore دقائق على أذان صلاة $prayerName' : '$prayerName is in $minutesBefore minutes.';
+              final pName = isArabic ? prayerType.nameArabic : prayerType.nameEnglish;
+              title = isArabic ? '⏳ اقتراب موعد صلاة $pName' : '$pName Prayer Upcoming';
+              body = isArabic
+                  ? 'متبقي $minutesBefore دقائق على أذان صلاة $pName • تهيأ للوضوء وأدرك تكبيرة الإحرام.'
+                  : '$pName is in $minutesBefore minutes. Prepare for prayer.';
+              subText = isArabic ? 'اقتراب الأذان' : 'Upcoming';
             }
           } else {
             alertTime = prayer.time.add(Duration(minutes: offset));
-            title = isArabic ? 'تذكير بعد أذان $prayerName' : '$prayerName Post-Adhan Reminder';
-            body = isArabic ? 'مضى $offset دقائق على أذان صلاة $prayerName' : '$offset minutes passed since $prayerName Adhan.';
+            final pName = isArabic ? prayerType.nameArabic : prayerType.nameEnglish;
+            title = isArabic ? '⏱️ موعد إقامة صلاة $pName' : '$pName Iqamah Reminder';
+            body = isArabic
+                ? 'مضى $offset دقائق على الأذان • حان وقت إقامة الصلاة، أقبل على صلاتك بخشوع وسكينة.'
+                : '$offset minutes passed since $pName Adhan. Time for Iqamah.';
+            subText = isArabic ? 'إقامة الصلاة' : 'Iqamah';
           }
 
           if (alertTime.isAfter(now.add(const Duration(seconds: 5)))) {
             final result = await _scheduleSingleNotification(
-              id: notifId, title: title, body: body,
-              scheduledDate: alertTime, isSoundEnabled: isSoundEnabled,
+              id: notifId,
+              title: title,
+              body: body,
+              scheduledDate: alertTime,
+              isSoundEnabled: isSoundEnabled,
               soundType: soundType,
+              subText: subText,
             );
             if (result.startsWith('failed')) { fail++; } else { ok++; }
           } else {
@@ -743,20 +850,30 @@ class NotificationService {
       final prayer = entry.value;
       final alertTime = prayer.time.subtract(Duration(minutes: offsetMinutes));
       if (alertTime.isAfter(now.add(const Duration(seconds: 5)))) {
-        final prayerName = isArabic ? prayer.type.nameArabic : prayer.type.nameEnglish;
-        String title, body;
+        final prayerType = prayer.type;
+        String title, body, subText;
         if (offsetMinutes == 0) {
-          title = isArabic ? 'الله أكبر — حان موعد صلاة $prayerName' : '$prayerName Prayer Time';
-          final iqInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0) ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة' : '';
-          body = isArabic ? 'دخل الآن وقت صلاة $prayerName$iqInfo' : '$prayerName time has started.';
+          final iqInfo = (prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0)
+              ? ' • الإقامة بعد ${prayer.iqamahOffsetMinutes} دقيقة' : '';
+          title = getPrayerNotificationTitle(prayerType, isArabic);
+          body = getPrayerNotificationBody(prayerType, iqInfo, isArabic);
+          subText = isArabic ? 'أذان الصلاة' : 'Adhan';
         } else {
-          title = isArabic ? 'اقتراب موعد صلاة $prayerName' : '$prayerName Upcoming';
-          body = isArabic ? 'متبقي $offsetMinutes دقائق على أذان صلاة $prayerName' : '$prayerName in $offsetMinutes min.';
+          final pName = isArabic ? prayerType.nameArabic : prayerType.nameEnglish;
+          title = isArabic ? '⏳ اقتراب موعد صلاة $pName' : '$pName Upcoming';
+          body = isArabic
+              ? 'متبقي $offsetMinutes دقائق على أذان صلاة $pName • تهيأ للوضوء وأدرك تكبيرة الإحرام.'
+              : '$pName in $offsetMinutes min.';
+          subText = isArabic ? 'اقتراب الأذان' : 'Upcoming';
         }
         await _scheduleSingleNotification(
-          id: entry.key, title: title, body: body,
-          scheduledDate: alertTime, isSoundEnabled: isSoundEnabled,
+          id: entry.key,
+          title: title,
+          body: body,
+          scheduledDate: alertTime,
+          isSoundEnabled: isSoundEnabled,
           soundType: soundType,
+          subText: subText,
         );
       }
     }
@@ -769,6 +886,7 @@ class NotificationService {
     required DateTime scheduledDate,
     required bool isSoundEnabled,
     String soundType = AppConstants.soundTypeHayya,
+    String subText = 'وِرد • الصلاة',
   }) async {
     final tzDate = _localDateTimeToTZ(scheduledDate);
     final soundCfg = getSoundConfig(soundType);
@@ -786,15 +904,36 @@ class NotificationService {
       enableVibration: isSoundEnabled,
       autoCancel: true,
       icon: '@mipmap/ic_launcher',
+      color: const Color(0xFFB58A4A),
       category: AndroidNotificationCategory.alarm,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       visibility: NotificationVisibility.public,
+      subText: subText,
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'أوقات الصلاة • وِرد',
+      ),
+      actions: isSoundEnabled
+          ? const [
+              AndroidNotificationAction(
+                'stop_adhan',
+                '🔕 إيقاف الأذان',
+                showsUserInterface: false,
+                cancelNotification: true,
+              ),
+            ]
+          : null,
     );
 
     final details = NotificationDetails(android: androidDetails);
 
     return await _scheduleWithFallback(
-      id: id, title: title, body: body, tzDate: tzDate, details: details,
+      id: id,
+      title: title,
+      body: body,
+      tzDate: tzDate,
+      details: details,
     );
   }
 
@@ -814,6 +953,8 @@ class NotificationService {
     required String title,
     required String body,
     required DateTime scheduledDate,
+    String subText = 'وِرد • الأذكار',
+    String summary = 'الأذكار والورد اليومي • وِرد',
   }) async {
     final now = DateTime.now();
     if (!scheduledDate.isAfter(now.add(const Duration(seconds: 5)))) {
@@ -822,7 +963,7 @@ class NotificationService {
 
     final tzDate = _localDateTimeToTZ(scheduledDate);
 
-    final androidDetails = const AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       AppConstants.azkarChannelId,
       AppConstants.azkarChannelName,
       channelDescription: AppConstants.azkarChannelDesc,
@@ -832,8 +973,15 @@ class NotificationService {
       enableVibration: true,
       autoCancel: true,
       icon: '@mipmap/ic_launcher',
+      color: const Color(0xFFB58A4A),
       category: AndroidNotificationCategory.reminder,
       visibility: NotificationVisibility.public,
+      subText: subText,
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: summary,
+      ),
     );
 
     final details = NotificationDetails(android: androidDetails);
@@ -865,18 +1013,20 @@ class NotificationService {
       final morningTime = fajrTime.add(const Duration(minutes: 30));
       await scheduleAzkarNotification(
         id: idMorningAzkar,
-        title: 'أذكار الصباح',
-        body: 'ابدأ يومك بنور الأذكار.. حصّن نفسك في حفظ الله ورعايته.',
+        title: '🌅 أذكار الصباح • نُورٌ لِيَوْمِكَ وَحِرْزٌ حَصِين',
+        body: '« أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ » • ابدأ يومك بذكر الله وتوكّل عليه، يُبارك لك في يومك ورزقك ويحفظك.',
         scheduledDate: morningTime,
+        subText: 'أذكار الصباح',
       );
 
       // Morning late reminder (45 min before Dhuhr)
       final lateMorningTime = dhuhrTime.subtract(const Duration(minutes: 45));
       await scheduleAzkarNotification(
         id: idMorningLateReminder,
-        title: 'تذكير بأذكار الصباح',
-        body: 'متبقي القليل على صلاة الظهر.. لا يفوتك ورد الصباح وبركته.',
+        title: '⏰ تذكير بورد الصباح المبارك',
+        body: 'متبقي القليل على صلاة الظهر.. لا يفوتك ثواب وأجر ورد الصباح وحصن الذاكرين.',
         scheduledDate: lateMorningTime,
+        subText: 'تذكير بالورد',
       );
     } else {
       await cancelNotification(idMorningAzkar);
@@ -888,18 +1038,20 @@ class NotificationService {
       final eveningTime = asrTime;
       await scheduleAzkarNotification(
         id: idEveningAzkar,
-        title: 'أذكار المساء',
-        body: 'حان وقت أذكار المساء.. حصنك وأمانك لليلتك.',
+        title: '🌇 أذكار المساء • طُمَأْنِينَةٌ لِلْقَلْبِ وَحِفْظٌ لِلَّيْلَة',
+        body: '« أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ » • رطّب لسانك بذكر الله وحصّن بيتك ونفسك بحفظ الله حتى تصبح.',
         scheduledDate: eveningTime,
+        subText: 'أذكار المساء',
       );
 
       // Evening late reminder (45 min before Isha)
       final lateEveningTime = ishaTime.subtract(const Duration(minutes: 45));
       await scheduleAzkarNotification(
         id: idEveningLateReminder,
-        title: 'تذكير بأذكار المساء',
-        body: 'متبقي القليل على صلاة العشاء.. تذكير بقراءة ورد المساء.',
+        title: '⏰ تذكير بورد المساء المبارك',
+        body: 'اقترب موعد صلاة العشاء.. استدرك ورد المساء المبارك واختم نهارك في معية الذاكرين.',
         scheduledDate: lateEveningTime,
+        subText: 'تذكير بالورد',
       );
     } else {
       await cancelNotification(idEveningAzkar);
@@ -915,9 +1067,10 @@ class NotificationService {
       }
       await scheduleAzkarNotification(
         id: idSleepAzkar,
-        title: 'أذكار النوم',
-        body: 'آية الكرسي وخواتيم البقرة وأذكار النوم راحة وطمأنينة لقلبك.',
+        title: '🌙 أذكار النوم • رَاحَةُ النَّفْسِ وَأَمَانُ الْمَنَام',
+        body: '« بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ » • آية الكرسي والمعوذات وخواتيم البقرة راحة لقلبك وحفظ من كل سوء.',
         scheduledDate: sleepTime,
+        subText: 'أذكار النوم',
       );
     } else {
       await cancelNotification(idSleepAzkar);
@@ -928,9 +1081,10 @@ class NotificationService {
       final qiyamTime = fajrTime.subtract(Duration(minutes: qiyamMinutesBeforeFajr));
       await scheduleAzkarNotification(
         id: idQiyamReminder,
-        title: 'قيام الليل والأسحار',
-        body: '«لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ.. سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ.. اللَّهُمَّ اغْفِرْ لِي» ركعة بالليل ودعاء مستجاب.',
+        title: '🌌 قيام الليل • شَرَفُ الْمُؤْمِنِ وَسَاعَةُ الرَّحَمَات',
+        body: '« هَلْ مِنْ دَاعٍ فَأَسْتَجِيبَ لَهُ؟ هَلْ مِنْ مُسْتَغْفِرٍ فَأَغْفِرَ لَهُ؟ » • ركعتان في جوف الليل تجلو الهموم وتفتح أبواب السماء.',
         scheduledDate: qiyamTime,
+        subText: 'قيام الليل والأسحار',
       );
     } else {
       await cancelNotification(idQiyamReminder);

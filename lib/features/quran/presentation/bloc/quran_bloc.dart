@@ -23,6 +23,9 @@ class QuranBloc extends Bloc<QuranEvent, QuranState> {
     on<BookmarkMultipleAyatEvent>(_onBookmarkMultipleAyat);
     on<SaveBookmarkCollectionEvent>(_onSaveBookmarkCollection);
     on<DeleteBookmarkCollectionEvent>(_onDeleteBookmarkCollection);
+    on<ToggleQuranDisplayModeEvent>(_onToggleQuranDisplayMode);
+    on<SetDefaultTafsirEvent>(_onSetDefaultTafsir);
+    on<ChangeMushafFontWeightEvent>(_onChangeMushafFontWeight);
   }
 
   Future<void> _onLoadQuran(
@@ -36,6 +39,9 @@ class QuranBloc extends Bloc<QuranEvent, QuranState> {
       final fontSize = repository.getFontSize();
       final fontWeight = repository.getFontWeight();
       final continuous = repository.isContinuousMode();
+      final displayMode = repository.getQuranDisplayMode();
+      final defaultTafsirId = repository.defaultTafsirResourceId;
+      final mushafFontWeight = repository.getMushafFontWeight();
       final bookmarks = repository.getBookmarks();
       final richBookmarks = repository.getRichBookmarks();
       final collections = repository.getCollections();
@@ -47,6 +53,9 @@ class QuranBloc extends Bloc<QuranEvent, QuranState> {
         fontSize: fontSize,
         fontWeightValue: fontWeight,
         continuousMode: continuous,
+        displayMode: displayMode,
+        defaultTafsirResourceId: defaultTafsirId,
+        mushafFontWeight: mushafFontWeight,
         bookmarks: bookmarks,
         richBookmarks: richBookmarks,
         collections: collections,
@@ -269,6 +278,39 @@ class QuranBloc extends Bloc<QuranEvent, QuranState> {
         richBookmarks: repository.getRichBookmarks(),
       ));
     }
+  }
+
+  Future<void> _onToggleQuranDisplayMode(
+    ToggleQuranDisplayModeEvent event,
+    Emitter<QuranState> emit,
+  ) async {
+    await repository.setQuranDisplayMode(event.mode);
+    final currentState = state;
+    if (currentState is QuranLoaded) {
+      emit(currentState.copyWith(displayMode: event.mode));
+    }
+  }
+
+  Future<void> _onSetDefaultTafsir(
+    SetDefaultTafsirEvent event,
+    Emitter<QuranState> emit,
+  ) async {
+    await repository.setDefaultTafsirResourceId(event.resourceId);
+    final currentState = state;
+    if (currentState is QuranLoaded) {
+      emit(currentState.copyWith(defaultTafsirResourceId: event.resourceId));
+    }
+  }
+
+  Future<void> _onChangeMushafFontWeight(
+    ChangeMushafFontWeightEvent event,
+    Emitter<QuranState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is QuranLoaded) {
+      emit(currentState.copyWith(mushafFontWeight: event.weight));
+    }
+    await repository.setMushafFontWeight(event.weight);
   }
 }
 

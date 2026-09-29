@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- The tajweed Mushaf font is downloaded once then cached on device. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Hardware sensor features for compass (optional so devices without it can still install) -->
     <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />
