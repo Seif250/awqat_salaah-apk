@@ -12,6 +12,7 @@ class AzkarRepository {
   static const String keyCatalog = 'azkar_unified_catalog_v2';
   static const String keyCustomAzkarList = 'azkar_custom_list_v1';
   static const String keyCatalogMigrationV14 = 'azkar_catalog_migration_v1_4';
+  static const String keyCatalogMigrationV15 = 'azkar_catalog_migration_v1_5';
 
   AzkarRepository(this._prefs);
 
@@ -67,8 +68,8 @@ class AzkarRepository {
             .map((str) => AzkarItem.fromJson(jsonDecode(str) as Map<String, dynamic>))
             .toList();
 
-        // Ensure newly introduced v1.4 system Azkar are migrated once
-        if (!(_prefs.getBool(keyCatalogMigrationV14) ?? false)) {
+        // Ensure newly introduced system Azkar are migrated once
+        if (!(_prefs.getBool(keyCatalogMigrationV15) ?? false)) {
           bool updated = false;
           for (final def in AzkarLocalData.defaultAzkar) {
             if (!items.any((i) => i.id == def.id)) {
@@ -79,7 +80,7 @@ class AzkarRepository {
           if (updated) {
             saveAllCatalogItems(items);
           }
-          _prefs.setBool(keyCatalogMigrationV14, true);
+          _prefs.setBool(keyCatalogMigrationV15, true);
         }
 
         return items;
@@ -89,7 +90,7 @@ class AzkarRepository {
     // Initialize with default Azkar database
     final defaults = List<AzkarItem>.from(AzkarLocalData.defaultAzkar);
     saveAllCatalogItems(defaults);
-    _prefs.setBool(keyCatalogMigrationV14, true);
+    _prefs.setBool(keyCatalogMigrationV15, true);
     return defaults;
   }
 
@@ -132,6 +133,7 @@ class AzkarRepository {
   Future<void> restoreDefaultAzkar() async {
     final defaults = List<AzkarItem>.from(AzkarLocalData.defaultAzkar);
     await saveAllCatalogItems(defaults);
+    await _prefs.setBool(keyCatalogMigrationV15, true);
   }
 
   /// Add new zikr (to any category or multiple categories)
@@ -178,29 +180,16 @@ class AzkarRepository {
       } else if (progress.completedItemIds.contains(key)) {
         isDone = true;
         count = item.targetCount;
-      } else if (item.isCustom || category == AzkarCategory.custom) {
-        // Fallback for custom azkar: check custom category key or any assigned categories
-        final customKey = scopedKey(item.id, AzkarCategory.custom);
-        if (progress.itemCounts.containsKey(customKey)) {
-          count = progress.itemCounts[customKey] ?? 0;
-          isDone = progress.completedItemIds.contains(customKey) ||
-              (item.targetCount > 0 && count >= item.targetCount);
-        } else {
-          for (final c in item.effectiveCategories) {
-            final cKey = scopedKey(item.id, c);
-            if (progress.itemCounts.containsKey(cKey)) {
-              count = progress.itemCounts[cKey] ?? 0;
-              isDone = progress.completedItemIds.contains(cKey) ||
-                  (item.targetCount > 0 && count >= item.targetCount);
-              break;
-            }
-          }
-        }
       } else if (item.effectiveCategories.length <= 1) {
-        // Fallback for single-category legacy data
-        count = progress.itemCounts[item.id] ?? 0;
-        isDone = progress.completedItemIds.contains(item.id) ||
-            (item.targetCount > 0 && count >= item.targetCount);
+        // Fallback only for single-category legacy data where progress was stored unscoped
+        if (progress.itemCounts.containsKey(item.id)) {
+          count = progress.itemCounts[item.id] ?? 0;
+          isDone = progress.completedItemIds.contains(item.id) ||
+              (item.targetCount > 0 && count >= item.targetCount);
+        } else if (progress.completedItemIds.contains(item.id)) {
+          isDone = true;
+          count = item.targetCount;
+        }
       }
 
       return item.copyWith(
@@ -268,6 +257,37 @@ class AzkarRepository {
     return updated;
   }
 
+  /// Decrement count for a zikr item (scoped to category)
+  DailyAzkarProgress decrementCount(String id, int targetCount, {AzkarCategory? category}) {
+    final currentProgress = getDailyProgress();
+    final newCounts = Map<String, int>.from(currentProgress.itemCounts);
+    final newCompleted = Set<String>.from(currentProgress.completedItemIds);
+
+    final key = category != null ? scopedKey(id, category) : id;
+    final current = newCounts[key] ?? (category == null ? (newCounts[id] ?? 0) : 0);
+    if (current <= 0) return currentProgress;
+
+    final next = current - 1;
+    newCounts[key] = next;
+
+    if (category != null) {
+      newCounts.remove(id);
+      newCompleted.remove(id);
+    }
+
+    if (targetCount > 0 && next < targetCount) {
+      newCompleted.remove(key);
+    }
+
+    final updated = currentProgress.copyWith(
+      itemCounts: newCounts,
+      completedItemIds: newCompleted,
+    );
+
+    saveDailyProgress(updated);
+    return updated;
+  }
+
   /// Toggle completion state directly (scoped to category)
   DailyAzkarProgress toggleCompletion(String id, int targetCount, {AzkarCategory? category}) {
     final currentProgress = getDailyProgress();
@@ -287,6 +307,29 @@ class AzkarRepository {
     } else {
       newCompleted.add(key);
       newCounts[key] = targetCount;
+    }
+
+    final updated = currentProgress.copyWith(
+      itemCounts: newCounts,
+      completedItemIds: newCompleted,
+    );
+
+    saveDailyProgress(updated);
+    return updated;
+  }
+
+  /// Reset count for a specific zikr in a specific category
+  DailyAzkarProgress resetZikrCount(String id, {AzkarCategory? category}) {
+    final currentProgress = getDailyProgress();
+    final newCounts = Map<String, int>.from(currentProgress.itemCounts);
+    final newCompleted = Set<String>.from(currentProgress.completedItemIds);
+
+    final key = category != null ? scopedKey(id, category) : id;
+    newCounts.remove(key);
+    newCompleted.remove(key);
+    if (category != null) {
+      newCounts.remove(id);
+      newCompleted.remove(id);
     }
 
     final updated = currentProgress.copyWith(

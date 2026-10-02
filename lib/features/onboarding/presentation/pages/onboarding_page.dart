@@ -275,7 +275,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
+                            const Text(
                               'التالي',
                               style: TextStyle(
                                 color: Colors.white,
@@ -283,8 +283,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 fontSize: 16,
                               ),
                             ),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
                           ],
                         ),
                       )

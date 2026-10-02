@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_system.dart';
 import '../../data/models/azkar_item_model.dart';
-import '../utils/azkar_ui_helpers.dart';
 
-/// Horizontally scrollable segmented tab system for Azkar categories.
+/// Horizontally scrollable pill-shaped tab system for Azkar categories.
 class AzkarCategoryBar extends StatelessWidget {
   final AzkarCategory selectedCategory;
   final ValueChanged<AzkarCategory> onSelectCategory;
@@ -16,71 +15,98 @@ class AzkarCategoryBar extends StatelessWidget {
     required this.isDark,
   });
 
+  IconData _categoryIcon(AzkarCategory cat) {
+    switch (cat) {
+      case AzkarCategory.morning:
+        return Icons.wb_sunny_rounded;
+      case AzkarCategory.evening:
+        return Icons.wb_twilight_outlined;
+      case AzkarCategory.postPrayer:
+        return Icons.mosque_outlined;
+      case AzkarCategory.sleep:
+        return Icons.bedtime_outlined;
+      case AzkarCategory.qiyam:
+        return Icons.mode_night_outlined;
+      case AzkarCategory.supplications:
+        return Icons.auto_awesome_outlined;
+      case AzkarCategory.general:
+        return Icons.all_inclusive_rounded;
+      case AzkarCategory.custom:
+        return Icons.bookmark_outline_rounded;
+    }
+  }
+
+  String _categoryLabel(AzkarCategory cat) {
+    switch (cat) {
+      case AzkarCategory.morning:
+        return 'أذكار الصباح';
+      case AzkarCategory.evening:
+        return 'أذكار المساء';
+      case AzkarCategory.postPrayer:
+        return 'بعد الصلاة';
+      case AzkarCategory.sleep:
+        return 'أذكار النوم';
+      case AzkarCategory.qiyam:
+        return 'قيام الليل';
+      case AzkarCategory.supplications:
+        return 'مفاتيح الإجابة';
+      case AzkarCategory.general:
+        return 'أذكار عامة';
+      case AzkarCategory.custom:
+        return 'أذكاري';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        border: Border(
-          bottom: BorderSide(
-            color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
-            width: 0.8,
-          ),
-        ),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      color: Colors.transparent,
       child: SizedBox(
-        height: 38,
+        height: 42,
         child: ListView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           children: AzkarCategory.values.map((category) {
             final isSelected = selectedCategory == category;
+            final icon = _categoryIcon(category);
+            final label = _categoryLabel(category);
+
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () => onSelectCategory(category),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusPill),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOut,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? (isDark
-                              ? AppColors.primary.withValues(alpha: 0.25)
-                              : const Color(0xFFE8F5E9))
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary.withValues(alpha: isDark ? 0.5 : 0.3)
-                            : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
-                        width: 0.8,
-                      ),
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: AppDesignSystem.pillTabDecoration(
+                      isSelected: isSelected,
+                      isDark: isDark,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          category.categoryIcon,
-                          size: 15,
+                          icon,
+                          size: 16,
                           color: isSelected
-                              ? (isDark ? AppColors.accentGoldLight : AppColors.primaryDark)
-                              : (isDark ? Colors.white54 : const Color(0xFF6B7280)),
+                              ? Colors.white
+                              : (isDark ? Colors.white60 : const Color(0xFF6B7280)),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 7),
                         Text(
-                          category.titleArabic,
+                          label,
                           style: TextStyle(
                             fontFamily: 'Cairo',
-                            fontSize: 12.5,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                             color: isSelected
-                                ? (isDark ? AppColors.accentGoldLight : AppColors.primaryDark)
-                                : (isDark ? Colors.white60 : const Color(0xFF4B5563)),
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : const Color(0xFF4B5563)),
                           ),
                         ),
                       ],
@@ -95,4 +121,3 @@ class AzkarCategoryBar extends StatelessWidget {
     );
   }
 }
-

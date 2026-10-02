@@ -5,7 +5,6 @@ import 'package:awqat_salaah/features/azkar/presentation/pages/azkar_page.dart';
 import 'package:awqat_salaah/features/azkar/presentation/bloc/azkar_bloc.dart';
 import 'package:awqat_salaah/features/azkar/presentation/bloc/azkar_state.dart';
 import 'package:awqat_salaah/features/azkar/presentation/widgets/azkar_category_bar.dart';
-import 'package:awqat_salaah/features/azkar/presentation/widgets/daily_progress_header.dart';
 import 'package:awqat_salaah/features/azkar/presentation/widgets/azkar_card.dart';
 import 'package:awqat_salaah/features/azkar/data/models/azkar_item_model.dart';
 import 'package:awqat_salaah/features/azkar/data/models/daily_azkar_progress.dart';
@@ -89,7 +88,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('الأذكار والورد اليومي'), findsOneWidget);
-      expect(find.byIcon(Icons.add_circle_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsWidgets);
+      expect(find.byIcon(Icons.more_vert_rounded), findsWidgets);
     });
 
     testWidgets('Renders lightweight segmented category tab bar', (tester) async {
@@ -105,12 +105,12 @@ void main() {
       expect(find.text('بعد الصلاة'), findsOneWidget);
     });
 
-    testWidgets('Renders compact, secondary DailyProgressHeader', (tester) async {
+    testWidgets('Renders compact, elegant Section Hero Banner', (tester) async {
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byType(DailyProgressHeader), findsOneWidget);
-      expect(find.text('1 / 3 مكتملة'), findsOneWidget);
+      expect(find.text('أذكار الصباح'), findsWidgets);
+      expect(find.textContaining('مكتملة'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsWidgets);
     });
 
@@ -139,15 +139,15 @@ void main() {
       // Benefit and reference
       expect(find.textContaining('من قرأها حين يصبح'), findsOneWidget);
       expect(find.text('صحيح الترغيب'), findsOneWidget);
+      expect(find.text('من فضلها'), findsNWidgets(3));
 
-      // Repetition badge
-      expect(find.text('مرة واحدة'), findsNWidgets(2));
-      expect(find.text('100 مرة'), findsOneWidget);
+      // Edit pencil action (replaces 3 dots & bookmark)
+      expect(find.byIcon(Icons.mode_edit_outline_rounded), findsWidgets);
 
-      // Counter pill
-      expect(find.text('0/1'), findsOneWidget);
-      expect(find.text('1/1'), findsOneWidget);
-      expect(find.text('33/100'), findsOneWidget);
+      // Counter box and repetition controls
+      expect(find.textContaining('التكرار المطلوب'), findsWidgets);
+      expect(find.text('0'), findsWidgets);
+      expect(find.byIcon(Icons.check_rounded), findsWidgets);
     });
 
     testWidgets('Azkar cards are wrapped in ReorderableDelayedDragStartListener for long-press moving', (tester) async {

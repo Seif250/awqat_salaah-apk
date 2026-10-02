@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../utils/page_transitions.dart';
 import 'app_colors.dart';
 
@@ -7,10 +8,7 @@ class AppTheme {
   static const String fontCairo = 'Cairo';
 
   static TextTheme _buildCairoTextTheme(TextTheme base) {
-    return base.apply(
-      fontFamily: fontCairo,
-      fontFamilyFallback: const [fontCairo, 'sans-serif'],
-    );
+    return GoogleFonts.cairoTextTheme(base);
   }
 
   static ThemeData get lightTheme {

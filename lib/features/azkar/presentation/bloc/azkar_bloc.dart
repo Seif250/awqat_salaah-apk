@@ -13,8 +13,10 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     on<LoadAzkarEvent>(_onLoadAzkar);
     on<SelectCategoryEvent>(_onSelectCategory);
     on<IncrementZikrCountEvent>(_onIncrementCount);
+    on<DecrementZikrCountEvent>(_onDecrementCount);
     on<ToggleZikrCompletionEvent>(_onToggleCompletion);
     on<ResetCategoryProgressEvent>(_onResetCategory);
+    on<ResetZikrCountEvent>(_onResetZikrCount);
     on<AddCustomZikrEvent>(_onAddCustomZikr);
     on<DeleteCustomZikrEvent>(_onDeleteCustomZikr);
     on<UpdateFreeTasbihEvent>(_onUpdateFreeTasbih);
@@ -92,6 +94,26 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     ));
   }
 
+  void _onDecrementCount(DecrementZikrCountEvent event, Emitter<AzkarState> emit) {
+    if (state is! AzkarLoaded) return;
+    final current = state as AzkarLoaded;
+
+    final targetCategory = event.category ?? current.selectedCategory;
+    final updatedProgress = repository.decrementCount(
+      event.id,
+      event.targetCount,
+      category: targetCategory,
+    );
+    final items = repository.getCategoryItems(current.selectedCategory, updatedProgress);
+
+    emit(_buildLoadedState(
+      selectedCategory: current.selectedCategory,
+      items: items,
+      progress: updatedProgress,
+      customAzkar: current.customAzkar,
+    ));
+  }
+
   void _onToggleCompletion(ToggleZikrCompletionEvent event, Emitter<AzkarState> emit) {
     if (state is! AzkarLoaded) return;
     final current = state as AzkarLoaded;
@@ -121,6 +143,25 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
 
     emit(_buildLoadedState(
       selectedCategory: event.category,
+      items: items,
+      progress: updatedProgress,
+      customAzkar: current.customAzkar,
+    ));
+  }
+
+  void _onResetZikrCount(ResetZikrCountEvent event, Emitter<AzkarState> emit) {
+    if (state is! AzkarLoaded) return;
+    final current = state as AzkarLoaded;
+
+    final targetCategory = event.category ?? current.selectedCategory;
+    final updatedProgress = repository.resetZikrCount(
+      event.id,
+      category: targetCategory,
+    );
+    final items = repository.getCategoryItems(current.selectedCategory, updatedProgress);
+
+    emit(_buildLoadedState(
+      selectedCategory: current.selectedCategory,
       items: items,
       progress: updatedProgress,
       customAzkar: current.customAzkar,

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_system.dart';
 import '../../data/models/azkar_item_model.dart';
 
-/// Top row of AzkarCard containing title, completion check, target repetition badge, and optional actions.
+/// Top header row of AzkarCard containing index number circle, title, and action icons.
 class AzkarCardHeader extends StatelessWidget {
   final AzkarItem item;
+  final int itemIndex;
   final bool isCompleted;
   final bool isDark;
   final bool isReorderMode;
@@ -13,10 +15,15 @@ class AzkarCardHeader extends StatelessWidget {
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onBookmark;
+  final VoidCallback? onShare;
+  final bool isBookmarked;
 
   const AzkarCardHeader({
     super.key,
     required this.item,
+    required this.itemIndex,
     required this.isCompleted,
     required this.isDark,
     required this.isReorderMode,
@@ -24,80 +31,95 @@ class AzkarCardHeader extends StatelessWidget {
     this.onMoveUp,
     this.onMoveDown,
     this.onEdit,
+    this.onDelete,
+    this.onBookmark,
+    this.onShare,
+    this.isBookmarked = false,
   });
-
-  String _formatTargetCount(int count) {
-    if (count == 1) return 'مرة واحدة';
-    if (count == 2) return 'مرتان';
-    if (count >= 3 && count <= 10) return '$count مرات';
-    return '$count مرة';
-  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (isReorderMode && reorderIndex != null) ...[
-          ReorderableDragStartListener(
-            index: reorderIndex!,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              margin: const EdgeInsetsDirectional.only(end: 8),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
-                  width: 0.8,
-                ),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.drag_indicator_rounded,
-                    color: AppColors.accentGold,
-                    size: 18,
-                  ),
-                  SizedBox(width: 3),
-                  Text(
-                    'اسحب',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.accentGold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-
-        // Title and Completion Status
+        // Right side (in RTL): Index Circle Badge + Title
         Expanded(
           child: Row(
             children: [
-              if (isCompleted && !isReorderMode) ...[
-                Icon(
-                  Icons.check_circle_rounded,
-                  size: 16,
-                  color: AppColors.primary,
+              if (isReorderMode && reorderIndex != null) ...[
+                ReorderableDragStartListener(
+                  index: reorderIndex!,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    margin: const EdgeInsetsDirectional.only(end: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.drag_indicator_rounded,
+                          color: AppColors.accentGold,
+                          size: 18,
+                        ),
+                        SizedBox(width: 3),
+                        Text(
+                          'اسحب',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accentGold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 6),
+              ] else ...[
+                // Deep green circular number badge
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? (isDark ? const Color(0xFF1B4D3E) : AppColors.primary)
+                        : (isDark ? const Color(0xFF1F3D30) : AppColors.primary),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$itemIndex',
+                    style: const TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      height: 1.1,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
               ],
+
+              // Dhikr Title
               Expanded(
                 child: Text(
                   item.title,
                   style: TextStyle(
                     fontFamily: 'Cairo',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15.5,
                     color: isCompleted
                         ? AppColors.primary
-                        : (isDark ? Colors.white70 : const Color(0xFF4B5563)),
+                        : (isDark ? Colors.white : const Color(0xFF163A29)),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -106,9 +128,10 @@ class AzkarCardHeader extends StatelessWidget {
             ],
           ),
         ),
+
         const SizedBox(width: 8),
 
-        // Reorder Actions or Repetition Badge & Edit
+        // Left side (in RTL): Action icons (Share, Bookmark, More options)
         if (isReorderMode) ...[
           IconButton(
             icon: const Icon(Icons.arrow_upward_rounded, size: 20),
@@ -133,54 +156,39 @@ class AzkarCardHeader extends StatelessWidget {
             onPressed: onMoveDown,
           ),
         ] else ...[
-          // Subtle Repetition Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color: isCompleted
-                  ? (isDark ? AppColors.primary.withValues(alpha: 0.15) : const Color(0xFFE8F5E9))
-                  : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF3F4F6)),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: isCompleted
-                    ? AppColors.primary.withValues(alpha: 0.3)
-                    : (isDark ? Colors.white10 : const Color(0xFFE5E7EB)),
-                width: 0.7,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Share button
+              IconButton(
+                icon: const Icon(Icons.share_outlined, size: 19),
+                color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+                tooltip: 'مشاركة الذكر',
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                onPressed: onShare,
               ),
-            ),
-            child: Text(
-              _formatTargetCount(item.targetCount),
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isCompleted
-                    ? AppColors.primary
-                    : (isDark ? Colors.white60 : const Color(0xFF6B7280)),
-              ),
-            ),
+
+              // Direct Edit Pencil button (Replaces 3-dots popup menu as requested)
+              if (onEdit != null)
+                IconButton(
+                  icon: const Icon(Icons.mode_edit_outline_rounded, size: 20),
+                  color: isDark ? AppColors.accentGoldLight : AppColors.wirdPrimaryGreen,
+                  tooltip: 'تعديل الذكر',
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                  onPressed: onEdit,
+                ),
+            ],
           ),
-          if (onEdit != null) ...[
-            const SizedBox(width: 4),
-            IconButton(
-              icon: Icon(
-                Icons.edit_note_rounded,
-                size: 20,
-                color: isDark ? Colors.white38 : Colors.black38,
-              ),
-              tooltip: 'تعديل أو حذف الذكر',
-              padding: const EdgeInsets.all(2),
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: onEdit,
-            ),
-          ],
         ],
       ],
     );
   }
 }
 
-/// Middle section of AzkarCard containing the Arabic Dhikr text (THE HERO), and optional reward/reference.
+/// Middle section of AzkarCard containing the Arabic Quran/Dhikr text in a soft tinted container,
+/// followed by the "من فضلها" virtue container.
 class AzkarCardBody extends StatelessWidget {
   final AzkarItem item;
   final bool isDark;
@@ -193,18 +201,30 @@ class AzkarCardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Subtle warm parchment tint for Quranic verses or clean soft sage-grey
+    final isQuranic = item.title.contains('آية') ||
+        item.title.contains('المعوذات') ||
+        item.title.contains('سورة') ||
+        item.title.contains('الإخلاص') ||
+        item.title.contains('الفلق') ||
+        item.title.contains('الناس');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Arabic Dhikr Text (THE HERO - large readable font, comfortable line height)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+        // Main Arabic Dhikr Text Container (Soft tinted, generous spacing, high readability)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: AppDesignSystem.dhikrTextContainerDecoration(
+            isDark: isDark,
+            isWarmParchment: isQuranic,
+          ),
           child: Text(
             item.arabicText,
             style: TextStyle(
               fontFamily: 'Cairo',
-              fontSize: 17.0,
-              height: 1.62,
+              fontSize: 17.5,
+              height: 1.78,
               fontWeight: FontWeight.w500,
               color: isDark ? AppColors.azkarTextDark : AppColors.azkarTextLight,
             ),
@@ -213,72 +233,59 @@ class AzkarCardBody extends StatelessWidget {
           ),
         ),
 
-        // Reference & Reward (Subtle, visually separated)
+        // Virtue container ("من فضلها")
         if (item.reward != null || item.reference != null) ...[
-          const SizedBox(height: 7),
+          const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.03)
-                  : const Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isDark ? Colors.white10 : const Color(0xFFE5E7EB),
-                width: 0.6,
-              ),
-            ),
+            padding: const EdgeInsets.all(12),
+            decoration: AppDesignSystem.virtueBoxDecoration(isDark: isDark),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (item.reward != null) ...[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('✨ ', style: TextStyle(fontSize: 11)),
-                      Expanded(
-                        child: Text(
-                          item.reward!,
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 11.5,
-                            height: 1.45,
-                            color: isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.textSecondaryLight,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                // Header: Book icon + "من فضلها"
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.menu_book_outlined,
+                      size: 15,
+                      color: isDark ? AppColors.accentGoldLight : AppColors.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'من فضلها',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.accentGoldLight : AppColors.primary,
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                if (item.reward != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    item.reward!,
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 12,
+                      height: 1.5,
+                      color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
                 if (item.reference != null) ...[
-                  if (item.reward != null) const SizedBox(height: 3),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.menu_book_outlined,
-                        size: 12,
-                        color: AppColors.accentGold.withValues(alpha: 0.8),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          item.reference!,
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 10.5,
-                            height: 1.35,
-                            color: isDark
-                                ? AppColors.textSecondaryDark
-                                : const Color(0xFF6B7280),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 3),
+                  Text(
+                    item.reference!,
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 11,
+                      color: isDark ? Colors.white54 : const Color(0xFF6B7280),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ],
@@ -290,155 +297,203 @@ class AzkarCardBody extends StatelessWidget {
   }
 }
 
-/// Bottom footer of AzkarCard with animated thin progress bar, clear counter pill, and secondary check toggle.
-class AzkarCardProgressFooter extends StatelessWidget {
+/// Bottom footer of AzkarCard with repetition label on right and interactive square counter box on left.
+class AzkarCardFooter extends StatelessWidget {
   final AzkarItem item;
   final bool isCompleted;
   final bool isDark;
   final bool isReorderMode;
-  final double progress;
   final Animation<double> scaleAnimation;
   final VoidCallback onIncrement;
-  final VoidCallback onToggleComplete;
+  final VoidCallback onDecrement;
+  final VoidCallback? onBookmark;
+  final bool isBookmarked;
 
-  const AzkarCardProgressFooter({
+  const AzkarCardFooter({
     super.key,
     required this.item,
     required this.isCompleted,
     required this.isDark,
     required this.isReorderMode,
-    required this.progress,
     required this.scaleAnimation,
     required this.onIncrement,
-    required this.onToggleComplete,
+    required this.onDecrement,
+    this.onBookmark,
+    this.isBookmarked = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Counter Row: Counter Pill (Right/Start), Subtitle (Center), Checkbox (Left/End)
-        Row(
-          children: [
-            // Interactive Counter Pill (Calm, non-loud, scale animation)
-            GestureDetector(
-              onTap: isReorderMode
-                  ? null
-                  : () {
-                      HapticFeedback.mediumImpact();
-                      onIncrement();
-                    },
-              child: ScaleTransition(
-                scale: scaleAnimation,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isCompleted
-                        ? (isDark
-                            ? AppColors.primary.withValues(alpha: 0.2)
-                            : const Color(0xFFE8F5E9))
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : const Color(0xFFF3F4F6)),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isCompleted
-                          ? AppColors.primary.withValues(alpha: 0.4)
-                          : (isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
-                      width: 0.8,
+        // Right Side (in RTL): Dhikr Repetition Info & Progress
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isCompleted) ...[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 16,
+                      color: isDark ? AppColors.accentGoldLight : AppColors.wirdPrimaryGreen,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isCompleted ? Icons.check_rounded : Icons.fingerprint_rounded,
-                        size: 13,
-                        color: isCompleted
-                            ? AppColors.primary
-                            : (isDark ? Colors.white60 : const Color(0xFF6B7280)),
+                    const SizedBox(width: 5),
+                    Text(
+                      item.currentCount > item.targetCount
+                          ? 'اكتمل الذكر (${item.currentCount} مرة)'
+                          : 'اكتمل الذكر بحمد الله',
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.accentGoldLight : AppColors.wirdPrimaryGreen,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${item.currentCount}/${item.targetCount}',
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                          color: isCompleted
-                              ? AppColors.primary
-                              : (isDark ? Colors.white : AppColors.primaryDark),
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+              ] else if (item.currentCount > 0) ...[
+                Text(
+                  'أنجزت ${item.currentCount} من ${item.targetCount}',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.accentGoldLight : AppColors.wirdPrimaryGreen,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-
-            // Secondary Status Subtitle
-            Expanded(
-              child: Text(
-                isCompleted
-                    ? 'اكتمل بحمد الله'
-                    : '${item.currentCount} من أصل ${item.targetCount}',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 11,
-                  color: isCompleted
-                      ? AppColors.primary
-                      : (isDark ? Colors.white38 : const Color(0xFF9CA3AF)),
-                ),
-              ),
-            ),
-
-            // Secondary Checkbox Toggle
-            IconButton(
-              icon: Icon(
-                isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                color: isCompleted
-                    ? AppColors.primary
-                    : (isDark ? Colors.white24 : const Color(0xFFD1D5DB)),
-                size: 19,
-              ),
-              tooltip: isCompleted ? 'إلغاء التحديد' : 'تحديد كمقروء',
-              padding: const EdgeInsets.all(3),
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: isReorderMode
-                  ? null
-                  : () {
-                      HapticFeedback.selectionClick();
-                      onToggleComplete();
-                    },
-            ),
-          ],
+              ],
+            ],
+          ),
         ),
 
-        const SizedBox(height: 4),
-
-        // Slim, Subtle Linear Progress Line (2.5px)
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: progress),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, _) {
-              return LinearProgressIndicator(
-                value: value,
-                minHeight: 2.5,
-                backgroundColor: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : const Color(0xFFF3F4F6),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isCompleted ? AppColors.primary : AppColors.primaryLight,
+        // Left Side (in RTL): Interactive Counter Square Box + Undo control
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Decrement / Undo button (visible whenever user tapped count > 0)
+            if (item.currentCount > 0 && !isReorderMode) ...[
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onDecrement();
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    margin: const EdgeInsets.only(left: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : const Color(0xFFF1F4F2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark ? Colors.white12 : const Color(0xFFDCE5DC),
+                        width: 1,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.remove_rounded,
+                      size: 18,
+                      color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                    ),
+                  ),
                 ),
-              );
-            },
-          ),
+              ),
+            ],
+
+            // Interactive Square Box:
+            // - At count 0: displays targetCount as a subtle placeholder (e.g., 3) with white/dark background
+            // - At count 1, 2, ...: displays actual count in green/gold with white/dark background
+            // - At targetCount: turns green with white checkmark
+            // - When exceeding targetCount (4, 5, ...): stays green with white number text
+            ScaleTransition(
+              scale: scaleAnimation,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: isReorderMode
+                      ? null
+                      : () {
+                          HapticFeedback.mediumImpact();
+                          onIncrement();
+                        },
+                  borderRadius: BorderRadius.circular(14),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: isCompleted
+                          ? AppColors.wirdPrimaryGreen
+                          : (isDark
+                              ? const Color(0xFF1E382B)
+                              : Colors.white),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isCompleted
+                            ? AppColors.wirdPrimaryGreen
+                            : (item.currentCount == 0
+                                ? (isDark ? Colors.white24 : const Color(0xFFCBD5E1))
+                                : (isDark
+                                    ? AppColors.accentGoldLight.withValues(alpha: 0.4)
+                                    : AppColors.wirdPrimaryGreen.withValues(alpha: 0.35))),
+                        width: isCompleted ? 1.5 : (item.currentCount == 0 ? 1.4 : 1.6),
+                      ),
+                      boxShadow: isCompleted
+                          ? [
+                              BoxShadow(
+                                color: AppColors.wirdPrimaryGreen.withValues(alpha: isDark ? 0.35 : 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                    ),
+                    alignment: Alignment.center,
+                    child: isCompleted && item.currentCount == item.targetCount
+                        ? const Icon(
+                            Icons.check_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          )
+                        : Text(
+                            item.currentCount == 0
+                                ? '${item.targetCount}'
+                                : '${item.currentCount}',
+                            style: TextStyle(
+                              fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w800,
+                              fontSize: (item.currentCount == 0 ? item.targetCount : item.currentCount) > 99 ? 16 : 20,
+                              height: 1.1,
+                              color: isCompleted
+                                  ? Colors.white
+                                  : (item.currentCount == 0
+                                      ? (isDark ? Colors.white38 : const Color(0xFF94A3B8))
+                                      : (isDark
+                                          ? AppColors.accentGoldLight
+                                          : AppColors.wirdPrimaryGreen)),
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

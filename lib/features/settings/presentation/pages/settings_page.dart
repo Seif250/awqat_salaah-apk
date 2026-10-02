@@ -7,10 +7,10 @@ import '../../../../core/constants/prayer_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_state.dart';
-import '../../../quran/presentation/bloc/quran_bloc.dart';
-import '../../../quran/presentation/bloc/quran_event.dart';
-import '../../../quran/presentation/bloc/quran_state.dart';
-import '../../../quran/data/repositories/tafsir_repository.dart';
+// import '../../../quran/presentation/bloc/quran_bloc.dart';
+// import '../../../quran/presentation/bloc/quran_event.dart';
+// import '../../../quran/presentation/bloc/quran_state.dart';
+// import '../../../quran/data/repositories/tafsir_repository.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_state.dart';
 import '../widgets/settings_section_card.dart';
@@ -83,6 +83,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  /*
   void _showDefaultTafsirDialog(BuildContext context, int currentId) {
     showModalBottomSheet(
       context: context,
@@ -344,6 +345,7 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
   }
+  */
 
   @override
   Widget build(BuildContext context) {
@@ -452,6 +454,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
 
                   // 3. القرآن الكريم والمصحف
+                  /*
                   BlocBuilder<QuranBloc, QuranState>(
                     builder: (context, qState) {
                       final isLoaded = qState is QuranLoaded;
@@ -501,6 +504,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       );
                     },
                   ),
+                  */
 
                   // 4. المظهر والتشغيل
                   SettingsSectionCard(

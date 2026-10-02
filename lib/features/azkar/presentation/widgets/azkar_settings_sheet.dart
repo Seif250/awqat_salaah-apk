@@ -4,7 +4,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/page_transitions.dart';
 import '../../../settings/presentation/pages/azkar_settings_page.dart';
-import '../../../settings/presentation/pages/settings_page.dart';
 import '../../data/models/azkar_item_model.dart';
 import '../../data/repositories/azkar_repository.dart';
 import '../../data/services/backup_service.dart';
@@ -183,35 +182,35 @@ class AzkarSettingsSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // SECTION 1: الإعدادات العامة
-            _buildSectionHeader('الإعدادات العامة'),
+            // SECTION 1: إدارة الورد والعدادات
+            _buildSectionHeader('الورد اليومي والعدادات'),
             _buildSettingTile(
               context: context,
-              icon: Icons.settings_rounded,
-              title: 'الإعدادات العامة للتطبيق',
-              subtitle: 'المظهر، التوقيت، الصوت، واللغة',
+              icon: Icons.restart_alt_rounded,
+              title: 'تصفير عدادات هذا القسم',
+              subtitle: 'إعادة ضبط عداد ${currentCategory.titleArabic} إلى البداية',
+              iconColor: Colors.teal,
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, FadeSlidePageRoute(page: const SettingsPage()));
+                context.read<AzkarBloc>().add(ResetCategoryProgressEvent(currentCategory));
+                AppSnackBar.showInfo(context, 'تم تصفير عدادات ${currentCategory.titleArabic}');
               },
               isDark: isDark,
             ),
             _buildSettingTile(
               context: context,
-              icon: Icons.tune_rounded,
-              title: 'إعدادات الأذكار والتنبيهات',
-              subtitle: 'أوقات التذكير، الاهتزاز، وحجم الخط',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, FadeSlidePageRoute(page: const AzkarSettingsPage()));
-              },
+              icon: Icons.restore_rounded,
+              title: 'استعادة الأذكار الافتراضية',
+              subtitle: 'إعادة أذكار السنة النبوية دون حذف أذكارك المخصصة',
+              iconColor: AppColors.accentGold,
+              onTap: () => _confirmRestoreDefaults(context),
               isDark: isDark,
             ),
 
             const SizedBox(height: 16),
 
             // SECTION 2: البيانات (النسخ الاحتياطي والاسترجاع)
-            _buildSectionHeader('البيانات'),
+            _buildSectionHeader('أذكاري المخصصة والنسخ الاحتياطي'),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -229,7 +228,7 @@ class AzkarSettingsSheet extends StatelessWidget {
                       Icon(Icons.shield_outlined, size: 18, color: AppColors.accentGold),
                       SizedBox(width: 8),
                       Text(
-                        'النسخ الاحتياطي والاسترجاع',
+                        'النسخ الاحتياطي للأذكار المخصصة',
                         style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 13.5,
@@ -240,7 +239,7 @@ class AzkarSettingsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'احفظ أذكارك المخصصة واسترجعها عند الحاجة أو عند نقل الهاتف.',
+                    'احفظ أذكارك المخصصة واسترجعها عند الحاجة أو عند نقل الهاتف إلى جهاز آخر.',
                     style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 12,
@@ -263,7 +262,7 @@ class AzkarSettingsSheet extends StatelessWidget {
                           ),
                           icon: const Icon(Icons.file_upload_outlined, size: 16),
                           label: const Text(
-                            'تصدير نسخة',
+                            'تصدير أذكاري',
                             style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                           onPressed: () => _handleExport(context),
@@ -280,7 +279,7 @@ class AzkarSettingsSheet extends StatelessWidget {
                           ),
                           icon: const Icon(Icons.file_download_outlined, size: 16),
                           label: const Text(
-                            'استيراد نسخة',
+                            'استيراد أذكار',
                             style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                           onPressed: () => _handleImport(context),
@@ -294,28 +293,18 @@ class AzkarSettingsSheet extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // SECTION 3: إجراءات أخرى
-            _buildSectionHeader('إجراءات أخرى'),
+            // SECTION 3: التنبيهات والتخصيص
+            _buildSectionHeader('التنبيهات والتخصيص'),
             _buildSettingTile(
               context: context,
-              icon: Icons.restart_alt_rounded,
-              title: 'تصفير عدادات هذا القسم',
-              subtitle: 'إعادة ضبط عداد ${currentCategory.titleArabic} إلى البداية',
-              iconColor: Colors.blueGrey,
+              icon: Icons.notifications_active_outlined,
+              title: 'مواعيد التنبيه بالورد اليومي',
+              subtitle: 'تخصيص أوقات تذكير الصباح والمساء والنوم وقيام الليل',
+              iconColor: AppColors.primary,
               onTap: () {
                 Navigator.pop(context);
-                context.read<AzkarBloc>().add(ResetCategoryProgressEvent(currentCategory));
-                AppSnackBar.showInfo(context, 'تم تصفير عدادات ${currentCategory.titleArabic}');
+                Navigator.push(context, FadeSlidePageRoute(page: const AzkarSettingsPage()));
               },
-              isDark: isDark,
-            ),
-            _buildSettingTile(
-              context: context,
-              icon: Icons.restore_rounded,
-              title: 'استعادة الأذكار الافتراضية',
-              subtitle: 'إعادة أذكار السنة النبوية دون حذف أذكارك المخصصة',
-              iconColor: AppColors.accentGold,
-              onTap: () => _confirmRestoreDefaults(context),
               isDark: isDark,
             ),
           ],

@@ -1,4 +1,4 @@
-import 'dart:ui' show lerpDouble;
+import 'dart:ui' show ImageFilter, lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/arabic_numbers.dart';
+import '../../../../core/utils/skeleton_loading.dart';
 import '../../data/models/azkar_item_model.dart';
 import '../../data/repositories/azkar_repository.dart';
 import '../../data/services/backup_service.dart';
@@ -16,11 +17,8 @@ import '../widgets/azkar_card.dart';
 import '../widgets/azkar_category_bar.dart';
 import '../widgets/azkar_empty_view.dart';
 import '../widgets/azkar_settings_sheet.dart';
-import '../widgets/custom_dhikr_tile.dart';
-import '../widgets/daily_progress_header.dart';
 import '../widgets/edit_zikr_dialog.dart';
 import '../widgets/import_backup_preview_dialog.dart';
-import '../../../../core/utils/skeleton_loading.dart';
 
 class AzkarPage extends StatefulWidget {
   const AzkarPage({super.key});
@@ -29,83 +27,20 @@ class AzkarPage extends StatefulWidget {
   State<AzkarPage> createState() => _AzkarPageState();
 }
 
-class _AzkarPageState extends State<AzkarPage>
-    with SingleTickerProviderStateMixin {
+class _AzkarPageState extends State<AzkarPage> {
   late final ScrollController _scrollController;
-  late final AnimationController _headerAnimController;
-  late final Animation<double> _headerFadeAnimation;
-  late final Animation<Offset> _headerSlideAnimation;
-  late final Animation<double> _headerSizeAnimation;
-  bool _isHeaderVisible = true;
-  bool _isDragging = false;
+  bool _isHeroVisible = true;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
-    _headerAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 320),
-      value: 1.0,
-    );
-    _headerFadeAnimation = CurvedAnimation(
-      parent: _headerAnimController,
-      curve: const Interval(0.15, 1.0, curve: Curves.easeInOut),
-    );
-    _headerSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, -0.35),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _headerAnimController,
-      curve: Curves.easeInOutCubic,
-    ));
-    _headerSizeAnimation = CurvedAnimation(
-      parent: _headerAnimController,
-      curve: Curves.easeInOutCubic,
-    );
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _headerAnimController.dispose();
     super.dispose();
-  }
-
-  void _setHeaderVisibility(bool visible) {
-    if (_isHeaderVisible == visible) return;
-    setState(() => _isHeaderVisible = visible);
-    if (visible) {
-      _headerAnimController.forward();
-    } else {
-      _headerAnimController.reverse();
-    }
-  }
-
-  void _onScroll() {
-    if (_isDragging) return;
-    if (!_scrollController.hasClients) return;
-
-    // Keep header visible when near the top
-    if (_scrollController.offset <= 20) {
-      if (!_isHeaderVisible) {
-        _setHeaderVisibility(true);
-      }
-      return;
-    }
-
-    final direction = _scrollController.position.userScrollDirection;
-    if (direction == ScrollDirection.reverse) {
-      if (_isHeaderVisible) {
-        _setHeaderVisibility(false);
-      }
-    } else if (direction == ScrollDirection.forward) {
-      if (!_isHeaderVisible) {
-        _setHeaderVisibility(true);
-      }
-    }
   }
 
   void _openAddDhikr(BuildContext context, AzkarCategory currentCat) {
@@ -230,45 +165,98 @@ class _AzkarPageState extends State<AzkarPage>
         ),
         elevation: 0,
         scrolledUnderElevation: 0,
-        toolbarHeight: 52,
+        toolbarHeight: 64,
         backgroundColor: Colors.transparent,
-        title: Text(
-          'الأذكار والورد اليومي',
-          style: TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDark,
+        centerTitle: true,
+        // Right side (in RTL): Add button (Deep green circle with white +)
+        leading: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 14),
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  final state = context.read<AzkarBloc>().state;
+                  final cat = state is AzkarLoaded ? state.selectedCategory : AzkarCategory.custom;
+                  _openAddDhikr(context, cat);
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1B4D3E) : AppColors.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.add_rounded, size: 22, color: Colors.white),
+                ),
+              ),
+            ),
           ),
         ),
-        actions: [
-          // Primary Action: Add Custom Dhikr
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12),
-                shape: BoxShape.circle,
+        // Center: Title + Subtitle
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'الأذكار والورد اليومي',
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 19.5,
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.textPrimaryDark : AppColors.primary,
+                letterSpacing: -0.3,
               ),
-              child: const Icon(Icons.add_circle_outline_rounded, size: 22, color: AppColors.primary),
             ),
-            tooltip: 'إضافة ذكر جديد',
-            onPressed: () {
-              final state = context.read<AzkarBloc>().state;
-              final cat = state is AzkarLoaded ? state.selectedCategory : AzkarCategory.custom;
-              _openAddDhikr(context, cat);
-            },
-          ),
-
-          // Secondary Action: Settings & Data management bottom sheet
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded),
-            tooltip: 'خيارات وإعدادات الأذكار',
-            onPressed: () {
-              final state = context.read<AzkarBloc>().state;
-              final cat = state is AzkarLoaded ? state.selectedCategory : AzkarCategory.morning;
-              AzkarSettingsSheet.show(context, currentCategory: cat);
-            },
+            const SizedBox(height: 1),
+            Text(
+              'قربًا من الله .. في كل وقت',
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+              ),
+            ),
+          ],
+        ),
+        // Left side (in RTL): 3 dots Menu button
+        actions: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 14),
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    final state = context.read<AzkarBloc>().state;
+                    final cat = state is AzkarLoaded ? state.selectedCategory : AzkarCategory.morning;
+                    AzkarSettingsSheet.show(context, currentCategory: cat);
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : const Color(0xFFF2F4F3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.more_vert_rounded,
+                      size: 20,
+                      color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -301,108 +289,33 @@ class _AzkarPageState extends State<AzkarPage>
 
             return Column(
               children: [
-                // Lightweight Category Segmented Tabs
+                // Top Horizontally Scrollable Segmented Category Tabs
                 AzkarCategoryBar(
                   selectedCategory: state.selectedCategory,
                   onSelectCategory: (category) {
+                    setState(() => _isHeroVisible = true);
                     context.read<AzkarBloc>().add(SelectCategoryEvent(category));
                     if (_scrollController.hasClients) {
                       _scrollController.jumpTo(0);
                     }
-                    _setHeaderVisibility(true);
                   },
                   isDark: isDark,
                 ),
 
-                // Collapsible Progress Header (for standard categories)
-                if (!isCustomTab)
-                  AnimatedBuilder(
-                    animation: _headerAnimController,
-                    builder: (context, child) {
-                      if (_headerAnimController.value == 0.0 && !_isHeaderVisible) {
-                        return const SizedBox.shrink();
-                      }
-                      return ClipRect(
-                        child: SizeTransition(
-                          sizeFactor: _headerSizeAnimation,
-                          axisAlignment: 0.0,
-                          child: FadeTransition(
-                            opacity: _headerFadeAnimation,
-                            child: SlideTransition(
-                              position: _headerSlideAnimation,
-                              child: child,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    child: DailyProgressHeader(
-                      category: state.selectedCategory,
-                      completedCount: state.completedCategoryCount,
-                      totalCount: state.totalCategoryCount,
-                      completionRate: state.categoryCompletionRate,
-                      onResetCategory: () {
-                        context
-                            .read<AzkarBloc>()
-                            .add(ResetCategoryProgressEvent(state.selectedCategory));
-                      },
-                    ),
-                  ),
+                // Hero Islamic Progress Banner with smooth slide and fade animation
+                AnimatedCrossFade(
+                  firstChild: _buildAzkarHeroHeader(context, state, isDark),
+                  secondChild: const SizedBox(width: double.infinity, height: 0),
+                  crossFadeState: _isHeroVisible
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
+                  duration: const Duration(milliseconds: 350),
+                  firstCurve: Curves.easeOutCubic,
+                  secondCurve: Curves.easeInCubic,
+                  sizeCurve: Curves.easeInOutCubic,
+                ),
 
-                // Compact Custom Adhkar Section Header (when "أذكاري المخصصة" is active)
-                if (isCustomTab)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'أذكاري المخصصة',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'أذكار وأدعية أضفتها بنفسك',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 11.5,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.08),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.25),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            '${toArabicDigits(state.currentItems.length)} أذكار',
-                            style: const TextStyle(
-                              fontFamily: 'Cairo',
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Content View: List or Calm Empty State
+                // Content View: Reorderable Adhkar List or Calm Empty State
                 Expanded(
                   child: state.currentItems.isEmpty
                       ? AzkarEmptyView(
@@ -416,9 +329,7 @@ class _AzkarPageState extends State<AzkarPage>
                               ? () => _handleImportFromEmptyState(context)
                               : null,
                         )
-                      : isCustomTab
-                          ? _buildCustomAdhkarList(state)
-                          : _buildStandardAdhkarList(state),
+                      : _buildAdhkarList(context, state, isDark),
                 ),
               ],
             );
@@ -430,57 +341,203 @@ class _AzkarPageState extends State<AzkarPage>
     );
   }
 
-  /// Clean, lightweight list for Custom Adhkar where Arabic text is hero
-  Widget _buildCustomAdhkarList(AzkarLoaded state) {
-    return ListView.builder(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-      itemCount: state.currentItems.length,
-      itemBuilder: (context, index) {
-        final item = state.currentItems[index];
-        return CustomDhikrTile(
-          item: item,
-          onEdit: () => _openEditDhikr(context, item),
-          onDelete: () => _confirmDeleteDhikr(context, item),
-          onIncrement: () {
-            context.read<AzkarBloc>().add(IncrementZikrCountEvent(
-                  id: item.id,
-                  targetCount: item.targetCount,
-                  category: state.selectedCategory,
-                ));
-          },
-          onReset: () {
-            context.read<AzkarBloc>().add(UpdateZikrItemEvent(
-                  item.copyWith(currentCount: 0, isCompleted: false),
-                ));
-          },
-        );
-      },
+  /// Compact & Elegant Section Hero Banner matching the mockup screenshot
+  Widget _buildAzkarHeroHeader(BuildContext context, AzkarLoaded state, bool isDark) {
+    final isAllDone = state.totalCategoryCount > 0 &&
+        state.completedCategoryCount >= state.totalCategoryCount;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      height: 116,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // AI-generated grand mosque archway & morning sunlight
+            Image.asset(
+              'assets/images/azkar_header_card.jpg',
+              fit: BoxFit.cover,
+            ),
+
+            // Light blur & transparent gradient overlay for readability
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 0.8, sigmaY: 0.8),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                    colors: [
+                      Colors.black.withValues(alpha: isDark ? 0.58 : 0.42),
+                      AppColors.primaryDark.withValues(alpha: isDark ? 0.75 : 0.62),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Content inside the hero banner
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Row 1: Right Title with Sun Icon & Left Completion Capsule
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Right: Icon + Title with graceful fade and slide animation
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.easeInOutCubic,
+                        opacity: _isHeroVisible ? 1.0 : 0.0,
+                        child: AnimatedSlide(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                          offset: _isHeroVisible ? Offset.zero : const Offset(0.1, -0.2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.wb_sunny_rounded,
+                                size: 20,
+                                color: Color(0xFFFDE047),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                state.selectedCategory.titleArabic,
+                                style: const TextStyle(
+                                  fontFamily: 'Cairo',
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Left: Dark capsule with checkmark and completion text
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isAllDone
+                                ? const Color(0xFF4ADE80).withValues(alpha: 0.6)
+                                : Colors.white24,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 15,
+                              color: isAllDone ? const Color(0xFF4ADE80) : const Color(0xFF34D399),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              isAllDone
+                                  ? 'مكتمل بحمد الله'
+                                  : '${toArabicDigits(state.completedCategoryCount)} / ${toArabicDigits(state.totalCategoryCount)} مكتملة',
+                              style: const TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Row 2: Subtitle time description
+                  Text(
+                    state.selectedCategory.timeDescription,
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.86),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  // Row 3: Clean progress bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: state.categoryCompletionRate,
+                      minHeight: 5.5,
+                      backgroundColor: Colors.white.withValues(alpha: 0.35),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4ADE80)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  /// Reorderable interactive list for standard Azkar categories
-  Widget _buildStandardAdhkarList(AzkarLoaded state) {
-    return RefreshIndicator(
-      color: AppColors.accentGold,
-      onRefresh: () async {
-        context.read<AzkarBloc>().add(const LoadAzkarEvent());
+  /// Reorderable interactive list for standard and custom Adhkar
+  Widget _buildAdhkarList(BuildContext context, AzkarLoaded state, bool isDark) {
+    final isCustomTab = state.selectedCategory == AzkarCategory.custom;
+
+    return NotificationListener<UserScrollNotification>(
+      onNotification: (notification) {
+        if (notification.metrics.axis == Axis.vertical) {
+          if (notification.direction == ScrollDirection.reverse) {
+            // Scrolling down through list -> hide progress bar
+            if (_isHeroVisible) {
+              setState(() => _isHeroVisible = false);
+            }
+          } else if (notification.direction == ScrollDirection.forward) {
+            // Scrolling up towards top -> show progress bar
+            if (!_isHeroVisible) {
+              setState(() => _isHeroVisible = true);
+            }
+          }
+        }
+        return false;
       },
-      child: ReorderableListView.builder(
-        scrollController: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        buildDefaultDragHandles: false,
-        autoScrollerVelocityScalar: 140.0,
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
-        itemCount: state.currentItems.length,
+      child: RefreshIndicator(
+        color: AppColors.accentGold,
+        onRefresh: () async {
+          context.read<AzkarBloc>().add(const LoadAzkarEvent());
+        },
+        child: ReorderableListView.builder(
+          scrollController: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          buildDefaultDragHandles: false,
+          autoScrollerVelocityScalar: 140.0,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+          itemCount: state.currentItems.length,
         onReorderStart: (index) {
           HapticFeedback.heavyImpact();
-          setState(() => _isDragging = true);
         },
-        onReorderEnd: (index) {
-          setState(() => _isDragging = false);
-        },
+        onReorderEnd: (index) {},
         onReorder: (oldIndex, newIndex) {
           HapticFeedback.selectionClick();
           context.read<AzkarBloc>().add(
@@ -513,14 +570,24 @@ class _AzkarPageState extends State<AzkarPage>
         },
         itemBuilder: (context, index) {
           final item = state.currentItems[index];
+          final isItemCustom = isCustomTab || item.isCustom;
+
           return ReorderableDelayedDragStartListener(
             key: ValueKey(item.id),
             index: index,
             child: AzkarCard(
               item: item,
+              itemIndex: index + 1,
               reorderIndex: index,
               onIncrement: () {
                 context.read<AzkarBloc>().add(IncrementZikrCountEvent(
+                      id: item.id,
+                      targetCount: item.targetCount,
+                      category: state.selectedCategory,
+                    ));
+              },
+              onDecrement: () {
+                context.read<AzkarBloc>().add(DecrementZikrCountEvent(
                       id: item.id,
                       targetCount: item.targetCount,
                       category: state.selectedCategory,
@@ -533,10 +600,24 @@ class _AzkarPageState extends State<AzkarPage>
                       category: state.selectedCategory,
                     ));
               },
+              onBookmark: () {
+                Clipboard.setData(ClipboardData(
+                  text: '${item.title}\n\n${item.arabicText}\n\n${item.reward ?? ""}',
+                ));
+                AppSnackBar.showSuccess(context, 'تم حفظ الذكر ونسخه إلى الحافظة');
+              },
+              onShare: () {
+                Clipboard.setData(ClipboardData(
+                  text: '${item.title}\n\n${item.arabicText}\n\n${item.reward != null ? "من فضلها: ${item.reward}\n" : ""}${item.reference != null ? "المصدر: ${item.reference}" : ""}',
+                ));
+                AppSnackBar.showInfo(context, 'تم نسخ نص الذكر للمشاركة بنجاح');
+              },
               onEdit: () => _openEditDhikr(context, item),
+              onDelete: isItemCustom ? () => _confirmDeleteDhikr(context, item) : null,
             ),
           );
         },
+      ),
       ),
     );
   }

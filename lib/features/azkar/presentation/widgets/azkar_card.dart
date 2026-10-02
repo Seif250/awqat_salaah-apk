@@ -1,31 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_system.dart';
 import '../../data/models/azkar_item_model.dart';
 import 'azkar_card_components.dart';
 
 class AzkarCard extends StatefulWidget {
   final AzkarItem item;
+  final int itemIndex;
   final VoidCallback onIncrement;
+  final VoidCallback? onDecrement;
   final VoidCallback onToggleComplete;
+  final VoidCallback? onBookmark;
+  final VoidCallback? onShare;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final VoidCallback? onLongPress;
   final bool isReorderMode;
   final int? reorderIndex;
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
+  final bool isBookmarked;
 
   const AzkarCard({
     super.key,
     required this.item,
+    this.itemIndex = 1,
     required this.onIncrement,
+    this.onDecrement,
     required this.onToggleComplete,
+    this.onBookmark,
+    this.onShare,
     this.onEdit,
+    this.onDelete,
     this.onLongPress,
     this.isReorderMode = false,
     this.reorderIndex,
     this.onMoveUp,
     this.onMoveDown,
+    this.isBookmarked = false,
   });
 
   @override
@@ -47,9 +59,9 @@ class _AzkarCardState extends State<AzkarCard>
       vsync: this,
     );
     _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.18), weight: 40),
-      TweenSequenceItem(tween: Tween(begin: 1.18, end: 0.95), weight: 30),
-      TweenSequenceItem(tween: Tween(begin: 0.95, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.16), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.16, end: 0.96), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.96, end: 1.0), weight: 30),
     ]).animate(CurvedAnimation(
       parent: _bounceController,
       curve: Curves.easeOut,
@@ -65,11 +77,9 @@ class _AzkarCardState extends State<AzkarCard>
   @override
   void didUpdateWidget(AzkarCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Bounce the counter when count changes
     if (widget.item.currentCount != oldWidget.item.currentCount) {
       _bounceController.forward(from: 0);
     }
-    // Detect completion transition
     if (!_wasCompleted && widget.item.isCompleted) {
       HapticFeedback.heavyImpact();
     }
@@ -81,38 +91,19 @@ class _AzkarCardState extends State<AzkarCard>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isCompleted = widget.item.isCompleted;
 
-    final double progress = widget.item.targetCount > 0
-        ? (widget.item.currentCount / widget.item.targetCount).clamp(0.0, 1.0)
-        : 0.0;
-
     return Semantics(
       button: true,
       label: '${widget.item.title}، المقروء ${widget.item.currentCount} من ${widget.item.targetCount}، ${isCompleted ? "مكتمل بحمد الله" : "انقر للتسبيح والزيادة"}',
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 260),
         curve: Curves.easeInOut,
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: isCompleted
-              ? (isDark ? const Color(0xFF0F2218) : const Color(0xFFF3F9F5))
-              : (isDark ? AppColors.darkCard : Colors.white),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isCompleted
-                ? AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.25)
-                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-            width: isCompleted ? 1.0 : 0.8,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.025),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: AppDesignSystem.cardDecoration(
+          isDark: isDark,
+          isCompleted: isCompleted,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusCard),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -128,15 +119,16 @@ class _AzkarCardState extends State<AzkarCard>
                       widget.onLongPress!();
                     }
                   : null,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppDesignSystem.radiusCard),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Header: Drag handle, title, repetition badge, edit button / reorder arrows
+                    // Header: Number Circle, Title, More & Share actions
                     AzkarCardHeader(
                       item: widget.item,
+                      itemIndex: widget.itemIndex,
                       isCompleted: isCompleted,
                       isDark: isDark,
                       isReorderMode: widget.isReorderMode,
@@ -144,26 +136,33 @@ class _AzkarCardState extends State<AzkarCard>
                       onMoveUp: widget.onMoveUp,
                       onMoveDown: widget.onMoveDown,
                       onEdit: widget.onEdit,
+                      onDelete: widget.onDelete,
+                      onBookmark: widget.onBookmark,
+                      onShare: widget.onShare,
+                      isBookmarked: widget.isBookmarked,
                     ),
-                    const SizedBox(height: 6),
 
-                    // Body: Arabic Dhikr text (Hero) and reward / reference
+                    const SizedBox(height: 12),
+
+                    // Body: Arabic Dhikr Text Container + Virtue "من فضلها" Container
                     AzkarCardBody(
                       item: widget.item,
                       isDark: isDark,
                     ),
-                    const SizedBox(height: 8),
 
-                    // Footer: Animated progress bar, counter pill, complete toggle
-                    AzkarCardProgressFooter(
+                    const SizedBox(height: 14),
+
+                    // Footer: "حفظ" Bookmark pill button + [-] Count [+] interactive controls
+                    AzkarCardFooter(
                       item: widget.item,
                       isCompleted: isCompleted,
                       isDark: isDark,
                       isReorderMode: widget.isReorderMode,
-                      progress: progress,
                       scaleAnimation: _scaleAnimation,
                       onIncrement: widget.onIncrement,
-                      onToggleComplete: widget.onToggleComplete,
+                      onDecrement: widget.onDecrement ?? () {},
+                      onBookmark: widget.onBookmark ?? () {},
+                      isBookmarked: widget.isBookmarked,
                     ),
                   ],
                 ),
@@ -175,4 +174,3 @@ class _AzkarCardState extends State<AzkarCard>
     );
   }
 }
-

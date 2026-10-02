@@ -146,6 +146,26 @@ void main() {
       expect(progress.totalLifetimeTasbih, equals(34));
     });
 
+    test('decrementCount decrements count and unmarks completed when below target', () {
+      repository.incrementCount('m_1', 3);
+      repository.incrementCount('m_1', 3);
+      var progress = repository.incrementCount('m_1', 3);
+      expect(progress.itemCounts['m_1'], equals(3));
+      expect(progress.completedItemIds.contains('m_1'), isTrue);
+
+      progress = repository.decrementCount('m_1', 3);
+      expect(progress.itemCounts['m_1'], equals(2));
+      expect(progress.completedItemIds.contains('m_1'), isFalse);
+
+      repository.decrementCount('m_1', 3);
+      progress = repository.decrementCount('m_1', 3);
+      expect(progress.itemCounts['m_1'], equals(0));
+
+      // Decrementing at 0 stays at 0
+      progress = repository.decrementCount('m_1', 3);
+      expect(progress.itemCounts['m_1'], equals(0));
+    });
+
     test('toggleCompletion toggles isCompleted state', () {
       var progress = repository.toggleCompletion('m_2', 3);
       expect(progress.completedItemIds.contains('m_2'), isTrue);
@@ -223,6 +243,66 @@ void main() {
       await repository.deleteCustomZikr('c_test_1');
       list = repository.getCustomAzkar();
       expect(list, isEmpty);
+    });
+
+    test('multi-category custom zikr tracks progress independently in each category as separate tasks', () async {
+      // 1. Add a custom zikr placed in both Morning and Evening
+      final multiCatItem = AzkarItem(
+        id: 'multi_cat_custom_1',
+        category: AzkarCategory.morning,
+        categories: const [AzkarCategory.morning, AzkarCategory.evening],
+        title: 'استغفار الصباح والمساء',
+        arabicText: 'أستغفر الله العظيم وأتوب إليه',
+        targetCount: 10,
+        isCustom: true,
+      );
+      await repository.addZikrItem(multiCatItem);
+
+      // 2. Mark completed in Morning category
+      repository.toggleCompletion(
+        multiCatItem.id,
+        multiCatItem.targetCount,
+        category: AzkarCategory.morning,
+      );
+
+      final progressAfterMorning = repository.getDailyProgress();
+
+      // 3. Query items in Morning
+      final morningItems = repository.getCategoryItems(AzkarCategory.morning, progressAfterMorning);
+      final morningZikr = morningItems.firstWhere((i) => i.id == multiCatItem.id);
+      expect(morningZikr.isCompleted, isTrue);
+      expect(morningZikr.currentCount, equals(10));
+
+      // 4. Query items in Evening: MUST NOT be completed, must be an independent task
+      final eveningItems = repository.getCategoryItems(AzkarCategory.evening, progressAfterMorning);
+      final eveningZikr = eveningItems.firstWhere((i) => i.id == multiCatItem.id);
+      expect(eveningZikr.isCompleted, isFalse);
+      expect(eveningZikr.currentCount, equals(0));
+
+      // 5. Complete it in Evening as well
+      repository.toggleCompletion(
+        multiCatItem.id,
+        multiCatItem.targetCount,
+        category: AzkarCategory.evening,
+      );
+      final progressAfterEvening = repository.getDailyProgress();
+      final eveningItemsAfter = repository.getCategoryItems(AzkarCategory.evening, progressAfterEvening);
+      final eveningZikrAfter = eveningItemsAfter.firstWhere((i) => i.id == multiCatItem.id);
+      expect(eveningZikrAfter.isCompleted, isTrue);
+      expect(eveningZikrAfter.currentCount, equals(10));
+
+      // 6. Test resetZikrCount resets only for the specified category
+      repository.resetZikrCount(multiCatItem.id, category: AzkarCategory.morning);
+      final progressAfterReset = repository.getDailyProgress();
+      final morningAfterReset = repository.getCategoryItems(AzkarCategory.morning, progressAfterReset)
+          .firstWhere((i) => i.id == multiCatItem.id);
+      final eveningAfterReset = repository.getCategoryItems(AzkarCategory.evening, progressAfterReset)
+          .firstWhere((i) => i.id == multiCatItem.id);
+
+      expect(morningAfterReset.isCompleted, isFalse);
+      expect(morningAfterReset.currentCount, equals(0));
+      expect(eveningAfterReset.isCompleted, isTrue);
+      expect(eveningAfterReset.currentCount, equals(10));
     });
 
     test('automatic daily reset resets daily ward but preserves lifetime total', () async {

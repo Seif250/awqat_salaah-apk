@@ -39,6 +39,20 @@ class IncrementZikrCountEvent extends AzkarEvent {
   List<Object?> get props => [id, targetCount, category];
 }
 
+class DecrementZikrCountEvent extends AzkarEvent {
+  final String id;
+  final int targetCount;
+  final AzkarCategory? category;
+  const DecrementZikrCountEvent({
+    required this.id,
+    required this.targetCount,
+    this.category,
+  });
+
+  @override
+  List<Object?> get props => [id, targetCount, category];
+}
+
 class ToggleZikrCompletionEvent extends AzkarEvent {
   final String id;
   final int targetCount;
@@ -59,6 +73,18 @@ class ResetCategoryProgressEvent extends AzkarEvent {
 
   @override
   List<Object?> get props => [category];
+}
+
+class ResetZikrCountEvent extends AzkarEvent {
+  final String id;
+  final AzkarCategory? category;
+  const ResetZikrCountEvent({
+    required this.id,
+    this.category,
+  });
+
+  @override
+  List<Object?> get props => [id, category];
 }
 
 class AddCustomZikrEvent extends AzkarEvent {

@@ -597,5 +597,39 @@ class AzkarLocalData {
           reward: 'لَمْ يَسْأَلِ اللَّهَ شَيْئًا إِلَّا أَعْطَاهُ إِيَّاهُ.',
           targetCount: 7,
         ),
+        const AzkarItem(
+          id: 'img_tasbih_dua',
+          category: AzkarCategory.supplications,
+          categories: [
+            AzkarCategory.supplications,
+            AzkarCategory.postPrayer,
+            AzkarCategory.qiyam,
+            AzkarCategory.general,
+          ],
+          title: 'التسبيح والتحميد والتكبير عند الدعاء',
+          arabicText:
+              'سُبْحَانَ اللَّهِ (عَشْرًا)،\nالْحَمْدُ لِلَّهِ (عَشْرًا)،\nاللَّهُ أَكْبَرُ (عَشْرًا).',
+          reference: 'رواه الإمام أحمد في المسند (12207)، والترمذي (481) وصححه الألباني.',
+          reward:
+              'بعد هذه الأذكار تسأل الله حاجتك، وجاء في الحديث أن الله يقول: «قَدْ فَعَلْتُ، قَدْ فَعَلْتُ».',
+          targetCount: 1,
+        ),
+        const AzkarItem(
+          id: 'img_five_words_tawhid',
+          category: AzkarCategory.general,
+          categories: [
+            AzkarCategory.general,
+            AzkarCategory.morning,
+            AzkarCategory.evening,
+            AzkarCategory.sleep,
+          ],
+          title: 'خمس كلمات من التوحيد والذكر',
+          arabicText:
+              'لَا إِلٰهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ،\nلَا إِلٰهَ إِلَّا اللَّهُ وَحْدَهُ،\nلَا إِلٰهَ إِلَّا اللَّهُ وَلَا شَرِيكَ لَهُ،\nلَا إِلٰهَ إِلَّا اللَّهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ،\nلَا إِلٰهَ إِلَّا اللَّهُ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ.',
+          reference: 'وردت في سنن الترمذي (3430)، وصحيح الجامع للألباني (6429).',
+          reward:
+              'مَن قالَهُنَّ في يومٍ أو في ليلَةٍ أو في شَهرٍ ثمَّ ماتَ في ذلكَ اليومِ أو في تلكَ اللَّيلَةِ أو في ذلكَ الشَّهرِ غُفِرَ لَه ذنبُه.',
+          targetCount: 1,
+        ),
       ];
 }

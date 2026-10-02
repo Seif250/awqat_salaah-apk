@@ -12,8 +12,6 @@ import '../../../azkar/data/models/azkar_item_model.dart';
 import '../../../azkar/presentation/bloc/azkar_bloc.dart';
 import '../../../azkar/presentation/bloc/azkar_event.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
-import '../../../quran/presentation/bloc/quran_bloc.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../quran/presentation/bloc/quran_state.dart';
 import '../../../quran/presentation/pages/surah_detail_page.dart';
 import '../../../quran/services/daily_ayah_service.dart';
@@ -188,18 +186,6 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // LEVEL 2 — IMPORTANT: Quran Continuation Section
-                      BlocBuilder<QuranBloc, QuranState>(
-                        builder: (context, quranState) {
-                          return _buildQuranSection(
-                            context: context,
-                            quranState: quranState,
-                            isDark: isDark,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-
                       // LEVEL 2 — IMPORTANT: Prayer Times Section
                       _buildPrayerTimesSection(
                         context: context,
@@ -238,10 +224,10 @@ class _HomePageState extends State<HomePage> {
     required bool isDark,
     required VoidCallback onLocationTap,
   }) {
-    final now = DateTime.now();
     final gregorianDate =
-        DateUtilsHelper.getGregorianDateFormatted(now, locale: 'ar');
-    final hijriDate = DateUtilsHelper.getHijriDateFormatted(now, locale: 'ar');
+        DateUtilsHelper.getGregorianDateFormatted(DateTime.now(), locale: 'ar');
+    final hijriDate =
+        DateUtilsHelper.getHijriDateFormatted(DateTime.now(), locale: 'ar');
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
@@ -1048,98 +1034,6 @@ class _HomePageState extends State<HomePage> {
                   ? AppColors.textSecondaryDark
                   : AppColors.textSecondaryLight,
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 1. Open in Mushaf
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () {
-                  final quranState = context.read<QuranBloc>().state;
-                  if (quranState is QuranLoaded) {
-                    final surah = quranState.allSurahs.firstWhere(
-                      (s) => s.id == dailyAyah.surahId,
-                      orElse: () => quranState.allSurahs.first,
-                    );
-                    Navigator.push(
-                      context,
-                      FadeSlidePageRoute(
-                        page: SurahDetailPage(
-                          surah: surah,
-                          initialAyah: dailyAyah.ayahId,
-                        ),
-                      ),
-                    );
-                  } else {
-                    _navigateToTab(1);
-                  }
-                },
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.menu_book_rounded,
-                        size: 14,
-                        color: isDark
-                            ? AppColors.accentGoldLight
-                            : AppColors.primary,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'فتح في المصحف',
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? AppColors.accentGoldLight
-                              : AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // 2. Share Ayah
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () {
-                  final shareText =
-                      '﴿ ${dailyAyah.text} ﴾\n[سورة ${dailyAyah.surahName}: الآية ${dailyAyah.ayahId}]\n\nتطبيق وِرد - صلاتك، قرآنك، ذكرك';
-                  SharePlus.instance.share(ShareParams(text: shareText));
-                },
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.share_outlined,
-                        size: 14,
-                        color: isDark ? Colors.white70 : Colors.black54,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'مشاركة الآية',
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white70 : Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),

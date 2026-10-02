@@ -3,7 +3,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../azkar/presentation/pages/azkar_page.dart';
-import '../../../quran/presentation/pages/quran_page.dart';
 import 'home_page.dart';
 import 'prayer_times_page.dart';
 
@@ -20,7 +19,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class MainNavigationScreenState extends State<MainNavigationScreen> {
   late final PageController _pageController;
-  int _currentIndex = 0;
+  int _currentIndex = 0; // Default to HomePage (الرئيسية) as specified
   bool _isNavBarVisible = true;
 
   @override
@@ -94,7 +93,6 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           children: const [
             HomePage(),
-            QuranPage(),
             PrayerTimesPage(),
             AzkarPage(),
           ],
@@ -109,24 +107,24 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
           opacity: _isNavBarVisible ? 1.0 : 0.0,
           child: Container(
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+              color: isDark ? AppColors.darkSurface : AppColors.wirdWhite,
               border: Border(
                 top: BorderSide(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  color: isDark ? AppColors.darkBorder : AppColors.wirdBorder,
                   width: 1,
                 ),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, -3),
+                  color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.05),
+                  blurRadius: 14,
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
             child: SafeArea(
               child: SizedBox(
-                height: 64,
+                height: 74,
                 child: Row(
                   children: [
                     _buildNavItem(
@@ -138,22 +136,15 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
                     ),
                     _buildNavItem(
                       index: 1,
-                      icon: Icons.menu_book_outlined,
-                      selectedIcon: Icons.menu_book_rounded,
-                      label: 'القرآن',
-                      isDark: isDark,
-                    ),
-                    _buildNavItem(
-                      index: 2,
                       icon: Icons.mosque_outlined,
                       selectedIcon: Icons.mosque_rounded,
                       label: 'المواقيت',
                       isDark: isDark,
                     ),
                     _buildNavItem(
-                      index: 3,
-                      icon: Icons.auto_stories_outlined,
-                      selectedIcon: Icons.auto_stories_rounded,
+                      index: 2,
+                      icon: Icons.format_list_bulleted_rounded,
+                      selectedIcon: Icons.format_list_bulleted_rounded,
                       label: 'الأذكار',
                       isDark: isDark,
                     ),
@@ -185,38 +176,34 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => navigateToPage(index),
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
+                    duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    width: 56,
+                    height: 38,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.primary
-                              .withValues(alpha: isDark ? 0.45 : 0.14)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(14),
-                      border: isSelected
-                          ? Border.all(
-                              color: AppColors.accentGold
-                                  .withValues(alpha: isDark ? 0.4 : 0.5),
-                              width: 1,
-                            )
-                          : null,
-                    ),
-                    child: Icon(
-                      isSelected ? selectedIcon : icon,
-                      color: isSelected
                           ? (isDark
-                              ? AppColors.accentGoldLight
-                              : AppColors.primary)
-                          : (isDark ? Colors.white60 : Colors.black54),
-                      size: 22,
+                              ? const Color(0xFF1B4D3E)
+                              : AppColors.wirdSageGreen)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        isSelected ? selectedIcon : icon,
+                        color: isSelected
+                            ? (isDark ? AppColors.accentGoldLight : AppColors.wirdPrimaryGreen)
+                            : (isDark ? Colors.white60 : const Color(0xFF7B8581)),
+                        size: 22,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -226,14 +213,11 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Cairo',
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w600,
-                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 10.5,
                       color: isSelected
-                          ? (isDark
-                              ? AppColors.accentGoldLight
-                              : AppColors.primary)
-                          : (isDark ? Colors.white60 : Colors.black54),
+                          ? (isDark ? AppColors.accentGoldLight : AppColors.wirdPrimaryGreen)
+                          : (isDark ? Colors.white60 : const Color(0xFF7B8581)),
                     ),
                   ),
                 ],

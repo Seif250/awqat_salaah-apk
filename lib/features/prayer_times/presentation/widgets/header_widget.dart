@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_design_system.dart';
 import '../../../../core/utils/date_utils.dart';
 
-class HeaderWidget extends StatelessWidget {
+class HeaderWidget extends StatefulWidget {
   final String cityName;
   final String countryName;
   final VoidCallback onLocationTap;
@@ -15,100 +17,179 @@ class HeaderWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+  State<HeaderWidget> createState() => _HeaderWidgetState();
+}
+
+class _HeaderWidgetState extends State<HeaderWidget>
+    with WidgetsBindingObserver {
+  late String _gregorianDate;
+  late String _hijriDate;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateDateStrings();
+    _startTimer();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // App going to background — stop timer to save battery
+      _timer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      // App coming back — restart timer and update dates immediately
+      _startTimer();
+      _updateDateStrings();
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _updateDateStrings();
+    });
+  }
+
+  void _updateDateStrings() {
     final now = DateTime.now();
+    final gregorianDate =
+        DateUtilsHelper.getGregorianDateFormatted(now, locale: 'ar');
+    final hijriDate =
+        DateUtilsHelper.getHijriDateFormatted(now, locale: 'ar');
+    if (mounted) {
+      setState(() {
+        _gregorianDate = gregorianDate;
+        _hijriDate = hijriDate;
+      });
+    }
+  }
 
-    final gregorianDate = DateUtilsHelper.getGregorianDateFormatted(now, locale: 'ar');
-    final hijriDate = DateUtilsHelper.getHijriDateFormatted(now, locale: 'ar');
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final locationDisplay = widget.cityName.isNotEmpty &&
+            widget.countryName.isNotEmpty
+        ? '${widget.cityName}، ${widget.countryName}'
+        : 'موقعي الحالي، مصر';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Date Information: Secondary, Calm Typography
+          // Right (RTL start): City Selector Pill
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onLocationTap,
+              borderRadius: BorderRadius.circular(AppDesignSystem.radiusPill),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6.5),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkCard
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(
+                      AppDesignSystem.radiusPill),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFEFF2F0),
+                    width: 0.9,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(
+                          alpha: isDark ? 0.2 : 0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.arrow_drop_down_rounded,
+                      color: Color(0xFF6B7280),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 4),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                          maxWidth: 135),
+                      child: Text(
+                        locationDisplay,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : const Color(0xFF163A29),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: Color(0xFFD97706),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Left (RTL end): Hijri and Gregorian Dates
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  hijriDate,
+                  _hijriDate,
                   style: TextStyle(
                     fontFamily: 'Cairo',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.accentGoldLight : const Color(0xFF8C5D00),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: isDark
+                        ? AppColors.accentGoldLight
+                        : const Color(0xFF8C5D00),
                   ),
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  gregorianDate,
+                  _gregorianDate,
                   style: TextStyle(
                     fontFamily: 'Cairo',
-                    fontSize: 12,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? Colors.white60
+                        : const Color(0xFF6B7280),
                   ),
                 ),
               ],
-            ),
-          ),
-
-          // City Selector: Subtle and compact pill
-          InkWell(
-            onTap: onLocationTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: (isDark ? AppColors.darkCard : Colors.white).withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  width: 0.8,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
-                    blurRadius: 6,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    color: AppColors.accentGold,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 130),
-                    child: Text(
-                      '$cityName، $countryName',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Cairo',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Icon(
-                    Icons.arrow_drop_down_rounded,
-                    color: isDark ? Colors.white54 : Colors.black45,
-                    size: 17,
-                  ),
-                ],
-              ),
             ),
           ),
         ],
