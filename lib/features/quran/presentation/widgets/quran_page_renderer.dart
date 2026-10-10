@@ -39,7 +39,6 @@ abstract class QuranPageRenderer extends StatefulWidget {
   final int juz;
   final int hizb;
   final String surahName;
-  final FontWeight fontWeight;
   final void Function({required int surahId, required int ayahId}) onAyahTap;
   final void Function({required int surahId, required int ayahId})
       onAyahLongPress;
@@ -54,7 +53,6 @@ abstract class QuranPageRenderer extends StatefulWidget {
     this.themeMode = MushafThemeMode.ivory,
     this.highlightColor = AyahHighlightColor.goldenAmber,
     this.useTransliteratedHeader = false,
-    this.fontWeight = FontWeight.w500,
     this.highlightedAyahId,
     this.highlightedSurahId,
     this.selectedAyat = const {},
@@ -80,7 +78,6 @@ abstract class QuranPageRenderer extends StatefulWidget {
     MushafThemeMode themeMode = MushafThemeMode.ivory,
     AyahHighlightColor highlightColor = AyahHighlightColor.goldenAmber,
     bool useTransliteratedHeader = false,
-    FontWeight fontWeight = FontWeight.w500,
     int? highlightedAyahId,
     int? highlightedSurahId,
     Map<String, dynamic> selectedAyat = const {},
@@ -105,7 +102,6 @@ abstract class QuranPageRenderer extends StatefulWidget {
         themeMode: themeMode,
         highlightColor: highlightColor,
         useTransliteratedHeader: useTransliteratedHeader,
-        fontWeight: fontWeight,
         highlightedAyahId: highlightedAyahId,
         highlightedSurahId: highlightedSurahId,
         selectedAyat: selectedAyat,
@@ -128,7 +124,6 @@ abstract class QuranPageRenderer extends StatefulWidget {
       themeMode: themeMode,
       highlightColor: highlightColor,
       useTransliteratedHeader: useTransliteratedHeader,
-      fontWeight: fontWeight,
       highlightedAyahId: highlightedAyahId,
       highlightedSurahId: highlightedSurahId,
       selectedAyat: selectedAyat,
@@ -429,7 +424,6 @@ class QcfV2PageRenderer extends QuranPageRenderer {
     super.themeMode,
     super.highlightColor,
     super.useTransliteratedHeader,
-    super.fontWeight,
     super.highlightedAyahId,
     super.highlightedSurahId,
     super.selectedAyat,
@@ -462,7 +456,6 @@ class QcfTajweedV4PageRenderer extends QuranPageRenderer {
     super.themeMode,
     super.highlightColor,
     super.useTransliteratedHeader,
-    super.fontWeight,
     super.highlightedAyahId,
     super.highlightedSurahId,
     super.selectedAyat,
@@ -484,6 +477,11 @@ class QcfTajweedV4PageRenderer extends QuranPageRenderer {
   @override
   State<QuranPageRenderer> createState() => _QuranPageRendererState();
 }
+
+/// The QCF page fonts and AmiriQuran ship a single weight. Asking for a heavier
+/// one makes the engine synthesise bold strokes, which alters the Mushaf
+/// calligraphy, so Quran text is always drawn at the font's own weight.
+const FontWeight _quranGlyphWeight = FontWeight.normal;
 
 /// Shared layout and interaction state ensuring 100% parity across normal and tajweed modes.
 class _QuranPageRendererState extends State<QuranPageRenderer> {
@@ -867,7 +865,20 @@ class _QuranPageRendererState extends State<QuranPageRenderer> {
               ),
             ),
             if (_fontLoadFailed) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'للقراءة بدون إنترنت، حمّل المصحف كاملًا من إعدادات القراءة',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 11.5,
+                    color: secondary.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
               TextButton.icon(
                 onPressed: _ensureFont,
                 icon: const Icon(Icons.refresh_rounded),
@@ -1166,7 +1177,7 @@ class _QuranPageRendererState extends State<QuranPageRenderer> {
             style: TextStyle(
               fontFamily: fontFamily,
               fontSize: currentSize,
-              fontWeight: widget.fontWeight,
+              fontWeight: _quranGlyphWeight,
               height: isFontLoaded ? 1.4 : 1.6,
             ),
             children: currentSpans,
@@ -1216,7 +1227,7 @@ class _QuranPageRendererState extends State<QuranPageRenderer> {
               style: TextStyle(
                 fontFamily: fontFamily,
                 fontSize: wordFontSize,
-                fontWeight: widget.fontWeight,
+                fontWeight: _quranGlyphWeight,
                 height: isFontLoaded ? 1.4 : 1.6,
                 wordSpacing: extraWordSpacing,
               ),
@@ -1338,7 +1349,7 @@ class _QuranPageRendererState extends State<QuranPageRenderer> {
         style: TextStyle(
           fontFamily: fontFamily,
           fontSize: wordFontSize,
-          fontWeight: widget.fontWeight,
+          fontWeight: _quranGlyphWeight,
           color: wordTextColor,
           backgroundColor: wordBgColor,
           height: 1.4,
@@ -1364,7 +1375,7 @@ class _QuranPageRendererState extends State<QuranPageRenderer> {
               style: TextStyle(
                 fontFamily: 'AmiriQuran',
                 fontSize: wordFontSize,
-                fontWeight: widget.fontWeight,
+                fontWeight: _quranGlyphWeight,
                 color: wordTextColor,
                 backgroundColor: wordBgColor,
                 height: 1.65,
@@ -1419,7 +1430,7 @@ class _QuranPageRendererState extends State<QuranPageRenderer> {
       style: TextStyle(
         fontFamily: 'AmiriQuran',
         fontSize: wordFontSize,
-        fontWeight: widget.fontWeight,
+        fontWeight: _quranGlyphWeight,
         color: wordTextColor,
         backgroundColor: wordBgColor,
         height: 1.65,

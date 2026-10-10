@@ -8,6 +8,7 @@ import '../models/mushaf_page_model.dart';
 import '../models/bookmark_model.dart';
 import '../models/bookmark_collection_model.dart';
 import '../models/quran_display_mode.dart';
+import '../quran_quarters.dart';
 
 class QuranRepository {
   final SharedPreferences _prefs;
@@ -152,14 +153,15 @@ class QuranRepository {
       }
 
       final firstAyah = (items.first['ayah'] as AyahModel);
+      final firstSurah = items.first['surah'] as SurahModel;
       final juz = firstAyah.juz;
-      final hizb = ((p - 1) / 10).floor() + 1;
-      final primarySurah = (items.first['surah'] as SurahModel).name;
+      final hizb = hizbForAyah(firstSurah.id, firstAyah.id);
+      final primarySurah = firstSurah.name;
 
       _pagesCache![p] = MushafPageModel(
         pageNumber: p,
         juz: juz,
-        hizb: hizb.clamp(1, 60),
+        hizb: hizb,
         surahName: primarySurah,
         segments: segments,
       );

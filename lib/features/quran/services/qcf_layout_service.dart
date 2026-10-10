@@ -12,39 +12,40 @@ class QcfLayoutService {
   QcfLayoutService._internal();
 
   final Map<int, QcfPageModel> _cache = <int, QcfPageModel>{};
-  final Map<int, Future<QcfPageModel?>> _inFlight = <int, Future<QcfPageModel?>>{};
+  final Map<int, Future<QcfPageModel?>> _inFlight =
+      <int, Future<QcfPageModel?>>{};
 
   /// Returns the cached model if already loaded, or null.
   QcfPageModel? getCachedPage(int page) => _cache[page];
 
-  /// Loads and parses the QCF page layout for [page] (1..604).
+  /// Loads and parses the QCF page layout for [page] (1..604), then loads the
+  /// neighbouring layouts in the background. The prefetch never chains.
   Future<QcfPageModel?> loadPage(int page) async {
-    if (page < 1 || page > 604) return null;
-
-    // Trigger font loading in parallel with layout loading
-    QcfFontService.instance.ensurePageFont(page);
-
-    if (_cache.containsKey(page)) {
-      _prefetchAdjacent(page);
-      return _cache[page];
-    }
-
-    if (_inFlight.containsKey(page)) {
-      return _inFlight[page]!;
-    }
-
-    final future = _loadFromAsset(page);
-    _inFlight[page] = future;
-
-    final result = await future;
-    _inFlight.remove(page);
-
+    final result = await _load(page);
     if (result != null) {
-      _cache[page] = result;
-      _prefetchAdjacent(page);
+      final radius = QcfFontService.prefetchRadius;
+      for (var d = 1; d <= radius; d++) {
+        _load(page + d);
+        _load(page - d);
+      }
     }
-
     return result;
+  }
+
+  Future<QcfPageModel?> _load(int page) {
+    if (page < 1 || page > 604) return Future.value(null);
+    final cached = _cache[page];
+    if (cached != null) return Future.value(cached);
+
+    return _inFlight.putIfAbsent(
+      page,
+      () => _loadFromAsset(page).then((result) {
+        if (result != null) _cache[page] = result;
+        return result;
+      }).whenComplete(() {
+        _inFlight.remove(page);
+      }),
+    );
   }
 
   Future<QcfPageModel?> _loadFromAsset(int page) async {
@@ -57,15 +58,6 @@ class QcfLayoutService {
     } catch (e) {
       debugPrint('[QcfLayoutService] Error loading page $page: $e');
       return null;
-    }
-  }
-
-  void _prefetchAdjacent(int page) {
-    if (page > 1 && !_cache.containsKey(page - 1) && !_inFlight.containsKey(page - 1)) {
-      loadPage(page - 1);
-    }
-    if (page < 604 && !_cache.containsKey(page + 1) && !_inFlight.containsKey(page + 1)) {
-      loadPage(page + 1);
     }
   }
 }

@@ -20,9 +20,9 @@ import '../widgets/bookmark_collection_dialog.dart';
 import '../widgets/quran_share_composer_dialog.dart';
 import '../../data/models/qcf_page_model.dart';
 import '../../data/models/quran_display_mode.dart';
-import '../../services/mushaf_image_service.dart';
 import '../../services/qcf_layout_service.dart';
 import '../widgets/qcf_mushaf_page_renderer.dart';
+import '../widgets/mushaf_offline_download_card.dart';
 import 'tafsir_screen.dart';
 
 class SurahDetailPage extends StatefulWidget {
@@ -56,7 +56,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   bool _isNightMode = false;
   double _fontSize = 24.0;
   double _fontWeightValue = 0.0;
-  FontWeight _mushafFontWeight = FontWeight.w500;
 
   bool _showControls = true;
 
@@ -299,15 +298,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
       _fontWeightValue = qState.fontWeightValue;
     }
 
-    final savedWeight = repo.getMushafFontWeight();
-    if (savedWeight == 400) {
-      _mushafFontWeight = FontWeight.w400;
-    } else if (savedWeight == 700) {
-      _mushafFontWeight = FontWeight.w700;
-    } else {
-      _mushafFontWeight = FontWeight.w500;
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recordCurrentPageAsLastRead();
     });
@@ -336,17 +326,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
       _useTransliteratedHeader = val;
     });
     context.read<QuranRepository>().setUseTransliteratedHeader(val);
-  }
-
-  void _setMushafFontWeight(FontWeight weight) {
-    setState(() {
-      _mushafFontWeight = weight;
-    });
-    final int weightInt = weight == FontWeight.w400
-        ? 400
-        : (weight == FontWeight.w700 ? 700 : 500);
-    context.read<QuranRepository>().setMushafFontWeight(weightInt);
-    context.read<QuranBloc>().add(ChangeMushafFontWeightEvent(weightInt));
   }
 
   @override
@@ -1957,68 +1936,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                   ),
                   const SizedBox(height: 14),
 
-                  // ── وضوح وسُمْك الرسم القرآني ──
-                  Text(
-                    'وضوح وسُمْك الرسم القرآني',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: _currentAccentColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Builder(
-                    builder: (context) {
-                      final qState = context.watch<QuranBloc>().state;
-                      final effectiveWeight = qState is QuranLoaded
-                          ? (qState.mushafFontWeight == 400
-                              ? FontWeight.w400
-                              : (qState.mushafFontWeight == 700
-                                  ? FontWeight.w700
-                                  : FontWeight.w500))
-                          : _mushafFontWeight;
-
-                      return Row(
-                        children: [
-                          _buildWeightOption(
-                            title: 'عادي',
-                            weightNumber: '٤٠٠',
-                            weight: FontWeight.w400,
-                            isSelected: effectiveWeight == FontWeight.w400,
-                            onTap: () {
-                              _setMushafFontWeight(FontWeight.w400);
-                              setSheetState(() {});
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _buildWeightOption(
-                            title: 'متوسط',
-                            weightNumber: '٥٠٠',
-                            weight: FontWeight.w500,
-                            isSelected: effectiveWeight == FontWeight.w500,
-                            onTap: () {
-                              _setMushafFontWeight(FontWeight.w500);
-                              setSheetState(() {});
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _buildWeightOption(
-                            title: 'عريض',
-                            weightNumber: '٧٠٠',
-                            weight: FontWeight.w700,
-                            isSelected: effectiveWeight == FontWeight.w700,
-                            onTap: () {
-                              _setMushafFontWeight(FontWeight.w700);
-                              setSheetState(() {});
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 14),
-
                   // ── لون تظليل الآيات ──
                   Text(
                     'لون تظليل الآية المحددة',
@@ -2137,6 +2054,14 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  MushafOfflineDownloadCard(
+                    backgroundColor: _currentBgColor,
+                    textColor: _currentTextColor,
+                    borderColor: _currentBorderColor,
+                    accentColor: _currentAccentColor,
                   ),
                   const SizedBox(height: 20),
 
@@ -2284,74 +2209,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                   fontFamily: 'Cairo',
                   fontSize: 9,
                   color: sampleText.withValues(alpha: 0.65),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeightOption({
-    required String title,
-    required String weightNumber,
-    required FontWeight weight,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? _currentAccentColor.withValues(alpha: _isNightMode ? 0.25 : 0.12)
-                : (_isNightMode
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.03)),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? _currentAccentColor
-                  : _currentBorderColor.withValues(alpha: 0.4),
-              width: isSelected ? 1.8 : 1.0,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'القرآن',
-                style: TextStyle(
-                  fontFamily: 'Amiri',
-                  fontSize: 15,
-                  fontWeight: weight,
-                  color: isSelected ? _currentAccentColor : _currentTextColor,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                title,
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected
-                      ? _currentAccentColor
-                      : _currentTextColor.withValues(alpha: 0.8),
-                ),
-              ),
-              Text(
-                weightNumber,
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 9.5,
-                  color: isSelected
-                      ? _currentAccentColor.withValues(alpha: 0.9)
-                      : _currentTextColor.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -2597,7 +2454,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
           });
           _recordCurrentPageAsLastRead();
           QcfLayoutService.instance.loadPage(_currentPage);
-          MushafImageService.instance.ensurePageImage(_currentPage);
         },
         itemBuilder: (context, index) {
           final pageNum = index + 1;
@@ -2871,14 +2727,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
         if (qcfPage != null) {
           // Tajweed is the only reader style exposed by the application.
           const displayMode = QuranDisplayMode.tajweed;
-          final effectiveWeight = qState is QuranLoaded
-              ? (qState.mushafFontWeight == 400
-                  ? FontWeight.w400
-                  : (qState.mushafFontWeight == 700
-                      ? FontWeight.w700
-                      : FontWeight.w500))
-              : _mushafFontWeight;
-
           return QcfMushafPageRenderer(
             pageModel: qcfPage,
             isNightMode: _isNightMode,
@@ -2886,7 +2734,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
             displayMode: displayMode,
             highlightColor: _highlightColor,
             useTransliteratedHeader: _useTransliteratedHeader,
-            fontWeight: effectiveWeight,
             highlightedAyahId: _highlightedAyahId,
             highlightedSurahId: _highlightedSurahId,
             selectedAyat: _selectedAyat,

@@ -14,7 +14,6 @@ class QcfMushafPageRenderer extends StatelessWidget {
   final QuranDisplayMode displayMode;
   final AyahHighlightColor highlightColor;
   final bool useTransliteratedHeader;
-  final FontWeight fontWeight;
   final int? highlightedAyahId;
   final int? highlightedSurahId;
   final Map<String, dynamic> selectedAyat;
@@ -37,7 +36,6 @@ class QcfMushafPageRenderer extends StatelessWidget {
     this.displayMode = QuranDisplayMode.normal,
     this.highlightColor = AyahHighlightColor.goldenAmber,
     this.useTransliteratedHeader = false,
-    this.fontWeight = FontWeight.w500,
     this.highlightedAyahId,
     this.highlightedSurahId,
     this.selectedAyat = const {},
@@ -87,7 +85,6 @@ class QcfMushafPageRenderer extends StatelessWidget {
       themeMode: themeMode,
       highlightColor: highlightColor,
       useTransliteratedHeader: useTransliteratedHeader,
-      fontWeight: fontWeight,
       highlightedAyahId: highlightedAyahId,
       highlightedSurahId: highlightedSurahId,
       selectedAyat: selectedAyat,
