@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_color_palette.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/widget_service.dart';
+import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
+import '../../../prayer_times/presentation/bloc/prayer_event.dart';
 import '../widgets/settings_section_card.dart';
 import '../widgets/settings_tile.dart';
 
@@ -19,9 +22,12 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
   Future<void> _refreshWidget() async {
     setState(() => _isRefreshing = true);
     try {
+      try {
+        context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+      } catch (_) {}
       await WidgetService.forceRefreshWidget();
       if (mounted) {
-        AppSnackBar.showSuccess(context, 'تم إرسال إشارة تحديث الودجت بنجاح');
+        AppSnackBar.showSuccess(context, 'تم تحديث بيانات ومظهر الودجت بنجاح');
       }
     } catch (e) {
       if (mounted) {
@@ -197,7 +203,7 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                   '3. اختر "الأدوات" أو "الودجت" (Widgets).\n'
                   '4. ابحث عن تطبيق "وِرد" واختر الودجت.\n'
                   '5. اسحب الودجت وضعه في المكان المناسب على شاشتك.\n\n'
-                  '• يتكيّف مظهر الودجت تلقائياً مع الوضع النهاري والليلي للنظام.',
+                  '• يتطابق مظهر الودجت تلقائياً مع ثيم التطبيق والوضع الليلي للنظام.',
                   style: AppTypography.meta(p.textPrimary),
                 ),
               ],

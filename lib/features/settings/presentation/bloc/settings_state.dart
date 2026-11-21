@@ -46,7 +46,7 @@ class SettingsState extends Equatable {
     this.notificationOffsetMinutes = 0,
     this.notificationOffsets = const [0],
     this.themeMode = ThemeMode.system,
-    this.colorPalette = AppColorPalette.goldenMushaf,
+    this.colorPalette = AppColorPalette.royalEmerald,
     this.is24HourFormat = false,
     this.adjustFajr = 0,
     this.adjustSunrise = 0,

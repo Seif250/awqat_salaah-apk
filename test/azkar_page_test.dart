@@ -34,7 +34,8 @@ void main() {
       const AzkarItem(
         id: 'zikr_2',
         title: 'سيد الاستغفار',
-        arabicText: 'اللَّهُمَّ أَنْتَ رَبِّي لاَ إِلَهَ إِلاَّ أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ...',
+        arabicText:
+            'اللَّهُمَّ أَنْتَ رَبِّي لاَ إِلَهَ إِلاَّ أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ...',
         reward: 'من قالها موقنا بها حين يمسي فمات من ليلته دخل الجنة',
         reference: 'صحيح البخاري',
         targetCount: 1,
@@ -59,7 +60,8 @@ void main() {
         AzkarLoaded(
           selectedCategory: AzkarCategory.morning,
           currentItems: testItems,
-          dailyProgress: DailyAzkarProgress(date: DailyAzkarProgress.todayKey()),
+          dailyProgress:
+              DailyAzkarProgress(date: DailyAzkarProgress.todayKey()),
           customAzkar: const [],
           categoryCompletionRate: 1 / 3,
           morningCompletionRate: 1 / 3,
@@ -83,7 +85,8 @@ void main() {
       );
     }
 
-    testWidgets('Renders minimal header with title and actions', (tester) async {
+    testWidgets('Renders minimal header with title and actions',
+        (tester) async {
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
 
@@ -92,13 +95,16 @@ void main() {
       expect(find.byIcon(Icons.more_vert_rounded), findsWidgets);
     });
 
-    testWidgets('Renders lightweight segmented category tab bar', (tester) async {
+    testWidgets('Renders lightweight segmented category tab bar',
+        (tester) async {
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
 
       expect(find.byType(AzkarCategoryBar), findsOneWidget);
       expect(
-        find.descendant(of: find.byType(AzkarCategoryBar), matching: find.text('أذكار الصباح')),
+        find.descendant(
+            of: find.byType(AzkarCategoryBar),
+            matching: find.text('أذكار الصباح')),
         findsOneWidget,
       );
       expect(find.text('أذكار المساء'), findsOneWidget);
@@ -114,7 +120,9 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsWidgets);
     });
 
-    testWidgets('Renders AzkarCard with Dhikr text as the hero and calm secondary elements', (tester) async {
+    testWidgets(
+        'Renders AzkarCard with Dhikr text as the hero and calm secondary elements',
+        (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -133,7 +141,9 @@ void main() {
       expect(find.text('التسبيح والتحميد'), findsOneWidget);
 
       // Dhikr Arabic texts (The Hero)
-      expect(find.text('اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...'), findsOneWidget);
+      expect(
+          find.text('اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...'),
+          findsOneWidget);
       expect(find.text('سُبْحَانَ اللَّهِ وَبِحَمْدِهِ'), findsOneWidget);
 
       // Benefit and reference
@@ -151,33 +161,31 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsWidgets);
     });
 
-    testWidgets('Renders utility bar with search, filter, font scale, focus mode, and tasbih', (tester) async {
+    testWidgets(
+        'Utility bar and digital tasbih are completely removed from AzkarPage',
+        (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('بحث'), findsOneWidget);
-      expect(find.text('المتبقي فقط'), findsOneWidget);
-      expect(find.text('أ-'), findsOneWidget);
-      expect(find.text('أ+'), findsOneWidget);
-      expect(find.text('وضع التركيز'), findsOneWidget);
-      expect(find.text('المسبحة'), findsOneWidget);
-
-      // Tap 'المتبقي فقط' hides the 1 completed item (zikr_2), leaving 2 cards
-      await tester.tap(find.text('المتبقي فقط'));
-      await tester.pumpAndSettle();
-      expect(find.byType(AzkarCard), findsNWidgets(2));
-      expect(find.text('سيد الاستغفار'), findsNothing);
-
-      // Tap 'بحث' expands search field and filters by normalized Arabic text
-      await tester.tap(find.text('بحث'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'الكرسي');
-      await tester.pumpAndSettle();
-      expect(find.byType(AzkarCard), findsNWidgets(1));
-      expect(find.text('آية الكرسي'), findsOneWidget);
+      expect(find.text('بحث'), findsNothing);
+      expect(find.text('المتبقي فقط'), findsNothing);
+      expect(find.text('أ-'), findsNothing);
+      expect(find.text('أ+'), findsNothing);
+      expect(find.text('وضع التركيز'), findsNothing);
+      expect(find.text('المسبحة'), findsNothing);
+      expect(find.byType(AzkarCard), findsNWidgets(3));
     });
 
-    testWidgets('Azkar cards are wrapped in ReorderableDelayedDragStartListener for long-press moving', (tester) async {
+    testWidgets(
+        'Azkar cards are wrapped in ReorderableDelayedDragStartListener for long-press moving',
+        (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {

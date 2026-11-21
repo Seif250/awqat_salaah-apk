@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/prayer_constants.dart';
 import '../../../../core/theme/app_color_palette.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/page_transitions.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
 import '../bloc/settings_bloc.dart';
@@ -10,6 +11,7 @@ import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
 import '../widgets/settings_section_card.dart';
 import '../widgets/settings_tile.dart';
+import 'adjustments_settings_page.dart';
 
 class CalculationSettingsPage extends StatelessWidget {
   const CalculationSettingsPage({super.key});
@@ -125,7 +127,33 @@ class CalculationSettingsPage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+
+              SettingsSectionCard(
+                title: 'مطابقة توقيت المسجد المحلي',
+                children: [
+                  SettingsTile(
+                    icon: Icons.tune_outlined,
+                    title: 'تعديل المواقيت بالدقائق',
+                    subtitle: (state.adjustFajr != 0 ||
+                            state.adjustSunrise != 0 ||
+                            state.adjustDhuhr != 0 ||
+                            state.adjustAsr != 0 ||
+                            state.adjustMaghrib != 0 ||
+                            state.adjustIsha != 0)
+                        ? 'تعديلات مفعّلة على بعض الصلوات'
+                        : 'ضبط يدوي (±30 دقيقة) لكل صلاة عند الحاجة',
+                    showDivider: false,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        FadeSlidePageRoute(page: const AdjustmentsSettingsPage()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
 
               // Informative Note
               Container(

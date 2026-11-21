@@ -528,28 +528,16 @@ class PrayerTimesPage extends StatelessWidget {
                 Icon(
                   Icons.auto_stories_outlined,
                   color: palette.accentText,
-                  size: 22,
+                  size: 20,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'أذكار ما بعد الصلاة',
-                        style: AppTypography.rowTitle(
-                          palette.textPrimary,
-                          weight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        'الاستغفار والتسبيح دبر كل صلاة مكتوبة',
-                        style: AppTypography.meta(
-                          palette.textSecondary,
-                          size: 12,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'أذكار ما بعد الصلاة',
+                    style: AppTypography.rowTitle(
+                      palette.textPrimary,
+                      weight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],

@@ -23,43 +23,6 @@ class AzkarSettingsPage extends StatefulWidget {
 }
 
 class _AzkarSettingsPageState extends State<AzkarSettingsPage> {
-  String? _backupDirectory;
-  bool _isLoadingDir = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBackupDirectory();
-  }
-
-  Future<void> _loadBackupDirectory() async {
-    final saved = await AzkarBackupService.getSavedBackupDirectory();
-    final effective = saved ?? await AzkarBackupService.getDefaultBackupDirectory();
-    if (mounted) {
-      setState(() {
-        _backupDirectory = effective;
-        _isLoadingDir = false;
-      });
-    }
-  }
-
-  Future<void> _pickBackupDirectory() async {
-    final picked = await AzkarBackupService.pickBackupDirectory();
-    if (picked != null && mounted) {
-      setState(() => _backupDirectory = picked);
-      AppSnackBar.showSuccess(context, 'تم تعيين مجلد النسخ الاحتياطي:\n$picked');
-    }
-  }
-
-  Future<void> _resetBackupDirectory() async {
-    await AzkarBackupService.resetSavedBackupDirectory();
-    final defaultDir = await AzkarBackupService.getDefaultBackupDirectory();
-    if (mounted) {
-      setState(() => _backupDirectory = defaultDir);
-      AppSnackBar.showInfo(context, 'تمت استعادة مجلد الحفظ الافتراضي');
-    }
-  }
-
   void _showQiyamMinutesDialog(BuildContext context, int currentMinutes) {
     final p = context.palette;
     final options = [15, 30, 45, 60, 90];
@@ -249,13 +212,12 @@ class _AzkarSettingsPageState extends State<AzkarSettingsPage> {
 
               // 2. الورد اليومي وإدارة الأذكار
               SettingsSectionCard(
-                title: 'الورد اليومي وإدارة الأذكار',
+                title: 'إدارة الأذكار',
                 children: [
                   SettingsTile(
                     icon: Icons.auto_stories_outlined,
                     title: 'فتح صفحة الأذكار والورد',
-                    subtitle:
-                        'استعراض الأذكار، متابعة الورد، والتسبيح الإلكتروني',
+                    subtitle: 'استعراض الأذكار ومتابعة الورد اليومي',
                     showDivider: true,
                     onTap: () {
                       Navigator.push(
@@ -266,8 +228,8 @@ class _AzkarSettingsPageState extends State<AzkarSettingsPage> {
                   ),
                   SettingsTile(
                     icon: Icons.add_circle_outline_rounded,
-                    title: 'إضافة ذكر مخصص',
-                    subtitle: 'أضف أذكارك الخاصة وحدد عدد التكرار والتنبيه',
+                    title: 'إضافة ذكر جديد',
+                    subtitle: 'أضف ذكراً مخصصاً وحدد عدد تكراره وتوقيت تنبيهه',
                     showDivider: true,
                     onTap: () {
                       AddCustomZikrDialog.show(
@@ -285,7 +247,7 @@ class _AzkarSettingsPageState extends State<AzkarSettingsPage> {
                     icon: Icons.restore_rounded,
                     title: 'استعادة الأذكار الافتراضية',
                     subtitle:
-                        'استرجاع أذكار السنة النبوية إذا قمت بحذف أي منها',
+                        'استرجاع أذكار السنة النبوية دون المساس بأذكارك المضافة',
                     showDivider: false,
                     onTap: () => _confirmRestoreDefaults(context),
                   ),
@@ -293,62 +255,23 @@ class _AzkarSettingsPageState extends State<AzkarSettingsPage> {
               ),
               const SizedBox(height: 12),
 
-              // 3. النسخ الاحتياطي للأذكار المخصصة (JSON)
+              // 3. النسخ الاحتياطي لأذكاري
               SettingsSectionCard(
-                title: 'النسخ الاحتياطي للأذكار المخصصة (JSON)',
+                title: 'النسخ الاحتياطي لأذكاري',
                 children: [
                   SettingsTile(
-                    icon: Icons.folder_open_rounded,
-                    title: 'مجلد حفظ النسخ الاحتياطية',
-                    subtitle: _isLoadingDir
-                        ? 'جاري تحميل المسار...'
-                        : (_backupDirectory ?? 'الافتراضي: مجلد التنزيلات (Downloads)'),
-                    showDivider: true,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.restart_alt_rounded, size: 20, color: Colors.blueGrey),
-                      tooltip: 'استعادة المجلد الافتراضي',
-                      onPressed: _resetBackupDirectory,
-                    ),
-                    onTap: _pickBackupDirectory,
-                  ),
-                  SettingsTile(
                     icon: Icons.save_alt_rounded,
-                    title: 'إنشاء نسخة احتياطية الآن (JSON)',
-                    subtitle: 'حفظ أذكارك المخصصة فوراً كملف JSON في المجلد المحدد أعلاه',
+                    title: 'حفظ نسخة احتياطية الآن',
+                    subtitle: 'تصدير أذكارك المخصصة لحمايتها أو نقلها لجهاز آخر',
                     showDivider: true,
                     onTap: () => AzkarBackupService.performBackupFlow(context),
                   ),
                   SettingsTile(
                     icon: Icons.file_open_rounded,
-                    title: 'استرجاع نسخة سابقة (JSON)',
-                    subtitle: 'اختيار ملف .json واستعادة الأذكار فوراً إلى التطبيق',
+                    title: 'استرجاع نسخة محفوظة',
+                    subtitle: 'استيراد ملف الأذكار المخصصة المحفوظ مسبقاً',
                     showDivider: false,
                     onTap: () => AzkarBackupService.performRestoreFlow(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // 4. سلوك الإنجاز
-              SettingsSectionCard(
-                title: 'سلوك إنجاز الورد',
-                children: [
-                  ListTile(
-                    leading: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: p.primaryContainer,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.refresh_rounded, size: 20, color: p.accentText),
-                    ),
-                    title: Text('إعادة ضبط الورد اليومي', style: AppTypography.rowTitle(p.textPrimary)),
-                    subtitle: Text(
-                      'يتم تصفير عداد إنجاز اليوم تلقائياً مع مطلع كل يوم جديد مع الحفاظ على إجمالي التسبيحات مدى الحياة.',
-                      style: AppTypography.meta(p.textSecondary),
-                    ),
-                    trailing: Icon(Icons.check_circle_outline_rounded, color: p.success),
                   ),
                 ],
               ),

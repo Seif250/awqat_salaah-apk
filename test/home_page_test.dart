@@ -107,7 +107,7 @@ void main() {
     // 4. Level 2: Daily Wird Summary card
     expect(find.text('ملخص وردك اليومي'), findsOneWidget);
     expect(find.text('متابعة الورد'), findsOneWidget);
-    expect(find.textContaining('تسبيح اليوم'), findsOneWidget);
+    expect(find.textContaining('تسبيح اليوم'), findsNothing);
 
     // 5. Level 2: Prayer times section
     expect(find.text('مواقيت الصلاة'), findsOneWidget);
@@ -122,13 +122,13 @@ void main() {
     expect(find.text('أذكار الصباح'), findsOneWidget);
     expect(find.text('أذكار المساء'), findsOneWidget);
     expect(find.text('أذكار النوم'), findsOneWidget);
-    expect(find.text('التسبيح'), findsOneWidget);
+    expect(find.text('بعد الصلاة'), findsOneWidget);
 
-    // 7. Level 3: Utility Row (Qibla + Digital Tasbih)
+    // 7. Level 3: Qibla Strip (Digital Tasbih removed)
     expect(find.text('اتجاه القبلة'), findsOneWidget);
-    expect(find.text('المسبحة الإلكترونية'), findsOneWidget);
+    expect(find.text('المسبحة الإلكترونية'), findsNothing);
 
-    // 8. Level 3: Mushaf-Styled Daily Ayah
+    // 8. Level 3: Clean Daily Ayah Reflection
     expect(find.text('آية اليوم'), findsOneWidget);
     final dailyAyah = DailyAyahService.instance.getTodayAyah();
     expect(find.text('﴿ ${dailyAyah.text} ﴾'), findsOneWidget);

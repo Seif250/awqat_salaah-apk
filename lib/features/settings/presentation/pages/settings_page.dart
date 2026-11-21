@@ -8,19 +8,13 @@ import '../../../../core/theme/app_color_palette.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_state.dart';
-// import '../../../quran/presentation/bloc/quran_bloc.dart';
-// import '../../../quran/presentation/bloc/quran_event.dart';
-// import '../../../quran/presentation/bloc/quran_state.dart';
-// import '../../../quran/data/repositories/tafsir_repository.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_state.dart';
 import '../widgets/settings_section_card.dart';
 import '../widgets/settings_tile.dart';
-import 'adjustments_settings_page.dart';
 import 'advanced_settings_page.dart';
 import 'appearance_settings_page.dart';
 import 'azkar_settings_page.dart';
-import 'battery_settings_page.dart';
 import 'calculation_settings_page.dart';
 import 'location_settings_page.dart';
 import 'notification_settings_page.dart';
@@ -40,7 +34,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _devTapCount++;
     if (_devTapCount == 7) {
       _devTapCount = 0;
-      AppSnackBar.showSuccess(context, 'تم تفعيل خيارات التشخيص والمطور');
+      AppSnackBar.showSuccess(context, 'تم تفعيل أدوات التشخيص المتقدمة');
       Navigator.push(
         context,
         FadeSlidePageRoute(page: const AdvancedSettingsPage()),
@@ -85,270 +79,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /*
-  void _showDefaultTafsirDialog(BuildContext context, int currentId) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final list = TafsirRepositoryImpl.defaultArabicTafsirs;
-
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.55,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1B201D) : const Color(0xFFFAF6EE),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4.5,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              Text(
-                'اختر التفسير الافتراضي',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: list.length,
-                  separatorBuilder: (_, __) => Divider(
-                    height: 1,
-                    color: (isDark ? Colors.white12 : Colors.black12),
-                  ),
-                  itemBuilder: (ctx, index) {
-                    final res = list[index];
-                    final isSelected = res.id == currentId;
-                    return ListTile(
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      leading: Icon(
-                        isSelected
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_unchecked_rounded,
-                        color: isSelected
-                            ? AppColors.accentGold
-                            : (isDark ? Colors.white38 : Colors.black38),
-                      ),
-                      title: Text(
-                        res.name,
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 14,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected
-                              ? AppColors.accentGold
-                              : (isDark ? Colors.white : Colors.black87),
-                        ),
-                      ),
-                      subtitle: res.authorName.isNotEmpty
-                          ? Text(
-                              res.authorName,
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 11.5,
-                                color: isDark ? Colors.white54 : Colors.black54,
-                              ),
-                            )
-                          : null,
-                      onTap: () {
-                        context
-                            .read<QuranBloc>()
-                            .add(SetDefaultTafsirEvent(res.id));
-                        Navigator.pop(ctx);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showMushafFontWeightDialog(BuildContext context, int currentWeight) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final options = [
-          (
-            weight: 400,
-            title: 'عادي (٤٠٠)',
-            subtitle: 'السُّمك القياسي للخط العثماني لمصحف المدينة',
-            fontWeight: FontWeight.w400,
-          ),
-          (
-            weight: 500,
-            title: 'متوسط (٥٠٠) - موصى به',
-            subtitle: 'سُمْك متوازن ومريح لقراءة واضحة للشاشات الحديثة',
-            fontWeight: FontWeight.w500,
-          ),
-          (
-            weight: 700,
-            title: 'عريض (٧٠٠)',
-            subtitle: 'سُمْك بارز وواضح جداً لأفضل قراءة وتحديد',
-            fontWeight: FontWeight.w700,
-          ),
-        ];
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1B201D) : const Color(0xFFFAF6EE),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4.5,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              Text(
-                'اختر سُمْك الرسم القرآني',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'يتحكم في درجة وضوح وسُمْك الخط داخل صفحات المصحف الشريف',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 12,
-                  color: isDark ? Colors.white60 : Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 14),
-              ...options.map((opt) {
-                final isSelected = opt.weight == currentWeight;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.accentGold.withValues(alpha: isDark ? 0.18 : 0.12)
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.04)
-                            : Colors.black.withValues(alpha: 0.02)),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.accentGold
-                          : (isDark ? Colors.white12 : Colors.black12),
-                      width: isSelected ? 1.8 : 1.0,
-                    ),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
-                    child: ListTile(
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      leading: Icon(
-                        isSelected
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_unchecked_rounded,
-                        color: isSelected
-                            ? AppColors.accentGold
-                            : (isDark ? Colors.white38 : Colors.black38),
-                      ),
-                      title: Text(
-                        opt.title,
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 14,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected
-                              ? AppColors.accentGold
-                              : (isDark ? Colors.white : Colors.black87),
-                        ),
-                      ),
-                      subtitle: Text(
-                        opt.subtitle,
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 11.5,
-                          color: isDark ? Colors.white54 : Colors.black54,
-                        ),
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white10
-                              : Colors.black.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'القرآن',
-                          style: TextStyle(
-                            fontFamily: 'Amiri',
-                            fontSize: 16,
-                            fontWeight: opt.fontWeight,
-                            color: isSelected
-                                ? AppColors.accentGold
-                                : (isDark ? Colors.white70 : Colors.black87),
-                          ),
-                        ),
-                      ),
-                      onTap: () {
-                        context
-                            .read<QuranBloc>()
-                            .add(ChangeMushafFontWeightEvent(opt.weight));
-                        Navigator.pop(ctx);
-                      },
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 10),
-            ],
-          ),
-        );
-      },
-    );
-  }
-  */
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -362,31 +92,47 @@ class _SettingsPageState extends State<SettingsPage> {
         builder: (context, settingsState) {
           return BlocBuilder<PrayerBloc, PrayerState>(
             builder: (context, prayerState) {
-              String locationSubtitle = 'تحديد الموقع الجغرافي';
+              String locationSubtitle = 'اختر مدينتك لحساب المواقيت بدقة';
               if (prayerState is PrayerLoaded) {
                 locationSubtitle = prayerState.countryName.isNotEmpty
                     ? '${prayerState.cityName}، ${prayerState.countryName}'
                     : prayerState.cityName;
               }
 
-              final calculationSubtitle = settingsState.calculationMethod.displayNameArabic;
+              final hasMinuteAdjustments = settingsState.adjustFajr != 0 ||
+                  settingsState.adjustSunrise != 0 ||
+                  settingsState.adjustDhuhr != 0 ||
+                  settingsState.adjustAsr != 0 ||
+                  settingsState.adjustMaghrib != 0 ||
+                  settingsState.adjustIsha != 0;
+              final calculationSubtitle = hasMinuteAdjustments
+                  ? '${settingsState.calculationMethod.displayNameArabic} • مع تعديل يدوي'
+                  : settingsState.calculationMethod.displayNameArabic;
+
               final notificationSubtitle = settingsState.notificationsEnabled
-                  ? (settingsState.notificationSoundEnabled ? 'مفعّلة (مع صوت الأذان)' : 'مفعّلة (بدون صوت)')
-                  : 'معطّلة';
-              final themeSubtitle = settingsState.themeMode == ThemeMode.dark
-                  ? 'داكن'
-                  : (settingsState.themeMode == ThemeMode.light ? 'فاتح' : 'حسب النظام');
+                  ? (settingsState.notificationSoundEnabled
+                      ? 'مفعّلة مع صوت الأذان والإقامة'
+                      : 'مفعّلة (إشعار صامت)')
+                  : 'معطّلة حالياً';
+
+              final themeSubtitle = settingsState.colorPalette.forcesDarkMode
+                  ? 'داكن دائماً'
+                  : (settingsState.themeMode == ThemeMode.dark
+                      ? 'داكن'
+                      : (settingsState.themeMode == ThemeMode.light
+                          ? 'نهاري'
+                          : 'حسب النظام'));
 
               return ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 children: [
-                  // 1. الصلاة والمواقيت
+                  // 1. الصلاة والمواقيت (مدمجة بوضوح)
                   SettingsSectionCard(
                     title: 'الصلاة والمواقيت',
                     children: [
                       SettingsTile(
                         icon: Icons.location_on_outlined,
-                        title: 'الموقع الجغرافي',
+                        title: 'المدينة والموقع الجغرافي',
                         subtitle: locationSubtitle,
                         showDivider: true,
                         onTap: () {
@@ -398,9 +144,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       SettingsTile(
                         icon: Icons.calculate_outlined,
-                        title: 'طريقة الحساب والمذهب',
+                        title: 'طريقة الحساب والمذهب والتعديل',
                         subtitle: calculationSubtitle,
-                        showDivider: true,
+                        showDivider: false,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -408,28 +154,16 @@ class _SettingsPageState extends State<SettingsPage> {
                           );
                         },
                       ),
-                      SettingsTile(
-                        icon: Icons.tune_outlined,
-                        title: 'تعديل المواقيت بالدقائق',
-                        subtitle: 'تقديم أو تأخير أوقات الصلوات',
-                        showDivider: false,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            FadeSlidePageRoute(page: const AdjustmentsSettingsPage()),
-                          );
-                        },
-                      ),
                     ],
                   ),
 
-                  // 2. التنبيهات والأذكار
+                  // 2. التنبيهات والأذكار (تشمل البطارية تحت التنبيهات)
                   SettingsSectionCard(
                     title: 'التنبيهات والأذكار',
                     children: [
                       SettingsTile(
                         icon: Icons.notifications_outlined,
-                        title: 'تنبيهات الصلاة والأذان',
+                        title: 'تنبيهات الأذان والإقامة والبطارية',
                         subtitle: notificationSubtitle,
                         showDivider: true,
                         onTap: () {
@@ -441,8 +175,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       SettingsTile(
                         icon: Icons.auto_stories_outlined,
-                        title: 'الأذكار والورد اليومي',
-                        subtitle: 'التنبيهات، الورد، والنسخ الاحتياطي للأذكار',
+                        title: 'الأذكار والتذكير اليومي',
+                        subtitle: 'مواعيد تنبيه الورد والنسخ الاحتياطي',
                         showDivider: false,
                         onTap: () {
                           Navigator.push(
@@ -454,67 +188,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
 
-                  // 3. القرآن الكريم والمصحف
-                  /*
-                  BlocBuilder<QuranBloc, QuranState>(
-                    builder: (context, qState) {
-                      final isLoaded = qState is QuranLoaded;
-                      final defaultTafsirId =
-                          isLoaded ? qState.defaultTafsirResourceId : 16;
-                      final tafsirMatch = TafsirRepositoryImpl.defaultArabicTafsirs
-                          .where((r) => r.id == defaultTafsirId);
-                      final tafsirName = tafsirMatch.isNotEmpty
-                          ? tafsirMatch.first.name
-                          : 'التفسير الميسر';
-                      final currentWeight =
-                          isLoaded ? qState.mushafFontWeight : 500;
-                      final weightLabel = currentWeight == 400
-                          ? 'عادي (٤٠٠)'
-                          : (currentWeight == 700
-                              ? 'عريض (٧٠٠)'
-                              : 'متوسط (٥٠٠)');
-
-                      return SettingsSectionCard(
-                        title: 'القرآن الكريم والمصحف',
-                        children: [
-                          SettingsTile(
-                            icon: Icons.palette_outlined,
-                            title: 'ألوان التجويد',
-                            subtitle: 'مصحف التجويد الملون هو نمط العرض المعتمد',
-                            showDivider: true,
-                            trailing: const Icon(Icons.check_circle_rounded,
-                                color: AppColors.accentGold),
-                          ),
-                          SettingsTile(
-                            icon: Icons.format_paint_outlined,
-                            title: 'سُمْك الرسم القرآني',
-                            subtitle: weightLabel,
-                            showDivider: true,
-                            onTap: () => _showMushafFontWeightDialog(
-                                context, currentWeight),
-                          ),
-                          SettingsTile(
-                            icon: Icons.menu_book_outlined,
-                            title: 'التفسير الافتراضي',
-                            subtitle: tafsirName,
-                            showDivider: false,
-                            onTap: () =>
-                                _showDefaultTafsirDialog(context, defaultTafsirId),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  */
-
-                  // 4. المظهر والتشغيل
+                  // 3. المظهر والودجت
                   SettingsSectionCard(
-                    title: 'المظهر والتشغيل',
+                    title: 'المظهر والودجت',
                     children: [
                       SettingsTile(
                         icon: Icons.palette_outlined,
-                        title: 'المظهر وتنسيق الوقت',
-                        subtitle: '${settingsState.colorPalette.titleArabic} • $themeSubtitle • ${settingsState.is24HourFormat ? "24 ساعة" : "12 ساعة"}',
+                        title: 'الألوان وتنسيق الوقت',
+                        subtitle:
+                            '${settingsState.colorPalette.titleArabic} • $themeSubtitle • ${settingsState.is24HourFormat ? "24 ساعة" : "12 ساعة"}',
                         showDivider: true,
                         onTap: () {
                           Navigator.push(
@@ -526,8 +208,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       SettingsTile(
                         icon: Icons.widgets_outlined,
                         title: 'ودجت الشاشة الرئيسية',
-                        subtitle: 'تخصيص وتحديث الويدجت المصغر',
-                        showDivider: true,
+                        subtitle: 'معاينة وتحديث الودجت على الشاشة الرئيسية',
+                        showDivider: false,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -535,24 +217,12 @@ class _SettingsPageState extends State<SettingsPage> {
                           );
                         },
                       ),
-                      SettingsTile(
-                        icon: Icons.battery_saver_outlined,
-                        title: 'استقرار الأذان والبطارية',
-                        subtitle: 'إرشادات استثناء البطارية والتشغيل بالخلفية',
-                        showDivider: false,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            FadeSlidePageRoute(page: const BatterySettingsPage()),
-                          );
-                        },
-                      ),
                     ],
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
-                  // Footer: About, Privacy & Developer Easter Egg
+                  // Footer: Privacy & Version Easter Egg
                   Center(
                     child: Column(
                       children: [
@@ -568,7 +238,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             child: Text(
-                              '${AppConstants.appName} • ${AppConstants.appSubtitle} • الإصدار ${AppConstants.appVersion}',
+                              '${AppConstants.appName} • الإصدار ${AppConstants.appVersion}',
                               style: AppTypography.label(p.textSecondary),
                             ),
                           ),

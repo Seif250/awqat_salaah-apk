@@ -24,12 +24,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Color Palette & Theme System Tests', () {
-    test('StorageService defaults to goldenMushaf and roundtrips all 5 palettes', () async {
+    test('StorageService defaults to royalEmerald and roundtrips all 3 palettes', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final storage = StorageService.withPrefs(prefs);
 
-      expect(storage.colorPalette, AppColorPalette.goldenMushaf);
+      expect(storage.colorPalette, AppColorPalette.royalEmerald);
 
       for (final palette in AppColorPalette.values) {
         await storage.setColorPalette(palette);
@@ -39,24 +39,28 @@ void main() {
 
       expect(
         AppColorPaletteExtension.fromStorageKey('non_existent_key'),
-        AppColorPalette.goldenMushaf,
+        AppColorPalette.royalEmerald,
       );
       expect(
         AppColorPaletteExtension.fromStorageKey(null),
+        AppColorPalette.royalEmerald,
+      );
+      expect(
+        AppColorPaletteExtension.fromStorageKey('sepiaParchment'),
         AppColorPalette.goldenMushaf,
       );
     });
 
     test('SettingsBloc loads persisted palette and updates on ChangeColorPaletteEvent', () async {
       SharedPreferences.setMockInitialValues({
-        AppConstants.keyColorPalette: AppColorPalette.royalEmerald.storageKey,
+        AppConstants.keyColorPalette: AppColorPalette.goldenMushaf.storageKey,
       });
       final prefs = await SharedPreferences.getInstance();
       final storage = StorageService.withPrefs(prefs);
       final bloc = SettingsBloc(storageService: storage);
       addTearDown(bloc.close);
 
-      expect(bloc.state.colorPalette, AppColorPalette.goldenMushaf);
+      expect(bloc.state.colorPalette, AppColorPalette.royalEmerald);
 
       bloc.add(const LoadSettingsEvent());
       await expectLater(
@@ -65,7 +69,7 @@ void main() {
           isA<SettingsState>().having(
             (s) => s.colorPalette,
             'colorPalette',
-            AppColorPalette.royalEmerald,
+            AppColorPalette.goldenMushaf,
           ),
         ),
       );
@@ -84,7 +88,7 @@ void main() {
       expect(storage.colorPalette, AppColorPalette.amoledGold);
     });
 
-    testWidgets('AppTheme.buildTheme attaches WirdPalette for all 5 palettes in light & dark',
+    testWidgets('AppTheme.buildTheme attaches WirdPalette for all 3 palettes in light & dark',
         (tester) async {
       for (final palette in AppColorPalette.values) {
         for (final brightness in Brightness.values) {
@@ -102,15 +106,19 @@ void main() {
             expect(ext.isDark, brightness == Brightness.dark);
           }
 
+          if (palette == AppColorPalette.royalEmerald &&
+              brightness == Brightness.light) {
+            expect(theme.scaffoldBackgroundColor, const Color(0xFFFFFFFF));
+          }
           if (palette == AppColorPalette.goldenMushaf &&
               brightness == Brightness.light) {
-            expect(theme.scaffoldBackgroundColor, const Color(0xFFFAFBF9));
+            expect(theme.scaffoldBackgroundColor, const Color(0xFFFAF4E4));
           }
         }
       }
     });
 
-    testWidgets('AppearanceSettingsPage renders all 5 palettes and dispatches ChangeColorPaletteEvent',
+    testWidgets('AppearanceSettingsPage renders all 3 palettes and dispatches ChangeColorPaletteEvent',
         (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -158,14 +166,16 @@ void main() {
         expect(find.text(palette.titleArabic), findsOneWidget);
       }
 
-      // Select Midnight Sapphire
+      expect(AppColorPalette.values.length, 3);
+
+      // Select Golden Mushaf
       await tester.ensureVisible(
-        find.text(AppColorPalette.midnightSapphire.titleArabic),
+        find.text(AppColorPalette.goldenMushaf.titleArabic),
       );
-      await tester.tap(find.text(AppColorPalette.midnightSapphire.titleArabic));
+      await tester.tap(find.text(AppColorPalette.goldenMushaf.titleArabic));
       await tester.pumpAndSettle();
-      expect(settingsBloc.state.colorPalette, AppColorPalette.midnightSapphire);
-      expect(storage.colorPalette, AppColorPalette.midnightSapphire);
+      expect(settingsBloc.state.colorPalette, AppColorPalette.goldenMushaf);
+      expect(storage.colorPalette, AppColorPalette.goldenMushaf);
 
       // Select AMOLED Gold and confirm forced-dark explanation appears
       await tester.ensureVisible(

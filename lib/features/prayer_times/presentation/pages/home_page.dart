@@ -17,7 +17,6 @@ import '../../../azkar/data/models/azkar_item_model.dart';
 import '../../../azkar/presentation/bloc/azkar_bloc.dart';
 import '../../../azkar/presentation/bloc/azkar_event.dart';
 import '../../../azkar/presentation/bloc/azkar_state.dart';
-import '../../../azkar/presentation/widgets/digital_tasbih_sheet.dart';
 import '../../../location/presentation/widgets/location_picker_sheet.dart';
 import '../../../qibla/presentation/pages/qibla_page.dart';
 import '../../../quran/services/daily_ayah_service.dart';
@@ -78,23 +77,6 @@ class _HomePageState extends State<HomePage> {
       label: 'وقت الأسحار',
       icon: Icons.nightlight_round,
       recommendedCategory: AzkarCategory.qiyam,
-    );
-  }
-
-  void _openDigitalTasbih(BuildContext context) {
-    final azkarBloc = context.read<AzkarBloc>();
-    final azkarState = azkarBloc.state;
-    final initialCount = azkarState is AzkarLoaded ? azkarState.dailyProgress.freeTasbihCount : 0;
-
-    DigitalTasbihSheet.show(
-      context,
-      initialCount: initialCount,
-      onCountChanged: (delta) {
-        azkarBloc.add(UpdateFreeTasbihEvent(delta));
-      },
-      onReset: () {
-        azkarBloc.add(const ResetFreeTasbihEvent());
-      },
     );
   }
 
@@ -299,7 +281,7 @@ class _HomePageState extends State<HomePage> {
                       AppDesignSystem.hairlineDivider(p),
                       const SizedBox(height: 14),
 
-                      // OPEN SECTION 4: Qibla & Digital Tasbih Split Row
+                      // OPEN SECTION 4: Qibla Compass Strip
                       _buildUtilityRow(context: context, isDark: isDark),
                       const SizedBox(height: 18),
 
@@ -329,11 +311,6 @@ class _HomePageState extends State<HomePage> {
             azkarState is AzkarLoaded ? azkarState.morningCompletionRate : 0.0;
         final double eveningRate =
             azkarState is AzkarLoaded ? azkarState.eveningCompletionRate : 0.0;
-        final int todayTasbih = azkarState is AzkarLoaded
-            ? azkarState.dailyProgress.freeTasbihCount +
-                azkarState.dailyProgress.itemCounts.values
-                    .fold<int>(0, (sum, v) => sum + v)
-            : 0;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -372,7 +349,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'تسبيح اليوم: ${toArabicDigits(todayTasbih)}',
+                          'تابع أذكار الصباح والمساء',
                           style: AppTypography.meta(p.textSecondary, size: 12),
                         ),
                       ],
@@ -640,9 +617,9 @@ class _HomePageState extends State<HomePage> {
         icon: Icons.bedtime_outlined,
       ),
       (
-        title: 'التسبيح',
-        cat: AzkarCategory.general,
-        icon: Icons.flare_outlined,
+        title: 'بعد الصلاة',
+        cat: AzkarCategory.postPrayer,
+        icon: Icons.mosque_outlined,
       ),
     ];
 
@@ -761,235 +738,122 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Open Split Utility Strip (Qibla + Digital Tasbih without heavy boxed cards)
+  /// Open Qibla Utility Strip (clean full-width navigation to Qibla Compass)
   Widget _buildUtilityRow({
     required BuildContext context,
     required bool isDark,
   }) {
     final p = context.palette;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-        final stackVertical = constraints.maxWidth < 310 || textScale > 1.3;
-
-        final qiblaTile = _buildUtilityTile(
-          palette: p,
-          icon: Icons.explore_outlined,
-          title: 'اتجاه القبلة',
-          subtitle: 'بوصلة الكعبة',
-          iconColor: p.accentText,
-          onTap: () {
-            Navigator.push(
-              context,
-              FadeSlidePageRoute(page: const QiblaPage()),
-            );
-          },
-        );
-
-        final tasbihTile = _buildUtilityTile(
-          palette: p,
-          icon: Icons.fingerprint_rounded,
-          title: 'المسبحة الإلكترونية',
-          subtitle: 'تسبيح حر سريع',
-          iconColor: p.accent,
-          onTap: () => _openDigitalTasbih(context),
-        );
-
-        if (stackVertical) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              qiblaTile,
-              AppDesignSystem.hairlineDivider(p),
-              tasbihTile,
-            ],
-          );
-        }
-
-        return IntrinsicHeight(
-          child: Row(
-            children: [
-              Expanded(child: qiblaTile),
-              Container(
-                width: 0.75,
-                margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
-                color: p.hairline,
-              ),
-              Expanded(child: tasbihTile),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildUtilityTile({
-    required WirdPalette palette,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 54),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: palette.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, size: 20, color: iconColor),
+      onTap: () {
+        Navigator.push(
+          context,
+          FadeSlidePageRoute(page: const QiblaPage()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: p.cardElevated,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: p.primaryContainer,
+                borderRadius: BorderRadius.circular(11),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.rowTitle(
-                        palette.textPrimary,
-                        weight: FontWeight.w700,
-                      ).copyWith(fontSize: 13.5),
+              child: Icon(Icons.explore_outlined, size: 20, color: p.accentText),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'اتجاه القبلة',
+                    style: AppTypography.rowTitle(
+                      p.textPrimary,
+                      weight: FontWeight.w700,
                     ),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.meta(
-                        palette.textSecondary,
-                        size: 11.5,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    'بوصلة الكعبة المشرفة',
+                    style: AppTypography.meta(p.textSecondary, size: 11.5),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            Icon(
+              Icons.chevron_left_rounded,
+              color: p.accentText,
+              size: 20,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// LEVEL 3: Mushaf-Styled Daily Ayah Reflection
+  /// Daily Ayah Reflection (clean upright Arabic typography without clutter)
   Widget _buildDailyAyahSection(BuildContext context, bool isDark) {
     final p = context.palette;
     final dailyAyah = DailyAyahService.instance.getTodayAyah();
 
     return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
         color: p.quranParchmentBg,
         borderRadius: AppDesignSystem.borderCard,
         border: Border.all(
           color: p.quranParchmentBorder,
-          width: 1,
+          width: 0.9,
         ),
-        boxShadow: AppDesignSystem.cardShadow(isDark: p.isDark),
       ),
-      child: ClipRRect(
-        borderRadius: AppDesignSystem.borderCard,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Opacity(
-                opacity: p.isDark ? 0.10 : 0.08,
-                child: Image.asset(
-                  'assets/images/azkar_dua.jpg',
-                  fit: BoxFit.cover,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const SizedBox(width: 36),
+              Expanded(
+                child: Text(
+                  'آية اليوم',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.label(p.accentText, size: 12.5),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const SizedBox(width: 36), // Balance share icon on opposite side
-                      Expanded(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            Text(
-                              'آية اليوم',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.bold,
-                                color: p.isDark ? p.accentLight : p.accent,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: (p.isDark ? p.accent : p.primary)
-                                    .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                dailyAyah.theme,
-                                style: TextStyle(
-                                  fontFamily: 'Cairo',
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: p.isDark ? p.accentLight : p.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.share_outlined, size: 18),
-                        tooltip: 'مشاركة الآية',
-                        color: p.isDark ? p.accentLight : p.primary,
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                        padding: EdgeInsets.zero,
-                        onPressed: () => _shareDailyAyah(context, dailyAyah),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '﴿ ${dailyAyah.text} ﴾',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'AmiriQuran',
-                      fontSize: 19.5,
-                      height: 1.9,
-                      color: p.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'سورة ${dailyAyah.surahName} • الآية ${toArabicDigits(dailyAyah.ayahId)} • صفحة ${toArabicDigits(dailyAyah.page)}',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 11.5,
-                      color: p.textSecondary,
-                    ),
-                  ),
-                ],
+              IconButton(
+                icon: const Icon(Icons.share_outlined, size: 18),
+                tooltip: 'مشاركة الآية',
+                color: p.accentText,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                padding: EdgeInsets.zero,
+                onPressed: () => _shareDailyAyah(context, dailyAyah),
               ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '﴿ ${dailyAyah.text} ﴾',
+            textAlign: TextAlign.center,
+            style: AppTypography.body(
+              p.textPrimary,
+              size: 16.5,
+              height: 1.78,
+              weight: FontWeight.w600,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'سورة ${dailyAyah.surahName} • الآية ${toArabicDigits(dailyAyah.ayahId)}',
+            style: AppTypography.meta(p.textSecondary, size: 11.5),
+          ),
+        ],
       ),
     );
   }

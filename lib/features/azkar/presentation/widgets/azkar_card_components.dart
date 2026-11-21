@@ -206,11 +206,18 @@ class AzkarCardBody extends StatelessWidget {
         if (item.reward != null || item.reference != null) ...[
           const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 4, 6),
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 10, 8),
             decoration: BoxDecoration(
+              color: p.cardElevated.withValues(alpha: 0.55),
+              borderRadius: const BorderRadiusDirectional.only(
+                topStart: Radius.circular(4),
+                bottomStart: Radius.circular(4),
+                topEnd: Radius.circular(12),
+                bottomEnd: Radius.circular(12),
+              ),
               border: Border(
                 right: BorderSide(
-                  color: p.accent.withValues(alpha: 0.7),
+                  color: p.accent.withValues(alpha: 0.72),
                   width: 2.5,
                 ),
               ),
@@ -218,26 +225,39 @@ class AzkarCardBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'من فضلها',
-                  style: AppTypography.badge(p.accentText, size: 12),
+                Row(
+                  children: [
+                    Text(
+                      'من فضلها',
+                      style: AppTypography.badge(p.accentText, size: 11.5),
+                    ),
+                    if (item.reference != null) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '•',
+                        style: AppTypography.meta(p.textSecondary, size: 11),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          item.reference!,
+                          style: AppTypography.meta(p.textSecondary, size: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 if (item.reward != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     item.reward!,
                     style: AppTypography.meta(
-                      p.textPrimary.withValues(alpha: 0.85),
+                      p.textPrimary.withValues(alpha: 0.86),
                       size: 12,
-                      height: 1.48,
+                      height: 1.5,
                     ),
-                  ),
-                ],
-                if (item.reference != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    item.reference!,
-                    style: AppTypography.meta(p.textSecondary, size: 11.5),
                   ),
                 ],
               ],
@@ -279,6 +299,14 @@ class AzkarCardFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    final progress = item.targetCount > 0
+        ? (item.currentCount / item.targetCount).clamp(0.0, 1.0)
+        : 0.0;
+    final remaining =
+        (item.targetCount - item.currentCount).clamp(0, item.targetCount);
+    final displayNumber =
+        item.currentCount == 0 ? item.targetCount : item.currentCount;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -295,15 +323,15 @@ class AzkarCardFooter extends StatelessWidget {
                           HapticFeedback.heavyImpact();
                           onToggleComplete();
                         },
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(20),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
+                      horizontal: 12,
                       vertical: 7,
                     ),
                     decoration: BoxDecoration(
                       color: p.primaryContainer,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -324,13 +352,24 @@ class AzkarCardFooter extends StatelessWidget {
                 ),
                 if (item.currentCount > 0) ...[
                   const SizedBox(width: 8),
-                  Text(
-                    '${item.currentCount} / ${item.targetCount}',
-                    style: AppTypography.timeValue(
-                      p.accentText,
-                      size: 12,
-                      weight: FontWeight.w600,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${item.currentCount} / ${item.targetCount}',
+                        style: AppTypography.timeValue(
+                          p.accentText,
+                          size: 12,
+                          weight: FontWeight.w700,
+                        ),
+                      ),
+                      if (remaining > 0 && item.targetCount > 1)
+                        Text(
+                          'متبقي $remaining',
+                          style: AppTypography.label(p.textSecondary, size: 10.5),
+                        ),
+                    ],
                   ),
                 ],
               ] else ...[
@@ -341,18 +380,18 @@ class AzkarCardFooter extends StatelessWidget {
                           HapticFeedback.selectionClick();
                           onToggleComplete();
                         },
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(20),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
+                      horizontal: 12,
                       vertical: 7,
                     ),
                     decoration: BoxDecoration(
                       color: p.completedCardBg,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: p.completedCardBorder,
-                        width: 0.8,
+                        width: 0.9,
                       ),
                     ),
                     child: Row(
@@ -387,19 +426,19 @@ class AzkarCardFooter extends StatelessWidget {
                   HapticFeedback.selectionClick();
                   onDecrement();
                 },
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  width: 36,
-                  height: 36,
+                  width: 34,
+                  height: 34,
                   margin: const EdgeInsets.only(left: 8),
                   decoration: BoxDecoration(
                     color: p.cardElevated,
-                    borderRadius: BorderRadius.circular(10),
+                    shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     Icons.remove_rounded,
-                    size: 18,
+                    size: 17,
                     color: p.textSecondary,
                   ),
                 ),
@@ -414,41 +453,68 @@ class AzkarCardFooter extends StatelessWidget {
                         HapticFeedback.mediumImpact();
                         onIncrement();
                       },
-                borderRadius: BorderRadius.circular(12),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutCubic,
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: isCompleted ? p.primary : p.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                    border: !isCompleted && item.currentCount > 0
-                        ? Border.all(color: p.primary.withValues(alpha: 0.45))
-                        : null,
-                  ),
-                  alignment: Alignment.center,
-                  child: isCompleted && item.currentCount == item.targetCount
-                      ? Icon(
-                          Icons.check_rounded,
-                          color: p.onPrimary,
-                          size: 22,
-                        )
-                      : Text(
-                          item.currentCount == 0
-                              ? '${item.targetCount}'
-                              : '${item.currentCount}',
-                          style: AppTypography.timeValue(
-                            isCompleted ? p.onPrimary : p.accentText,
-                            size: (item.currentCount == 0
-                                        ? item.targetCount
-                                        : item.currentCount) >
-                                    99
-                                ? 13.5
-                                : 16.5,
-                            weight: FontWeight.w700,
+                borderRadius: BorderRadius.circular(24),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (item.targetCount > 1)
+                        SizedBox(
+                          width: 46,
+                          height: 46,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: progress),
+                            duration: const Duration(milliseconds: 240),
+                            curve: Curves.easeOutCubic,
+                            builder: (_, value, __) =>
+                                CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 3.0,
+                              strokeCap: StrokeCap.round,
+                              backgroundColor:
+                                  p.primaryContainer.withValues(alpha: 0.9),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(p.primary),
+                            ),
                           ),
                         ),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        width: item.targetCount > 1 ? 37 : 42,
+                        height: item.targetCount > 1 ? 37 : 42,
+                        decoration: BoxDecoration(
+                          color: isCompleted
+                              ? p.primary
+                              : p.primaryContainer.withValues(alpha: 0.72),
+                          shape: BoxShape.circle,
+                          border: !isCompleted && item.targetCount == 1
+                              ? Border.all(
+                                  color: p.primary.withValues(alpha: 0.25),
+                                )
+                              : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: isCompleted &&
+                                item.currentCount == item.targetCount
+                            ? Icon(
+                                Icons.check_rounded,
+                                color: p.onPrimary,
+                                size: 20,
+                              )
+                            : Text(
+                                '$displayNumber',
+                                style: AppTypography.timeValue(
+                                  isCompleted ? p.onPrimary : p.accentText,
+                                  size: displayNumber > 99 ? 12.5 : 15,
+                                  weight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

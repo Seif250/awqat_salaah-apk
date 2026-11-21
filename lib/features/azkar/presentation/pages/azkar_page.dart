@@ -9,7 +9,6 @@ import '../../../../core/theme/app_design_system.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/arabic_numbers.dart';
-import '../../../../core/utils/page_transitions.dart';
 import '../../../../core/utils/skeleton_loading.dart';
 import '../../data/models/azkar_item_model.dart';
 import '../../data/repositories/azkar_repository.dart';
@@ -17,14 +16,13 @@ import '../../data/services/backup_service.dart';
 import '../bloc/azkar_bloc.dart';
 import '../bloc/azkar_event.dart';
 import '../bloc/azkar_state.dart';
+import '../utils/azkar_ui_helpers.dart';
 import '../widgets/azkar_card.dart';
 import '../widgets/azkar_category_bar.dart';
 import '../widgets/azkar_empty_view.dart';
 import '../widgets/azkar_settings_sheet.dart';
-import '../widgets/digital_tasbih_sheet.dart';
 import '../widgets/edit_zikr_dialog.dart';
 import '../widgets/import_backup_preview_dialog.dart';
-import 'azkar_focus_mode_page.dart';
 
 class AzkarPage extends StatefulWidget {
   const AzkarPage({super.key});
@@ -35,47 +33,18 @@ class AzkarPage extends StatefulWidget {
 
 class _AzkarPageState extends State<AzkarPage> {
   late final ScrollController _scrollController;
-  late final TextEditingController _searchController;
   bool _isHeroVisible = true;
-  bool _isSearchExpanded = false;
-  bool _hideCompleted = false;
-  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _searchController = TextEditingController();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _searchController.dispose();
     super.dispose();
-  }
-
-  String _normalizeArabic(String input) {
-    return input
-        .replaceAll(RegExp(r'[\u064B-\u065F\u0670\u0640]'), '')
-        .replaceAll(RegExp(r'[أإآٱ]'), 'ا')
-        .replaceAll('ى', 'ي')
-        .replaceAll('ة', 'ه')
-        .toLowerCase();
-  }
-
-  List<AzkarItem> _applyFilters(List<AzkarItem> items) {
-    final normalizedQuery = _normalizeArabic(_searchQuery.trim());
-    return items.where((item) {
-      if (_hideCompleted && item.isCompleted) return false;
-      if (normalizedQuery.isNotEmpty) {
-        final haystack = _normalizeArabic(
-          '${item.title} ${item.arabicText} ${item.reward ?? ''} ${item.reference ?? ''}',
-        );
-        if (!haystack.contains(normalizedQuery)) return false;
-      }
-      return true;
-    }).toList();
   }
 
   Future<void> _shareZikr(BuildContext context, AzkarItem item) async {
@@ -102,28 +71,6 @@ class _AzkarPageState extends State<AzkarPage> {
         AppSnackBar.showInfo(context, 'تم نسخ نص الذكر للمشاركة بنجاح');
       }
     }
-  }
-
-  void _openDigitalTasbih(BuildContext context, AzkarLoaded state) {
-    final azkarBloc = context.read<AzkarBloc>();
-    DigitalTasbihSheet.show(
-      context,
-      initialCount: state.dailyProgress.freeTasbihCount,
-      onCountChanged: (delta) => azkarBloc.add(UpdateFreeTasbihEvent(delta)),
-      onReset: () => azkarBloc.add(const ResetFreeTasbihEvent()),
-    );
-  }
-
-  void _openFocusMode(BuildContext context) {
-    final azkarBloc = context.read<AzkarBloc>();
-    Navigator.of(context).push(
-      FadeSlidePageRoute(
-        page: BlocProvider<AzkarBloc>.value(
-          value: azkarBloc,
-          child: const AzkarFocusModePage(),
-        ),
-      ),
-    );
   }
 
   void _openAddDhikr(BuildContext context, AzkarCategory currentCat) {
@@ -254,7 +201,7 @@ class _AzkarPageState extends State<AzkarPage> {
         ),
         elevation: 0,
         scrolledUnderElevation: 0,
-        toolbarHeight: 64,
+        toolbarHeight: 56,
         backgroundColor: Colors.transparent,
         centerTitle: true,
         // Right side (in RTL): Add button
@@ -283,20 +230,10 @@ class _AzkarPageState extends State<AzkarPage> {
             ),
           ),
         ),
-        // Center: Title + Subtitle
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'الأذكار والورد اليومي',
-              style: AppTypography.pageTitle(p.isDark ? p.textPrimary : p.primary),
-            ),
-            const SizedBox(height: 1),
-            Text(
-              'قربًا من الله .. في كل وقت',
-              style: AppTypography.meta(p.textSecondary),
-            ),
-          ],
+        // Center: Clean Title
+        title: Text(
+          'الأذكار والورد اليومي',
+          style: AppTypography.pageTitle(p.isDark ? p.textPrimary : p.primary),
         ),
         // Left side (in RTL): 3 dots Menu button
         actions: [
@@ -357,8 +294,6 @@ class _AzkarPageState extends State<AzkarPage> {
 
           if (state is AzkarLoaded) {
             final isCustomTab = state.selectedCategory == AzkarCategory.custom;
-            final filteredItems = _applyFilters(state.currentItems);
-            final isFiltered = _searchQuery.trim().isNotEmpty || _hideCompleted;
 
             return Column(
               children: [
@@ -389,14 +324,6 @@ class _AzkarPageState extends State<AzkarPage> {
                   sizeCurve: Curves.easeInOutCubic,
                 ),
 
-                // Compact Utility Bar (Search, Remaining filter, Font size, Focus Mode, Tasbih)
-                if (state.currentItems.isNotEmpty)
-                  _buildUtilityBar(context, state, isDark),
-
-                // Expandable Search Field
-                if (_isSearchExpanded && state.currentItems.isNotEmpty)
-                  _buildSearchBar(isDark),
-
                 // Content View: Adhkar List or Empty State
                 Expanded(
                   child: state.currentItems.isEmpty
@@ -411,15 +338,13 @@ class _AzkarPageState extends State<AzkarPage> {
                               ? () => _handleImportFromEmptyState(context)
                               : null,
                         )
-                      : filteredItems.isEmpty
-                          ? _buildFilteredEmptyView(isDark)
-                          : _buildAdhkarList(
-                              context,
-                              state,
-                              filteredItems,
-                              isFiltered,
-                              isDark,
-                            ),
+                      : _buildAdhkarList(
+                          context,
+                          state,
+                          state.currentItems,
+                          false,
+                          isDark,
+                        ),
                 ),
               ],
             );
@@ -501,8 +426,8 @@ class _AzkarPageState extends State<AzkarPage> {
     final visual = _heroVisualForCategory(state.selectedCategory);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-      height: 82,
+      margin: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+      height: 74,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
@@ -524,15 +449,15 @@ class _AzkarPageState extends State<AzkarPage> {
               fit: BoxFit.cover,
             ),
 
-            // Soft directional palette-harmonized gradient scrim
+            // Clean translucent black scrim for consistent legibility
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topRight,
                   end: Alignment.bottomLeft,
                   colors: [
-                    visual.tintColor.withValues(alpha: isDark ? 0.78 : 0.72),
-                    p.primaryDark.withValues(alpha: isDark ? 0.88 : 0.82),
+                    Colors.black.withValues(alpha: isDark ? 0.56 : 0.46),
+                    Colors.black.withValues(alpha: isDark ? 0.78 : 0.70),
                   ],
                 ),
               ),
@@ -618,14 +543,25 @@ class _AzkarPageState extends State<AzkarPage> {
                       ),
                       const SizedBox(width: 12),
                       SizedBox(
-                        width: 90,
+                        width: 96,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: state.categoryCompletionRate,
-                            minHeight: 4.5,
-                            backgroundColor: Colors.white.withValues(alpha: 0.30),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4ADE80)),
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(
+                              begin: 0,
+                              end: state.categoryCompletionRate,
+                            ),
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeOutCubic,
+                            builder: (_, animatedValue, __) =>
+                                LinearProgressIndicator(
+                              value: animatedValue,
+                              minHeight: 5,
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.30),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF4ADE80)),
+                            ),
                           ),
                         ),
                       ),
@@ -640,246 +576,121 @@ class _AzkarPageState extends State<AzkarPage> {
     );
   }
 
-  Widget _buildUtilityBar(
+  AzkarCategory _nextAzkarCategory(AzkarCategory current) {
+    switch (current) {
+      case AzkarCategory.morning:
+        return AzkarCategory.evening;
+      case AzkarCategory.evening:
+        return AzkarCategory.sleep;
+      case AzkarCategory.sleep:
+        return AzkarCategory.morning;
+      case AzkarCategory.postPrayer:
+        return AzkarCategory.morning;
+      case AzkarCategory.qiyam:
+        return AzkarCategory.morning;
+      case AzkarCategory.supplications:
+        return AzkarCategory.general;
+      case AzkarCategory.general:
+        return AzkarCategory.supplications;
+      case AzkarCategory.custom:
+        return AzkarCategory.morning;
+    }
+  }
+
+  Widget _buildCategoryCompletionFooter(
     BuildContext context,
     AzkarLoaded state,
-    bool isDark,
   ) {
+    final p = context.palette;
+    final nextCategory = _nextAzkarCategory(state.selectedCategory);
     return Container(
-      height: 40,
-      margin: const EdgeInsets.only(bottom: 4),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.only(top: 8, bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: p.completedCardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: p.completedCardBorder, width: 1),
+      ),
+      child: Column(
         children: [
-          // Search toggle
-          _buildUtilityChip(
-            isDark: isDark,
-            icon: _isSearchExpanded ? Icons.close_rounded : Icons.search_rounded,
-            label: 'بحث',
-            isActive: _isSearchExpanded || _searchQuery.isNotEmpty,
-            onTap: () {
-              setState(() {
-                _isSearchExpanded = !_isSearchExpanded;
-                if (!_isSearchExpanded) {
-                  _searchQuery = '';
-                  _searchController.clear();
-                }
-              });
-            },
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: p.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.done_all_rounded, color: p.onPrimary, size: 22),
           ),
-          const SizedBox(width: 6),
-
-          // Hide completed filter
-          _buildUtilityChip(
-            isDark: isDark,
-            icon: _hideCompleted
-                ? Icons.visibility_off_rounded
-                : Icons.filter_list_rounded,
-            label: 'المتبقي فقط',
-            isActive: _hideCompleted,
-            onTap: () {
-              setState(() => _hideCompleted = !_hideCompleted);
-            },
+          const SizedBox(height: 10),
+          Text(
+            'أتممتَ ${state.selectedCategory.titleArabic}',
+            style: AppTypography.sectionHeader(p.textPrimary),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(width: 6),
-
-          // Font scale controls
-          Builder(builder: (context) {
-            final p = context.palette;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              decoration: BoxDecoration(
-                color: p.cardElevated,
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusPill),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => context.read<AzkarBloc>().add(
-                          ChangeAzkarFontScaleEvent(state.fontScale - 0.08),
-                        ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
-                      child: Text(
-                        'أ-',
-                        style: AppTypography.label(p.accentText, weight: FontWeight.w700),
-                      ),
+          const SizedBox(height: 4),
+          Text(
+            'تقبّل الله طاعتك وجعل يومك عامرًا بذكره',
+            style: AppTypography.meta(p.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: Icon(nextCategory.categoryIcon, size: 18),
+                  label: Text(
+                    nextCategory.titleArabic,
+                    style: AppTypography.meta(p.onPrimary, weight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: p.primary,
+                    foregroundColor: p.onPrimary,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 14,
-                    color: p.hairline,
-                  ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => context.read<AzkarBloc>().add(
-                          ChangeAzkarFontScaleEvent(state.fontScale + 0.08),
-                        ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
-                      child: Text(
-                        'أ+',
-                        style: AppTypography.label(p.accentText, weight: FontWeight.w700),
-                      ),
-                    ),
-                  ),
-                ],
+                  onPressed: () {
+                    context.read<AzkarBloc>().add(SelectCategoryEvent(nextCategory));
+                    if (_scrollController.hasClients) {
+                      _scrollController.jumpTo(0);
+                    }
+                  },
+                ),
               ),
-            );
-          }),
-          const SizedBox(width: 6),
-
-          // Focus mode button
-          _buildUtilityChip(
-            isDark: isDark,
-            icon: Icons.center_focus_strong_outlined,
-            label: 'وضع التركيز',
-            isActive: false,
-            onTap: () => _openFocusMode(context),
-          ),
-          const SizedBox(width: 6),
-
-          // Quick Digital Tasbih button
-          _buildUtilityChip(
-            isDark: isDark,
-            icon: Icons.fingerprint_rounded,
-            label: 'المسبحة',
-            isActive: false,
-            onTap: () => _openDigitalTasbih(context, state),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                icon: Icon(Icons.replay_rounded, size: 17, color: p.accentText),
+                label: Text(
+                  'إعادة القراءة',
+                  style: AppTypography.meta(p.accentText, weight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: p.primary.withValues(alpha: 0.35)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () {
+                  context.read<AzkarBloc>().add(
+                        ResetCategoryProgressEvent(state.selectedCategory),
+                      );
+                  if (_scrollController.hasClients) {
+                    _scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                    );
+                  }
+                },
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildUtilityChip({
-    required bool isDark,
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Builder(
-      builder: (context) {
-        final p = context.palette;
-        final fgColor = isActive ? p.accentText : p.textSecondary;
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusPill),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-              decoration: BoxDecoration(
-                color: isActive ? p.primaryContainer : p.cardElevated,
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusPill),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 14, color: fgColor),
-                  const SizedBox(width: 5),
-                  Text(
-                    label,
-                    style: AppTypography.label(
-                      fgColor,
-                      weight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSearchBar(bool isDark) {
-    final p = context.palette;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-      child: TextField(
-        controller: _searchController,
-        textDirection: TextDirection.rtl,
-        onChanged: (val) => setState(() => _searchQuery = val),
-        style: AppTypography.body(p.textPrimary),
-        decoration: InputDecoration(
-          hintText: 'ابحث في أذكار هذا القسم...',
-          hintStyle: AppTypography.meta(p.textSecondary.withValues(alpha: 0.7)),
-          prefixIcon: Icon(Icons.search_rounded, size: 19, color: p.textSecondary),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.clear_rounded, size: 18, color: p.textSecondary),
-                  onPressed: () {
-                    setState(() {
-                      _searchQuery = '';
-                      _searchController.clear();
-                    });
-                  },
-                )
-              : null,
-          isDense: true,
-          filled: true,
-          fillColor: p.cardElevated,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: p.hairline, width: 0.75),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: p.hairline, width: 0.75),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilteredEmptyView(bool isDark) {
-    final p = context.palette;
-    final isOnlyCompletedHidden = _hideCompleted && _searchQuery.trim().isEmpty;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isOnlyCompletedHidden
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.search_off_rounded,
-              size: 46,
-              color: p.accent,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              isOnlyCompletedHidden
-                  ? 'اكتملت جميع أذكار هذا القسم بحمد الله'
-                  : 'لا توجد نتائج مطابقة للبحث',
-              textAlign: TextAlign.center,
-              style: AppTypography.rowTitle(p.textPrimary),
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _hideCompleted = false;
-                  _searchQuery = '';
-                  _searchController.clear();
-                });
-              },
-              child: Text(
-                'عرض كل الأذكار',
-                style: AppTypography.meta(p.accentText, weight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -893,6 +704,32 @@ class _AzkarPageState extends State<AzkarPage> {
     bool isDark,
   ) {
     final isCustomTab = state.selectedCategory == AzkarCategory.custom;
+    final isAllDone = state.totalCategoryCount > 0 &&
+        state.completedCategoryCount >= state.totalCategoryCount;
+    final p = context.palette;
+
+    final Widget? listFooter = isAllDone
+        ? _buildCategoryCompletionFooter(context, state)
+        : (isCustomTab
+            ? Padding(
+                padding: const EdgeInsets.only(top: 6, bottom: 16),
+                child: OutlinedButton.icon(
+                  icon: Icon(Icons.add_rounded, color: p.accentText),
+                  label: Text(
+                    'إضافة ذكر جديد',
+                    style: AppTypography.meta(p.accentText, weight: FontWeight.w700),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: p.primary.withValues(alpha: 0.35)),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () => _openAddDhikr(context, state.selectedCategory),
+                ),
+              )
+            : null);
 
     Widget buildCard(AzkarItem item, int index) {
       final isItemCustom = isCustomTab || item.isCustom;
@@ -970,6 +807,7 @@ class _AzkarPageState extends State<AzkarPage> {
                 autoScrollerVelocityScalar: 140.0,
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
                 itemCount: items.length,
+                footer: listFooter,
                 onReorderStart: (index) {
                   HapticFeedback.heavyImpact();
                 },

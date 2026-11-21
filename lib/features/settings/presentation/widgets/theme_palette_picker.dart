@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_color_palette.dart';
 import '../../../../core/theme/app_design_system.dart';
 import '../bloc/settings_bloc.dart';
+import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
+import '../../../prayer_times/presentation/bloc/prayer_event.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
 
@@ -24,7 +26,11 @@ class ThemeModeSegmentBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final options = [
-      (mode: ThemeMode.system, label: 'تلقائي', icon: Icons.brightness_auto_rounded),
+      (
+        mode: ThemeMode.system,
+        label: 'تلقائي',
+        icon: Icons.brightness_auto_rounded
+      ),
       (mode: ThemeMode.light, label: 'نهاري', icon: Icons.light_mode_rounded),
       (mode: ThemeMode.dark, label: 'ليلي', icon: Icons.dark_mode_rounded),
     ];
@@ -41,8 +47,9 @@ class ThemeModeSegmentBar extends StatelessWidget {
           ),
           child: Row(
             children: options.map((opt) {
-              final effectiveSelected =
-                  forcesDark ? opt.mode == ThemeMode.dark : currentMode == opt.mode;
+              final effectiveSelected = forcesDark
+                  ? opt.mode == ThemeMode.dark
+                  : currentMode == opt.mode;
               final disabled = forcesDark && opt.mode != ThemeMode.dark;
 
               return Expanded(
@@ -60,7 +67,8 @@ class ThemeModeSegmentBar extends StatelessWidget {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: effectiveSelected ? p.primary : Colors.transparent,
+                        color:
+                            effectiveSelected ? p.primary : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -150,7 +158,8 @@ class ThemePalettePicker extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? p.primaryContainer : p.card,
                   borderRadius: BorderRadius.circular(18),
@@ -178,7 +187,9 @@ class ThemePalettePicker extends StatelessWidget {
                                   color: swatches[i],
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: p.isDark ? Colors.white24 : Colors.black12,
+                                    color: p.isDark
+                                        ? Colors.white24
+                                        : Colors.black12,
                                     width: 1.2,
                                   ),
                                 ),
@@ -314,16 +325,30 @@ class ThemeQuickPickerSheet extends StatelessWidget {
                 ThemeModeSegmentBar(
                   currentMode: state.themeMode,
                   forcesDark: state.colorPalette.forcesDarkMode,
-                  onChanged: (mode) => context
-                      .read<SettingsBloc>()
-                      .add(ChangeThemeModeEvent(mode)),
+                  onChanged: (mode) {
+                    context
+                        .read<SettingsBloc>()
+                        .add(ChangeThemeModeEvent(mode));
+                    try {
+                      context
+                          .read<PrayerBloc>()
+                          .add(const RefreshPrayerTimesEvent());
+                    } catch (_) {}
+                  },
                 ),
                 const SizedBox(height: 14),
                 ThemePalettePicker(
                   selectedPalette: state.colorPalette,
-                  onSelect: (palette) => context
-                      .read<SettingsBloc>()
-                      .add(ChangeColorPaletteEvent(palette)),
+                  onSelect: (palette) {
+                    context
+                        .read<SettingsBloc>()
+                        .add(ChangeColorPaletteEvent(palette));
+                    try {
+                      context
+                          .read<PrayerBloc>()
+                          .add(const RefreshPrayerTimesEvent());
+                    } catch (_) {}
+                  },
                 ),
               ],
             ),

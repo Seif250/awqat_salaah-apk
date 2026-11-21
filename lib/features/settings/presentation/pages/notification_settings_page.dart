@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_color_palette.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/page_transitions.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
 import '../bloc/settings_bloc.dart';
@@ -10,10 +11,11 @@ import '../bloc/settings_state.dart';
 import '../widgets/adhan_sound_dialog.dart';
 import '../widgets/notification_offsets_dialog.dart';
 import '../widgets/settings_section_card.dart';
+import '../widgets/settings_tile.dart';
+import 'battery_settings_page.dart';
 
 class NotificationSettingsPage extends StatelessWidget {
   const NotificationSettingsPage({super.key});
-
 
   Widget _buildIqamahStepper(
     BuildContext context, {
@@ -47,7 +49,8 @@ class NotificationSettingsPage extends StatelessWidget {
                 child: Text(
                   '$value دقيقة',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13.5),
                 ),
               ),
               IconButton.filledTonal(
@@ -73,7 +76,9 @@ class NotificationSettingsPage extends StatelessWidget {
           thickness: 1,
           indent: 16,
           endIndent: 16,
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.05),
         ),
       ],
     );
@@ -85,7 +90,8 @@ class NotificationSettingsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('تنبيهات الصلاة', style: AppTypography.pageTitle(p.textPrimary)),
+        title: Text('تنبيهات الصلاة',
+            style: AppTypography.pageTitle(p.textPrimary)),
         centerTitle: true,
       ),
       body: BlocBuilder<SettingsBloc, SettingsState>(
@@ -105,18 +111,28 @@ class NotificationSettingsPage extends StatelessWidget {
                         color: p.primaryContainer,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.notifications_outlined, size: 20, color: p.accentText),
+                      child: Icon(Icons.notifications_outlined,
+                          size: 20, color: p.accentText),
                     ),
-                    title: Text('تفعيل إشعارات الصلاة', style: AppTypography.rowTitle(p.textPrimary)),
-                    subtitle: Text('إظهار تنبيهات مواقيت الصلاة في شريط الإشعارات', style: AppTypography.meta(p.textSecondary)),
+                    title: Text('تفعيل إشعارات الصلاة',
+                        style: AppTypography.rowTitle(p.textPrimary)),
+                    subtitle: Text(
+                        'إظهار تنبيهات مواقيت الصلاة في شريط الإشعارات',
+                        style: AppTypography.meta(p.textSecondary)),
                     value: state.notificationsEnabled,
                     activeThumbColor: p.primary,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(ToggleNotificationsEvent(val));
+                      context
+                          .read<SettingsBloc>()
+                          .add(ToggleNotificationsEvent(val));
                     },
                   ),
                   if (state.notificationsEnabled) ...[
-                    Divider(height: 1, indent: 66, endIndent: 16, color: p.hairline),
+                    Divider(
+                        height: 1,
+                        indent: 66,
+                        endIndent: 16,
+                        color: p.hairline),
                     SwitchListTile(
                       secondary: Container(
                         width: 36,
@@ -125,18 +141,28 @@ class NotificationSettingsPage extends StatelessWidget {
                           color: p.primaryContainer,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.volume_up_outlined, size: 20, color: p.accentText),
+                        child: Icon(Icons.volume_up_outlined,
+                            size: 20, color: p.accentText),
                       ),
-                      title: Text('صوت الأذان والاهتزاز', style: AppTypography.rowTitle(p.textPrimary)),
-                      subtitle: Text('تشغيل صوت أذان المؤذن كاملاً عند حلول مواعيد الصلاة والتنبيه', style: AppTypography.meta(p.textSecondary)),
+                      title: Text('صوت الأذان والاهتزاز',
+                          style: AppTypography.rowTitle(p.textPrimary)),
+                      subtitle: Text(
+                          'تشغيل صوت أذان المؤذن كاملاً عند حلول مواعيد الصلاة والتنبيه',
+                          style: AppTypography.meta(p.textSecondary)),
                       value: state.notificationSoundEnabled,
                       activeThumbColor: p.primary,
                       onChanged: (val) {
-                        context.read<SettingsBloc>().add(ToggleNotificationSoundEvent(val));
+                        context
+                            .read<SettingsBloc>()
+                            .add(ToggleNotificationSoundEvent(val));
                       },
                     ),
                     if (state.notificationSoundEnabled) ...[
-                      Divider(height: 1, indent: 66, endIndent: 16, color: p.hairline),
+                      Divider(
+                          height: 1,
+                          indent: 66,
+                          endIndent: 16,
+                          color: p.hairline),
                       ListTile(
                         leading: Container(
                           width: 36,
@@ -145,12 +171,19 @@ class NotificationSettingsPage extends StatelessWidget {
                             color: p.primaryContainer,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(Icons.music_note_outlined, size: 20, color: p.accentText),
+                          child: Icon(Icons.music_note_outlined,
+                              size: 20, color: p.accentText),
                         ),
-                        title: Text('صوت إشعار الأذان', style: AppTypography.rowTitle(p.textPrimary)),
-                        subtitle: Text(AdhanSoundDialog.getSoundDisplayName(state.notificationSoundType), style: AppTypography.meta(p.textSecondary)),
-                        trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: p.textSecondary),
-                        onTap: () => AdhanSoundDialog.show(context, state.notificationSoundType),
+                        title: Text('نغمة الأذان',
+                            style: AppTypography.rowTitle(p.textPrimary)),
+                        subtitle: Text(
+                            AdhanSoundDialog.getSoundDisplayName(
+                                state.notificationSoundType),
+                            style: AppTypography.meta(p.textSecondary)),
+                        trailing: Icon(Icons.arrow_forward_ios_rounded,
+                            size: 14, color: p.textSecondary),
+                        onTap: () => AdhanSoundDialog.show(
+                            context, state.notificationSoundType),
                       ),
                     ],
                   ],
@@ -158,10 +191,10 @@ class NotificationSettingsPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 2. وقت التنبيه (Alert Offsets)
+              // 2. التنبيه قبل الأذان
               if (state.notificationsEnabled) ...[
                 SettingsSectionCard(
-                  title: 'وقت التنبيه المسبق',
+                  title: 'التنبيه قبل الأذان',
                   children: [
                     ListTile(
                       leading: Container(
@@ -171,29 +204,40 @@ class NotificationSettingsPage extends StatelessWidget {
                           color: p.primaryContainer,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.alarm_outlined, size: 20, color: p.accentText),
+                        child: Icon(Icons.alarm_outlined,
+                            size: 20, color: p.accentText),
                       ),
-                      title: Text('مواعيد التنبيه قبل أو عند الأذان', style: AppTypography.rowTitle(p.textPrimary)),
-                      subtitle: Text(NotificationOffsetsDialog.formatNotificationOffsets(state.notificationOffsets), style: AppTypography.meta(p.textSecondary)),
-                      trailing: Icon(Icons.chevron_left_rounded, color: p.textSecondary),
-                      onTap: () => NotificationOffsetsDialog.show(context, state.notificationOffsets),
+                      title: Text('موعد التذكير بالأذان',
+                          style: AppTypography.rowTitle(p.textPrimary)),
+                      subtitle: Text(
+                          NotificationOffsetsDialog.formatNotificationOffsets(
+                              state.notificationOffsets),
+                          style: AppTypography.meta(p.textSecondary)),
+                      trailing: Icon(Icons.chevron_left_rounded,
+                          color: p.textSecondary),
+                      onTap: () => NotificationOffsetsDialog.show(
+                          context, state.notificationOffsets),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
               ],
 
-              // 3. الإقامة (Iqamah Intervals)
+              // 3. الإقامة
               SettingsSectionCard(
-                title: 'وقت الإقامة (الفارق بالدقائق بعد الأذان)',
+                title: 'مدة الانتظار للإقامة (بالدقائق بعد الأذان)',
                 children: [
                   _buildIqamahStepper(
                     context,
                     name: 'الفجر',
                     value: state.iqamahFajr,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(fajr: val));
-                      context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+                      context
+                          .read<SettingsBloc>()
+                          .add(UpdateIqamahOffsetsEvent(fajr: val));
+                      context
+                          .read<PrayerBloc>()
+                          .add(const RefreshPrayerTimesEvent());
                     },
                   ),
                   _buildIqamahStepper(
@@ -201,8 +245,12 @@ class NotificationSettingsPage extends StatelessWidget {
                     name: 'الظهر',
                     value: state.iqamahDhuhr,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(dhuhr: val));
-                      context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+                      context
+                          .read<SettingsBloc>()
+                          .add(UpdateIqamahOffsetsEvent(dhuhr: val));
+                      context
+                          .read<PrayerBloc>()
+                          .add(const RefreshPrayerTimesEvent());
                     },
                   ),
                   _buildIqamahStepper(
@@ -210,8 +258,12 @@ class NotificationSettingsPage extends StatelessWidget {
                     name: 'العصر',
                     value: state.iqamahAsr,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(asr: val));
-                      context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+                      context
+                          .read<SettingsBloc>()
+                          .add(UpdateIqamahOffsetsEvent(asr: val));
+                      context
+                          .read<PrayerBloc>()
+                          .add(const RefreshPrayerTimesEvent());
                     },
                   ),
                   _buildIqamahStepper(
@@ -219,8 +271,12 @@ class NotificationSettingsPage extends StatelessWidget {
                     name: 'المغرب',
                     value: state.iqamahMaghrib,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(maghrib: val));
-                      context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+                      context
+                          .read<SettingsBloc>()
+                          .add(UpdateIqamahOffsetsEvent(maghrib: val));
+                      context
+                          .read<PrayerBloc>()
+                          .add(const RefreshPrayerTimesEvent());
                     },
                   ),
                   _buildIqamahStepper(
@@ -229,43 +285,35 @@ class NotificationSettingsPage extends StatelessWidget {
                     value: state.iqamahIsha,
                     showDivider: false,
                     onChanged: (val) {
-                      context.read<SettingsBloc>().add(UpdateIqamahOffsetsEvent(isha: val));
-                      context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+                      context
+                          .read<SettingsBloc>()
+                          .add(UpdateIqamahOffsetsEvent(isha: val));
+                      context
+                          .read<PrayerBloc>()
+                          .add(const RefreshPrayerTimesEvent());
                     },
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
 
-              // Educational Clarification Card
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: p.cardElevated,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline_rounded, size: 18, color: p.textSecondary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'توضيح الفروق في المنظومة:',
-                          style: AppTypography.rowTitle(p.textPrimary),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '• الإشعار: رسالة التنبيه التي تظهر في شريط إشعارات الهاتف.\n'
-                      '• الأذان: صوت أذان المؤذن كاملاً عند حلول مواقيت الصلاة ومواعيد التنبيه.\n'
-                      '• الإقامة: فارق الدقائق بين الأذان وبدء الصلاة في المسجد لمتابعة العد التنازلي بدقة.',
-                      style: AppTypography.meta(p.textSecondary),
-                    ),
-                  ],
-                ),
+              // 4. استقرار التنبيهات في الخلفية
+              SettingsSectionCard(
+                title: 'العمل في الخلفية واستقرار الأذان',
+                children: [
+                  SettingsTile(
+                    icon: Icons.battery_saver_outlined,
+                    title: 'استثناء البطارية والتشغيل التلقائي',
+                    subtitle: 'لضمان انطلاق الأذان في وقته عند إغلاق الشاشة',
+                    showDivider: false,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        FadeSlidePageRoute(page: const BatterySettingsPage()),
+                      );
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
             ],

@@ -144,8 +144,8 @@ class AppTheme {
   }
 
   static ThemeData get lightTheme =>
-      buildTheme(AppColorPalette.goldenMushaf, Brightness.light);
+      buildTheme(AppColorPalette.royalEmerald, Brightness.light);
 
   static ThemeData get darkTheme =>
-      buildTheme(AppColorPalette.goldenMushaf, Brightness.dark);
+      buildTheme(AppColorPalette.royalEmerald, Brightness.dark);
 }

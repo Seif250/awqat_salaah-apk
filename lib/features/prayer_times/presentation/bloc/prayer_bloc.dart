@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/app_color_palette.dart';
 import '../../../../services/prayer_calculation_service.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../services/widget_service.dart';
@@ -133,6 +134,8 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> with WidgetsBindingObser
         isArabic: true,
         is24Hour: _storageService.is24HourFormat,
         tomorrowFajrTimestamp: tomorrowFajrTs,
+        colorPalette: _storageService.colorPalette.storageKey,
+        themeMode: _storageService.themeMode.name,
       );
 
       // Schedule 7-day advance notifications when requested (e.g. app start, settings update, midnight)

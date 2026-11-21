@@ -115,11 +115,11 @@ class AppTypography {
     bool isQuranic = false,
   }) =>
       TextStyle(
-        fontFamily: isQuranic ? 'AmiriQuran' : uiFont,
-        fontFamilyFallback: isQuranic ? const ['AmiriQuran', uiFont] : uiFallback,
-        fontSize: (isQuranic ? 19.0 : 16.5) * scale,
-        fontWeight: isQuranic ? FontWeight.w400 : FontWeight.w500,
-        height: isQuranic ? 1.9 : 1.72,
+        fontFamily: uiFont,
+        fontFamilyFallback: uiFallback,
+        fontSize: (isQuranic ? 17.5 : 16.5) * scale,
+        fontWeight: isQuranic ? FontWeight.w500 : FontWeight.w500,
+        height: isQuranic ? 1.8 : 1.72,
         color: color,
       );
 

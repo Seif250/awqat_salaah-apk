@@ -76,34 +76,26 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
 
   @override
   Widget build(BuildContext context) {
-    const double dialSize = 310.0;
-    const double radarSize = 200.0;
+    final screenW = MediaQuery.of(context).size.width;
+    final double dialSize = (screenW - 56).clamp(240.0, 296.0);
+    final double radarSize = dialSize * 0.64;
     final p = context.palette;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Live alignment indicator banner
+        // Live alignment indicator banner (calm, high-contrast)
         AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 280),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: const EdgeInsets.only(bottom: 18),
           decoration: BoxDecoration(
-            color: _isAligned ? p.primary : p.cardElevated,
-            borderRadius: BorderRadius.circular(14),
+            color: _isAligned ? p.primary : p.primaryContainer,
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: _isAligned ? p.accent : p.hairline,
               width: _isAligned ? 1.5 : 0.75,
             ),
-            boxShadow: _isAligned
-                ? [
-                    BoxShadow(
-                      color: p.accent.withValues(alpha: 0.28),
-                      blurRadius: 12,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -114,27 +106,19 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                     : (_relativeAngle > 0
                         ? Icons.turn_right_rounded
                         : Icons.turn_left_rounded),
-                color: _isAligned
-                    ? p.accentLight
-                    : (_relativeAngle.abs() <= 15
-                        ? p.accentText
-                        : p.textSecondary),
-                size: 20,
+                color: _isAligned ? p.accentLight : p.accentText,
+                size: 19,
               ),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   _isAligned
-                      ? 'أنت بمواجهة الكعبة المشرفة مباشرة 🕋'
+                      ? 'أنت بمواجهة القبلة مباشرة'
                       : (_relativeAngle > 0
-                          ? 'أدر الهاتف يميناً بمقدار ${toArabicDigits(_relativeAngle.round())}°'
-                          : 'أدر الهاتف يساراً بمقدار ${toArabicDigits(_relativeAngle.abs().round())}°'),
+                          ? 'أدر الهاتف يميناً ${toArabicDigits(_relativeAngle.round())}°'
+                          : 'أدر الهاتف يساراً ${toArabicDigits(_relativeAngle.abs().round())}°'),
                   style: AppTypography.meta(
-                    _isAligned
-                        ? p.onPrimary
-                        : (_relativeAngle.abs() <= 15
-                            ? p.accentText
-                            : p.textPrimary),
+                    _isAligned ? p.onPrimary : p.accentText,
                     weight: FontWeight.w700,
                   ),
                 ),
@@ -143,10 +127,9 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
           ),
         ),
 
-        // Interactive Compass Dial with Integrated Map Inside
+        // Interactive Compass Dial with Integrated Radar Inside
         GestureDetector(
           onPanUpdate: (details) {
-            // Allow manual rotation/testing of the compass
             final center = Offset(dialSize / 2, dialSize / 2);
             final touch = details.localPosition;
             final angle = (atan2(touch.dy - center.dy, touch.dx - center.dx) * 180 / pi + 90 + 360) % 360;
@@ -155,22 +138,30 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Outer Glowing halo when aligned
-              if (_isAligned)
-                Container(
-                  width: dialSize + 16,
-                  height: dialSize + 16,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: p.accent.withValues(alpha: 0.35),
-                        blurRadius: 22,
-                        spreadRadius: 3,
-                      ),
-                    ],
-                  ),
+              // Outer subtle halo when aligned
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                width: dialSize + 14,
+                height: dialSize + 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: _isAligned
+                      ? [
+                          BoxShadow(
+                            color: p.primary.withValues(alpha: 0.24),
+                            blurRadius: 22,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: p.isDark ? 0.25 : 0.06),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                 ),
+              ),
 
               // Rotating Dial Bezel
               AnimatedRotation(
@@ -184,14 +175,20 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                     painter: _CompassDialPainter(
                       qiblaAngle: widget.qiblaAngle,
                       isAligned: _isAligned,
+                      isDark: p.isDark,
+                      surfaceColor: p.surface,
+                      borderColor: p.border,
+                      primaryColor: p.primary,
                       accentColor: p.accent,
-                      primaryDarkColor: p.primaryDark,
+                      textColor: p.textPrimary,
+                      mutedColor: p.textSecondary,
+                      northColor: p.error,
                     ),
                   ),
                 ),
               ),
 
-              // Integrated Map Radar inside the central dial
+              // Integrated Radar Inside the Central Dial
               SizedBox(
                 width: radarSize,
                 height: radarSize,
@@ -216,6 +213,7 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                   child: CustomPaint(
                     painter: _QiblaPointerPainter(
                       isAligned: _isAligned,
+                      primaryColor: p.primary,
                       accentColor: p.accent,
                       accentLightColor: p.accentLight,
                     ),
@@ -223,13 +221,13 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                 ),
               ),
 
-              // Top North reference triangle (stationary relative to phone)
+              // Top reference marker (stationary relative to phone)
               Positioned(
                 top: 2,
                 child: Icon(
                   Icons.arrow_drop_down_rounded,
                   size: 28,
-                  color: _isAligned ? p.accent : p.error,
+                  color: _isAligned ? p.accent : p.primary,
                 ),
               ),
             ],
@@ -243,14 +241,26 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
 class _CompassDialPainter extends CustomPainter {
   final double qiblaAngle;
   final bool isAligned;
+  final bool isDark;
+  final Color surfaceColor;
+  final Color borderColor;
+  final Color primaryColor;
   final Color accentColor;
-  final Color primaryDarkColor;
+  final Color textColor;
+  final Color mutedColor;
+  final Color northColor;
 
   _CompassDialPainter({
     required this.qiblaAngle,
     required this.isAligned,
+    required this.isDark,
+    required this.surfaceColor,
+    required this.borderColor,
+    required this.primaryColor,
     required this.accentColor,
-    required this.primaryDarkColor,
+    required this.textColor,
+    required this.mutedColor,
+    required this.northColor,
   });
 
   @override
@@ -258,37 +268,39 @@ class _CompassDialPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // 1. Outer Bezel Ring
+    // 1. Clean Dial Face matched to app palette
     final bezelPaint = Paint()
-      ..color = primaryDarkColor
+      ..color = surfaceColor
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, bezelPaint);
 
     final borderPaint = Paint()
-      ..color = isAligned ? accentColor : const Color(0xFF4A6B56)
+      ..color = isAligned ? primaryColor : borderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    canvas.drawCircle(center, radius - 1, borderPaint);
+      ..strokeWidth = isAligned ? 2.5 : 1.5;
+    canvas.drawCircle(center, radius - 1.5, borderPaint);
 
-    // Inner rim dividing bezel from map
+    // Inner hairline dividing bezel from center radar
     final innerRimPaint = Paint()
-      ..color = isAligned ? accentColor : const Color(0xFF7A583A)
+      ..color = isAligned ? accentColor : borderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawCircle(center, radius * 0.68, innerRimPaint);
+      ..strokeWidth = 1.2;
+    canvas.drawCircle(center, radius * 0.65, innerRimPaint);
 
-    // 2. Degree ticks around dial
+    // 2. Clean Degree Ticks
     for (int deg = 0; deg < 360; deg += 5) {
       final rad = (deg - 90) * (pi / 180.0);
       final isMajor = deg % 30 == 0;
       final isCardinal = deg % 90 == 0;
 
-      final double tickLength = isCardinal ? 12.0 : (isMajor ? 8.0 : 4.0);
+      final double tickLength = isCardinal ? 11.0 : (isMajor ? 7.0 : 3.5);
       final tickPaint = Paint()
         ..color = isCardinal
-            ? (deg == 0 ? Colors.redAccent : Colors.white)
-            : (isMajor ? accentColor : Colors.white38)
-        ..strokeWidth = isCardinal ? 2.0 : (isMajor ? 1.5 : 1.0);
+            ? (deg == 0 ? northColor : textColor)
+            : (isMajor
+                ? primaryColor.withValues(alpha: 0.7)
+                : mutedColor.withValues(alpha: 0.35))
+        ..strokeWidth = isCardinal ? 2.0 : (isMajor ? 1.4 : 0.9);
 
       final p1 = Offset(
         center.dx + cos(rad) * (radius - 4),
@@ -299,32 +311,14 @@ class _CompassDialPainter extends CustomPainter {
         center.dy + sin(rad) * (radius - 4 - tickLength),
       );
       canvas.drawLine(p1, p2, tickPaint);
-
-      // Degree Numbers
-      if (isMajor && !isCardinal) {
-        final textSpan = TextSpan(
-          text: '$deg°',
-          style: const TextStyle(
-            fontFamily: AppTypography.uiFont,
-            fontSize: 8,
-            color: Colors.white60,
-          ),
-        );
-        final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr)..layout();
-        final textPos = Offset(
-          center.dx + cos(rad) * (radius - 22) - tp.width / 2,
-          center.dy + sin(rad) * (radius - 22) - tp.height / 2,
-        );
-        tp.paint(canvas, textPos);
-      }
     }
 
     // 3. Arabic Cardinal Directions (ش N, ق E, ج S, غ W)
     final cardinals = [
-      (label: 'ش', angle: 0.0, color: Colors.redAccent),
-      (label: 'ق', angle: 90.0, color: Colors.white),
-      (label: 'ج', angle: 180.0, color: Colors.white),
-      (label: 'غ', angle: 270.0, color: Colors.white),
+      (label: 'ش', angle: 0.0, color: northColor),
+      (label: 'ق', angle: 90.0, color: textColor),
+      (label: 'ج', angle: 180.0, color: textColor),
+      (label: 'غ', angle: 270.0, color: textColor),
     ];
 
     for (final c in cardinals) {
@@ -333,15 +327,15 @@ class _CompassDialPainter extends CustomPainter {
         text: c.label,
         style: TextStyle(
           fontFamily: AppTypography.uiFont,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
+          fontSize: 13.5,
+          fontWeight: FontWeight.w800,
           color: c.color,
         ),
       );
       final tp = TextPainter(text: textSpan, textDirection: TextDirection.rtl)..layout();
       final textPos = Offset(
-        center.dx + cos(rad) * (radius - 22) - tp.width / 2,
-        center.dy + sin(rad) * (radius - 22) - tp.height / 2,
+        center.dx + cos(rad) * (radius - 26) - tp.width / 2,
+        center.dy + sin(rad) * (radius - 26) - tp.height / 2,
       );
       tp.paint(canvas, textPos);
     }
@@ -351,17 +345,21 @@ class _CompassDialPainter extends CustomPainter {
   bool shouldRepaint(covariant _CompassDialPainter oldDelegate) {
     return oldDelegate.qiblaAngle != qiblaAngle ||
         oldDelegate.isAligned != isAligned ||
-        oldDelegate.accentColor != accentColor;
+        oldDelegate.isDark != isDark ||
+        oldDelegate.surfaceColor != surfaceColor ||
+        oldDelegate.primaryColor != primaryColor;
   }
 }
 
 class _QiblaPointerPainter extends CustomPainter {
   final bool isAligned;
+  final Color primaryColor;
   final Color accentColor;
   final Color accentLightColor;
 
   _QiblaPointerPainter({
     required this.isAligned,
+    required this.primaryColor,
     required this.accentColor,
     required this.accentLightColor,
   });
@@ -372,36 +370,31 @@ class _QiblaPointerPainter extends CustomPainter {
     final radius = size.width / 2;
 
     final tip = Offset(center.dx, center.dy - radius + 14);
-    final leftBase = Offset(center.dx - 9, center.dy - radius * 0.68 + 10);
-    final rightBase = Offset(center.dx + 9, center.dy - radius * 0.68 + 10);
+    final leftBase = Offset(center.dx - 8.5, center.dy - radius * 0.65 + 8);
+    final rightBase = Offset(center.dx + 8.5, center.dy - radius * 0.65 + 8);
 
     final needlePath = Path()
       ..moveTo(tip.dx, tip.dy)
       ..lineTo(rightBase.dx, rightBase.dy)
-      ..lineTo(center.dx, center.dy - radius * 0.68 + 15)
+      ..lineTo(center.dx, center.dy - radius * 0.65 + 14)
       ..lineTo(leftBase.dx, leftBase.dy)
       ..close();
 
     final needlePaint = Paint()
-      ..color = isAligned ? accentLightColor : accentColor
+      ..color = isAligned ? primaryColor : accentColor
       ..style = PaintingStyle.fill;
     canvas.drawPath(needlePath, needlePaint);
 
-    final needleBorder = Paint()
-      ..color = Colors.black45
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    canvas.drawPath(needlePath, needleBorder);
-
     final emblemPaint = Paint()
-      ..color = isAligned ? accentLightColor : accentColor
+      ..color = isAligned ? accentColor : primaryColor
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(center.dx, tip.dy - 3), 4.5, emblemPaint);
+    canvas.drawCircle(Offset(center.dx, tip.dy - 2), 4.5, emblemPaint);
   }
 
   @override
   bool shouldRepaint(covariant _QiblaPointerPainter oldDelegate) {
     return oldDelegate.isAligned != isAligned ||
+        oldDelegate.primaryColor != primaryColor ||
         oldDelegate.accentColor != accentColor;
   }
 }

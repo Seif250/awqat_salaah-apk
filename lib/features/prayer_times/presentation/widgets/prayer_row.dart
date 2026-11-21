@@ -161,18 +161,17 @@ class PrayerRow extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  if (isSunrise)
+                  if (isSunrise) ...[
+                    const SizedBox(height: 2),
                     Text(
                       'شروق الشمس',
                       style: AppTypography.meta(p.textSecondary, size: 11.5),
-                    )
-                  else
+                    ),
+                  ] else if (iqamahTimeFormatted != null &&
+                      prayer.iqamahOffsetMinutes > 0) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      iqamahTimeFormatted != null &&
-                              prayer.iqamahOffsetMinutes > 0
-                          ? 'الأذان $formattedTime  •  الإقامة $iqamahTimeFormatted'
-                          : 'الأذان $formattedTime',
+                      'الإقامة $iqamahTimeFormatted',
                       style: AppTypography.meta(
                         isPassed
                             ? p.textSecondary.withValues(alpha: 0.85)
@@ -180,6 +179,7 @@ class PrayerRow extends StatelessWidget {
                         size: 11.5,
                       ),
                     ),
+                  ],
                 ],
               ),
             ),

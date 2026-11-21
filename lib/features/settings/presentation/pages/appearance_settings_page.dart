@@ -50,11 +50,16 @@ class AppearanceSettingsPage extends StatelessWidget {
                 forcesDark: state.colorPalette.forcesDarkMode,
                 onChanged: (mode) {
                   context.read<SettingsBloc>().add(ChangeThemeModeEvent(mode));
+                  try {
+                    context
+                        .read<PrayerBloc>()
+                        .add(const RefreshPrayerTimesEvent());
+                  } catch (_) {}
                 },
               ),
               const SizedBox(height: 18),
 
-              // 3. 5 Selectable Golden-Quran Color Palettes
+              // 3. 3 Core Color Palettes
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                 child: Text(
@@ -73,6 +78,11 @@ class AppearanceSettingsPage extends StatelessWidget {
                   context
                       .read<SettingsBloc>()
                       .add(ChangeColorPaletteEvent(palette));
+                  try {
+                    context
+                        .read<PrayerBloc>()
+                        .add(const RefreshPrayerTimesEvent());
+                  } catch (_) {}
                 },
               ),
               const SizedBox(height: 10),
@@ -86,7 +96,8 @@ class AppearanceSettingsPage extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: p.accent.withValues(alpha: p.isDark ? 0.14 : 0.10),
+                        color:
+                            p.accent.withValues(alpha: p.isDark ? 0.14 : 0.10),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -137,7 +148,8 @@ class AppearanceSettingsPage extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
                   color: p.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
@@ -169,9 +181,10 @@ class AppearanceSettingsPage extends StatelessWidget {
               '﴿ أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ ﴾',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'AmiriQuran',
-                fontSize: 19,
-                height: 1.85,
+                fontFamily: 'IBMPlexSansArabic',
+                fontSize: 16.5,
+                fontWeight: FontWeight.w600,
+                height: 1.75,
                 color: p.textPrimary,
               ),
             ),

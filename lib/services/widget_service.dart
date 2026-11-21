@@ -15,6 +15,8 @@ class WidgetService {
     required bool isArabic,
     required bool is24Hour,
     int tomorrowFajrTimestamp = 0,
+    String colorPalette = 'royalEmerald',
+    String themeMode = 'system',
   }) async {
     try {
       final isDuringIqamah = prayerDay.phase == PrayerPhase.duringIqamah;
@@ -99,6 +101,8 @@ class WidgetService {
         // ── Settings ──
         'widget_is_24hour': is24Hour,
         'widget_is_arabic': isArabic,
+        'widget_palette': colorPalette,
+        'widget_theme_mode': themeMode,
 
         // ── Tomorrow's Fajr for overnight rollover ──
         'widget_ts_tomorrow_fajr': tomorrowFajrTimestamp,

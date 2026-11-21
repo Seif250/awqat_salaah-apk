@@ -233,50 +233,6 @@ class _QiblaPageState extends State<QiblaPage> {
     );
   }
 
-  void _showSunGuideDialog() {
-    final p = context.palette;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wb_sunny_rounded, color: p.sunrise),
-            const SizedBox(width: 8),
-            Text('تحديد القبلة بظل الشمس', style: AppTypography.sectionHeader(p.textPrimary)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'ظاهرة تعامد الشمس على الكعبة المشرفة:',
-              style: AppTypography.rowTitle(p.textPrimary),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'تتعامد الشمس مباشرة فوق الكعبة المشرفة مرتين كل عام (٢٧-٢٨ مايو و١٥-١٦ يوليو). في تلك اللحظات، يكون اتجاه القبلة في أي مكان في العالم معاكساً لظل أي شاخص عمودي.',
-              style: AppTypography.meta(p.textPrimary),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'وفي سائر الأيام، توفر البوصلة الرقمية والخريطة المدمجة التوجيه الدقيق المباشر.',
-              style: AppTypography.meta(p.textSecondary),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('إغلاق', style: AppTypography.meta(p.accentText, weight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -285,15 +241,10 @@ class _QiblaPageState extends State<QiblaPage> {
       backgroundColor: p.background,
       appBar: AppBar(
         title: Text(
-          'اتجاه القبلة الشريفة',
+          'اتجاه القبلة',
           style: AppTypography.pageTitle(p.textPrimary),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.wb_sunny_outlined),
-            tooltip: 'تحديد القبلة بالشمس',
-            onPressed: _showSunGuideDialog,
-          ),
           IconButton(
             icon: const Icon(Icons.screen_rotation_outlined),
             tooltip: 'معايرة البوصلة',
@@ -331,32 +282,21 @@ class _QiblaPageState extends State<QiblaPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Open Editorial Location Header (no boxed border clutter)
+                // Clean Location Selector Row (city & country only, no raw coordinates)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.location_on_rounded,
-                        color: p.accent,
-                        size: 20,
+                        Icons.location_on_outlined,
+                        color: p.accentText,
+                        size: 19,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '$cityName، $countryName',
-                              style: AppTypography.rowTitle(p.textPrimary),
-                            ),
-                            Text(
-                              '${lat.toStringAsFixed(2)}° ش • ${lng.toStringAsFixed(2)}° ق',
-                              style: AppTypography.label(p.textSecondary).copyWith(
-                                fontFeatures: const [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          '$cityName، $countryName',
+                          style: AppTypography.rowTitle(p.textPrimary),
                         ),
                       ),
                       TextButton.icon(
@@ -369,7 +309,7 @@ class _QiblaPageState extends State<QiblaPage> {
                             context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
                           }
                         },
-                        icon: const Icon(Icons.edit_location_alt_rounded, size: 16),
+                        icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
                         label: Text(
                           'تغيير',
                           style: AppTypography.meta(p.accentText, weight: FontWeight.w700),
@@ -379,12 +319,12 @@ class _QiblaPageState extends State<QiblaPage> {
                   ),
                 ),
                 Container(height: 0.75, color: p.hairline),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-                // Live Sensor Status Strip
+                // Show compact status strip only when needed (sensor missing / loading / manual)
                 _buildSensorStatusBadge(p),
 
-                // Qibla Compass Dial with Integrated Map Inside
+                // Qibla Compass Dial with Integrated Radar Inside
                 Center(
                   child: QiblaCompassWidget(
                     userLat: lat,
@@ -392,11 +332,17 @@ class _QiblaPageState extends State<QiblaPage> {
                     qiblaAngle: qiblaAngle,
                     distanceKm: distanceKm,
                     currentHeading: _currentHeading,
+                    onHeadingChanged: (angle) {
+                      setState(() {
+                        _isAutoCompass = false;
+                        _currentHeading = angle;
+                      });
+                    },
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Open 3-Column Metrics Strip divided by clean vertical hairlines
+                // Concise 2-Column Metrics Strip divided by a clean vertical hairline
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
@@ -419,83 +365,12 @@ class _QiblaPageState extends State<QiblaPage> {
                         _buildStatColumn(
                           p: p,
                           title: 'المسافة لمكة',
-                          value: toArabicDigits(distanceKm.round()),
-                          subtitle: 'كيلومتر',
-                          accentColor: p.success,
-                        ),
-                        Container(width: 0.75, color: p.hairline),
-                        _buildStatColumn(
-                          p: p,
-                          title: 'الاتجاه الحالي',
-                          value: '${toArabicDigits(_currentHeading.round())}°',
-                          subtitle: _getDirectionCardinal(_currentHeading),
+                          value: '${toArabicDigits(distanceKm.round())} كم',
+                          subtitle: 'المسجد الحرام',
                           accentColor: p.accentText,
                         ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Automatic Compass Sensor Status & Live Calibration Row
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: p.primaryContainer,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.autorenew_rounded,
-                          size: 20,
-                          color: p.success,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  'التوجيه التلقائي للمستشعر نشط',
-                                  style: AppTypography.rowTitle(p.textPrimary),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: p.primaryContainer,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'تلقائي',
-                                    style: AppTypography.badge(p.success),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _hasCompassSensor
-                                  ? 'البوصلة تدور تلقائياً مع حركة يدك لتوجيهك بدقة نحو القبلة'
-                                  : 'جهازك لا يدعم مستشعر البوصلة المغناطيسي',
-                              style: AppTypography.label(p.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.screen_rotation_rounded, size: 20, color: p.accentText),
-                        tooltip: 'معايرة البوصلة',
-                        onPressed: _showCalibrationDialog,
-                      ),
-                    ],
                   ),
                 ),
               ],
@@ -562,48 +437,7 @@ class _QiblaPageState extends State<QiblaPage> {
     }
 
     if (_isAutoCompass && _sensorDataReceived) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: p.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: p.success,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'البوصلة التلقائية نشطة • يلتف القرص تلقائياً مع دوران هاتفك',
-                style: AppTypography.label(p.textPrimary, weight: FontWeight.w600),
-              ),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              ),
-              onPressed: () {
-                setState(() {
-                  _isAutoCompass = false;
-                });
-              },
-              child: Text(
-                'وضع يدوي',
-                style: AppTypography.label(p.accentText, weight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     if (!_isAutoCompass) {

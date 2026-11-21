@@ -68,8 +68,44 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
   late final TextEditingController _referenceController;
   late int _targetCount;
   late Set<AzkarCategory> _selectedCategories;
+  late bool _showOptionalFields;
 
   bool get _isEditing => widget.item != null;
+
+  static const _starterTemplates = [
+    (
+      label: 'الصلاة على النبي ﷺ',
+      title: 'الصلاة على النبي ﷺ',
+      text: 'اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ',
+      count: 10,
+      reference: 'صحيح الجامع',
+      reward: 'من صلّى عليّ حين يصبح وحين يمسي عشراً أدركته شفاعتي يوم القيامة.',
+    ),
+    (
+      label: 'الاستغفار',
+      title: 'الاستغفار',
+      text: 'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ',
+      count: 100,
+      reference: 'متفق عليه',
+      reward: 'مئة مرة في اليوم على هدي النبي ﷺ.',
+    ),
+    (
+      label: 'سبحان الله وبحمده',
+      title: 'التسبيح والتحميد',
+      text: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
+      count: 100,
+      reference: 'متفق عليه',
+      reward: 'حُطّت خطاياه وإن كانت مثل زبد البحر.',
+    ),
+    (
+      label: 'الباقيات الصالحات',
+      title: 'الباقيات الصالحات',
+      text: 'سُبْحَانَ اللَّهِ، وَالْحَمْدُ لِلَّهِ، وَلَا إِلَهَ إِلَّا اللَّهُ، وَاللَّهُ أَكْبَرُ',
+      count: 33,
+      reference: 'صحيح مسلم',
+      reward: 'أحب الكلام إلى الله أربع.',
+    ),
+  ];
 
   @override
   void initState() {
@@ -82,6 +118,9 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
     _rewardController = TextEditingController(text: widget.item?.reward ?? '');
     _referenceController =
         TextEditingController(text: widget.item?.reference ?? '');
+    _showOptionalFields =
+        (widget.item?.reward?.trim().isNotEmpty ?? false) ||
+            (widget.item?.reference?.trim().isNotEmpty ?? false);
 
     final initialCat = widget.initialCategory ?? AzkarCategory.custom;
     if (widget.item != null) {
@@ -234,7 +273,63 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                 isEditing: _isEditing,
                 onClose: () => Navigator.pop(context),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+
+              if (!_isEditing) ...[
+                Text(
+                  'نماذج سريعة للتعبئة التلقائية',
+                  style: AppTypography.label(
+                    p.textSecondary,
+                    weight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _starterTemplates.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final tpl = _starterTemplates[index];
+                      return ActionChip(
+                        avatar: Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 14,
+                          color: p.accentText,
+                        ),
+                        label: Text(
+                          tpl.label,
+                          style: AppTypography.label(
+                            p.accentText,
+                            weight: FontWeight.w600,
+                          ),
+                        ),
+                        backgroundColor: p.primaryContainer.withValues(alpha: 0.7),
+                        side: BorderSide(
+                          color: p.primary.withValues(alpha: 0.2),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onPressed: () {
+                          setState(() {
+                            _titleController.text = tpl.title;
+                            _textController.text = tpl.text;
+                            _targetCount = tpl.count;
+                            _countController.text = tpl.count.toString();
+                            _referenceController.text = tpl.reference;
+                            _rewardController.text = tpl.reward;
+                            _showOptionalFields = true;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
 
               // 1. Title (اسم الذكر) - Required
               TextFormField(
@@ -251,15 +346,15 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                     ? 'يرجى كتابة اسم للذكر'
                     : null,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
 
               // 2. Arabic Text (نص الذكر) - Required (hero input)
               TextFormField(
                 controller: _textController,
-                maxLines: 5,
+                maxLines: 4,
                 textDirection: TextDirection.rtl,
                 style: const TextStyle(
-                    fontFamily: 'Amiri', fontSize: 16, height: 1.6),
+                    fontFamily: 'IBMPlexSansArabic', fontSize: 16, height: 1.6),
                 decoration: InputDecoration(
                   labelText: 'نص الذكر أو الدعاء *',
                   hintText: 'اكتب نص الذكر كاملاً هنا...',
@@ -267,7 +362,7 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14)),
                   prefixIcon: const Padding(
-                    padding: EdgeInsets.only(bottom: 60),
+                    padding: EdgeInsets.only(bottom: 44),
                     child: Icon(Icons.format_quote_rounded),
                   ),
                 ),
@@ -275,53 +370,23 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                     ? 'نص الذكر مطلوب'
                     : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // 3. Repetition count (عدد التكرار)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: ZikrTargetCountChips(
-                      targetCount: _targetCount,
-                      onCountChanged: (count) {
-                        setState(() {
-                          _targetCount = count;
-                          _countController.text = count.toString();
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      controller: _countController,
-                      keyboardType: TextInputType.number,
-                      textDirection: TextDirection.ltr,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        labelText: 'العدد المحدد',
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      validator: (val) {
-                        final n = int.tryParse(val?.trim() ?? '');
-                        if (n == null || n <= 0) return 'عدد موجب';
-                        return null;
-                      },
-                      onChanged: (val) {
-                        final n = int.tryParse(val.trim());
-                        if (n != null && n > 0) {
-                          setState(() => _targetCount = n);
-                        }
-                      },
-                    ),
-                  ),
-                ],
+              ZikrTargetCountChips(
+                targetCount: _targetCount,
+                controller: _countController,
+                onCountChanged: (count) {
+                  setState(() {
+                    _targetCount = count;
+                    final textVal = count.toString();
+                    if (_countController.text != textVal) {
+                      _countController.text = textVal;
+                    }
+                  });
+                },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // 4. Category (القسم)
               ZikrCategorySelector(
@@ -330,35 +395,71 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                     setState(() => _selectedCategories = updated),
                 isDark: isDark,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
 
-              // 5. Source / Reference (المصدر / المرجع) - Optional
-              TextFormField(
-                controller: _referenceController,
-                textDirection: TextDirection.rtl,
-                decoration: InputDecoration(
-                  labelText: 'المصدر أو المرجع (اختياري)',
-                  hintText: 'مثال: صحيح البخاري، الترمذي...',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  prefixIcon: const Icon(Icons.menu_book_rounded),
+              // 5 & 6. Collapsible optional fields (المصدر وفضل الذكر)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  icon: Icon(
+                    _showOptionalFields
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.add_circle_outline_rounded,
+                    size: 18,
+                    color: p.accentText,
+                  ),
+                  label: Text(
+                    _showOptionalFields
+                        ? 'إخفاء المصدر والفضل'
+                        : 'إضافة المصدر وفضل الذكر (اختياري)',
+                    style: AppTypography.meta(
+                      p.accentText,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() => _showOptionalFields = !_showOptionalFields);
+                  },
                 ),
               ),
-              const SizedBox(height: 12),
-
-              // 6. Note (ملاحظة أو فضل الذكر) - Optional
-              TextFormField(
-                controller: _rewardController,
-                textDirection: TextDirection.rtl,
-                decoration: InputDecoration(
-                  labelText: 'ملاحظة أو فضل الذكر (اختياري)',
-                  hintText: 'مثال: يقال عند الاستيقاظ، حطت خطاياه...',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  prefixIcon: const Icon(Icons.note_alt_outlined),
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 220),
+                crossFadeState: _showOptionalFields
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                firstChild: const SizedBox.shrink(),
+                secondChild: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _referenceController,
+                        textDirection: TextDirection.rtl,
+                        decoration: InputDecoration(
+                          labelText: 'المصدر أو المرجع (اختياري)',
+                          hintText: 'مثال: صحيح البخاري، الترمذي...',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          prefixIcon: const Icon(Icons.menu_book_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _rewardController,
+                        textDirection: TextDirection.rtl,
+                        decoration: InputDecoration(
+                          labelText: 'ملاحظة أو فضل الذكر (اختياري)',
+                          hintText: 'مثال: يقال عند الاستيقاظ، حطت خطاياه...',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          prefixIcon: const Icon(Icons.note_alt_outlined),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
 
               // Action Buttons: Save & Delete
               EditZikrActionButtons(

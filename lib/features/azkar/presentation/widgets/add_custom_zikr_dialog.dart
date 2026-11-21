@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'edit_zikr_form_fields.dart';
 import '../../../../core/theme/app_color_palette.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/models/custom_zikr_model.dart';
@@ -92,13 +93,36 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: p.hairline,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.star_outline_rounded, size: 22, color: p.accent),
-                      const SizedBox(width: 8),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: p.primaryContainer,
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Icon(
+                          Icons.star_outline_rounded,
+                          size: 20,
+                          color: p.accentText,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Text('إضافة ذكر مخصص', style: AppTypography.sectionHeader(p.textPrimary)),
                     ],
                   ),
@@ -136,49 +160,9 @@ class _AddCustomZikrDialogState extends State<AddCustomZikrDialog> {
               ),
               const SizedBox(height: 18),
 
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('العدد المطلوب:', style: AppTypography.meta(p.textPrimary, weight: FontWeight.w700)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: p.primaryContainer,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '$_targetCount ${_targetCount == 1 ? "مرة" : "مرات"}',
-                          style: AppTypography.badge(p.accentText),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [1, 3, 7, 33, 70, 100].map((count) {
-                      final isSelected = _targetCount == count;
-                      return ChoiceChip(
-                        label: Text('$count'),
-                        selected: isSelected,
-                        showCheckmark: false,
-                        visualDensity: VisualDensity.compact,
-                        selectedColor: p.primaryContainer,
-                        labelStyle: AppTypography.label(
-                          isSelected ? p.accentText : p.textPrimary,
-                          weight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                        onSelected: (selected) {
-                          if (selected) setState(() => _targetCount = count);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ],
+              ZikrTargetCountChips(
+                targetCount: _targetCount,
+                onCountChanged: (count) => setState(() => _targetCount = count),
               ),
               const SizedBox(height: 16),
 

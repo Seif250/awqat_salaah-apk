@@ -1,4 +1,3 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import '../../../../core/constants/prayer_constants.dart';
 import '../../../../core/theme/app_color_palette.dart';
@@ -100,7 +99,6 @@ class _NextPrayerCardState extends State<NextPrayerCard>
       iqamahOffsetMinutes: focusedPrayerModel?.iqamahOffsetMinutes ?? 15,
     );
 
-    final scrimBase = isDuringIqamah ? const Color(0xFF0B4654) : palette.primary;
     final warmTint = const Color(0xFFFFF4D4);
 
     return Semantics(
@@ -126,23 +124,18 @@ class _NextPrayerCardState extends State<NextPrayerCard>
                 ),
               ),
 
-              // Lighter, serene directional scrim matched to palette & phase
+              // Clean translucent black scrim for sharp photo & high contrast
               Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 0.6, sigmaY: 0.6),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          scrimBase.withValues(alpha: 0.34),
-                          Color.lerp(scrimBase, Colors.black, 0.38)!
-                              .withValues(alpha: 0.70),
-                          Color.lerp(scrimBase, Colors.black, 0.55)!
-                              .withValues(alpha: 0.86),
-                        ],
-                      ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.42),
+                        Colors.black.withValues(alpha: 0.62),
+                        Colors.black.withValues(alpha: 0.78),
+                      ],
                     ),
                   ),
                 ),
