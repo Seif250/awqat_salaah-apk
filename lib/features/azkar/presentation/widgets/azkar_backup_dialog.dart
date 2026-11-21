@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../data/models/azkar_item_model.dart';
 import '../../data/repositories/azkar_repository.dart';
 import '../../data/services/azkar_backup_service.dart';
@@ -159,115 +160,116 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
   }
 
   void _showConfirmationDialog(List<AzkarItem> items) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     showDialog(
       context: context,
-      builder: (dlgCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.check_circle_outline_rounded, color: AppColors.accentGold),
-            const SizedBox(width: 8),
-            Text('تأكيد استرجاع الأذكار (${items.length})'),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (dlgCtx) {
+        final p = dlgCtx.palette;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
             children: [
-              Text(
-                _replaceExisting
-                    ? 'سيتم استبدال جميع الأذكار المخصصة الحالية بالأذكار التالية:'
-                    : 'سيتم دمج الأذكار التالية مع أذكارك المخصصة الحالية:',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: Container(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                    ),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const Divider(height: 8),
-                    itemBuilder: (_, i) {
-                      final item = items[i];
-                      return ListTile(
-                        dense: true,
-                        visualDensity: VisualDensity.compact,
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          radius: 12,
-                          backgroundColor: AppColors.primaryLight.withValues(alpha: 0.2),
-                          child: Text(
-                            '${i + 1}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.primaryLight),
-                          ),
-                        ),
-                        title: Text(
-                          item.title.isNotEmpty ? item.title : item.arabicText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                        trailing: Text(
-                          '${item.targetCount}x',
-                          style: const TextStyle(color: AppColors.accentGold, fontSize: 12),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
+              Icon(Icons.check_circle_outline_rounded, color: p.accent),
+              const SizedBox(width: 8),
+              Text('تأكيد استرجاع الأذكار (${items.length})', style: AppTypography.rowTitle(p.textPrimary)),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dlgCtx),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.pop(dlgCtx);
-              context.read<AzkarBloc>().add(
-                    ImportCustomAzkarEvent(
-                      items: items,
-                      replaceExisting: _replaceExisting,
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _replaceExisting
+                      ? 'سيتم استبدال جميع الأذكار المخصصة الحالية بالأذكار التالية:'
+                      : 'سيتم دمج الأذكار التالية مع أذكارك المخصصة الحالية:',
+                  style: AppTypography.meta(p.textPrimary, weight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: p.cardElevated,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  );
-              _setStatus(
-                'تم استرجاع ${items.length} أذكار مخصصة بنجاح!',
-                isSuccess: true,
-              );
-              _pasteController.clear();
-            },
-            child: const Text('تأكيد وحفظ'),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => Divider(height: 8, color: p.hairline),
+                      itemBuilder: (_, i) {
+                        final item = items[i];
+                        return ListTile(
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            radius: 12,
+                            backgroundColor: p.primaryContainer,
+                            child: Text(
+                              '${i + 1}',
+                              style: AppTypography.badge(p.accentText),
+                            ),
+                          ),
+                          title: Text(
+                            item.title.isNotEmpty ? item.title : item.arabicText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.meta(p.textPrimary, weight: FontWeight.w700),
+                          ),
+                          trailing: Text(
+                            '${item.targetCount}x',
+                            style: AppTypography.badge(p.accentText),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dlgCtx),
+              child: Text('إلغاء', style: AppTypography.meta(p.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: p.primary,
+                foregroundColor: p.onPrimary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                Navigator.pop(dlgCtx);
+                context.read<AzkarBloc>().add(
+                      ImportCustomAzkarEvent(
+                        items: items,
+                        replaceExisting: _replaceExisting,
+                      ),
+                    );
+                _setStatus(
+                  'تم استرجاع ${items.length} أذكار مخصصة بنجاح!',
+                  isSuccess: true,
+                );
+                _pasteController.clear();
+              },
+              child: Text(
+                'تأكيد وحفظ',
+                style: AppTypography.meta(p.onPrimary, weight: FontWeight.w700),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final p = context.palette;
     final customItems = _getCustomItems();
 
     return Container(
@@ -275,26 +277,24 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        color: p.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 44,
+              width: 38,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.4),
+                color: p.hairline,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
 
-          // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
@@ -302,35 +302,27 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.accentGold.withValues(alpha: 0.15),
+                    color: p.primaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.sync_alt_rounded, color: AppColors.accentGold, size: 24),
+                  child: Icon(Icons.sync_alt_rounded, color: p.accent, size: 22),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'النسخ الاحتياطي للأذكار المخصصة',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Text('النسخ الاحتياطي للأذكار المخصصة', style: AppTypography.sectionHeader(p.textPrimary)),
                       const SizedBox(height: 2),
                       Text(
                         'حفظ واسترجاع أذكارك الخاصة بصيغة JSON بأمان',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white60 : Colors.black54,
-                        ),
+                        style: AppTypography.label(p.textSecondary),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(Icons.close_rounded, color: p.textSecondary),
                   tooltip: 'إغلاق',
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -338,22 +330,21 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
             ),
           ),
 
-          // Tab Bar
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkCard : AppColors.lightCard,
+              color: p.cardElevated,
               borderRadius: BorderRadius.circular(14),
             ),
             child: TabBar(
               controller: _tabController,
               indicatorSize: TabBarIndicatorSize.tab,
               indicator: BoxDecoration(
-                color: AppColors.primary,
+                color: p.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
-              labelColor: Colors.white,
-              unselectedLabelColor: isDark ? Colors.white60 : Colors.black54,
+              labelColor: p.onPrimary,
+              unselectedLabelColor: p.textSecondary,
               tabs: [
                 Tab(
                   icon: const Icon(Icons.upload_file_rounded, size: 18),
@@ -373,38 +364,28 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _isSuccess
-                    ? Colors.green.withValues(alpha: 0.12)
-                    : Colors.orange.withValues(alpha: 0.12),
+                color: _isSuccess ? p.primaryContainer : p.error.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _isSuccess
-                      ? Colors.green.withValues(alpha: 0.4)
-                      : Colors.orange.withValues(alpha: 0.4),
-                ),
               ),
               child: Row(
                 children: [
                   Icon(
                     _isSuccess ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                    color: _isSuccess ? Colors.green : Colors.orange,
+                    color: _isSuccess ? p.success : p.error,
                     size: 20,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       _statusMessage!,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: _isSuccess
-                            ? (isDark ? Colors.greenAccent : Colors.green[800])
-                            : (isDark ? Colors.orangeAccent : Colors.orange[900]),
-                        height: 1.3,
+                      style: AppTypography.label(
+                        _isSuccess ? p.success : p.error,
+                        weight: FontWeight.w600,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16),
+                    icon: Icon(Icons.close, size: 16, color: p.textSecondary),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () => setState(() => _statusMessage = null),
@@ -414,10 +395,10 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
             ),
 
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Center(
-                child: CircularProgressIndicator(color: AppColors.accentGold),
+                child: CircularProgressIndicator(color: p.primary),
               ),
             ),
 
@@ -426,11 +407,8 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
             child: TabBarView(
               controller: _tabController,
               children: [
-                // TAB 1: EXPORT
-                _buildExportTab(context, customItems, isDark),
-
-                // TAB 2: IMPORT
-                _buildImportTab(context, isDark),
+                _buildExportTab(context, customItems, p.isDark),
+                _buildImportTab(context, p.isDark),
               ],
             ),
           ),
@@ -440,22 +418,19 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
   }
 
   Widget _buildExportTab(BuildContext context, List<AzkarItem> customItems, bool isDark) {
+    final p = context.palette;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Summary Card
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primaryLight.withValues(alpha: isDark ? 0.12 : 0.08),
+            color: p.primaryContainer,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.primaryLight.withValues(alpha: 0.3),
-            ),
           ),
           child: Row(
             children: [
-              const Icon(Icons.bookmark_added_rounded, color: AppColors.primaryLight, size: 30),
+              Icon(Icons.bookmark_added_rounded, color: p.primary, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -463,12 +438,12 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
                   children: [
                     Text(
                       'أذكارك المخصصة المسجلة: ${customItems.length} أذكار',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: AppTypography.rowTitle(p.textPrimary),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'احفظ نسختك في ملف أو سحابياً لتتمكن من استرجاعها بضغطة زر عند إعادة تثبيت التطبيق.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.3),
+                      style: AppTypography.label(p.textSecondary),
                     ),
                   ],
                 ),
@@ -478,10 +453,9 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
         ),
         const SizedBox(height: 16),
 
-        // Action 1: Save to File (Folder Picker / Internal / SD Card)
         _buildActionTile(
           icon: Icons.save_alt_rounded,
-          iconColor: AppColors.accentGold,
+          iconColor: p.accent,
           title: 'حفظ كملف في الذاكرة (JSON)',
           subtitle: 'تحديد مكان الحفظ بنفسك (الذاكرة الداخلية، كارت SD، أو التنزيلات)',
           onTap: () => _exportToFile(customItems),
@@ -489,10 +463,9 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
         ),
         const SizedBox(height: 10),
 
-        // Action 2: Cloud / Share (Google Drive / WhatsApp)
         _buildActionTile(
           icon: Icons.share_rounded,
-          iconColor: Colors.blueAccent,
+          iconColor: p.primary,
           title: 'مشاركة وحفظ سحابي',
           subtitle: 'إرسال الملف مباشرة إلى Google Drive، واتساب، أو تطبيق الملفات',
           onTap: () => _shareBackup(customItems),
@@ -500,10 +473,9 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
         ),
         const SizedBox(height: 10),
 
-        // Action 3: Copy JSON Code
         _buildActionTile(
           icon: Icons.copy_rounded,
-          iconColor: Colors.teal,
+          iconColor: p.accentText,
           title: 'نسخ كود JSON إلى الحافظة',
           subtitle: 'نسخ نصوص وبيانات الأذكار ككود خام للملاحظات أو الحافظة',
           onTap: () => _copyJsonToClipboard(customItems),
@@ -514,26 +486,20 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
   }
 
   Widget _buildImportTab(BuildContext context, bool isDark) {
+    final p = context.palette;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Import Strategy Selector Card
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            color: p.cardElevated,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'طريقة استرجاع الأذكار:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
+              Text('طريقة استرجاع الأذكار:', style: AppTypography.rowTitle(p.textPrimary)),
               const SizedBox(height: 6),
               RadioGroup<bool>(
                 groupValue: _replaceExisting,
@@ -541,20 +507,20 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
                 child: Column(
                   children: [
                     RadioListTile<bool>(
-                      title: const Text('دمج مع الأذكار الحالية (موصى به)', style: TextStyle(fontSize: 13)),
-                      subtitle: const Text('يحتفظ بأذكارك الحالية ويضيف الأذكار الجديدة إليها دون تكرار', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      title: Text('دمج مع الأذكار الحالية (موصى به)', style: AppTypography.meta(p.textPrimary)),
+                      subtitle: Text('يحتفظ بأذكارك الحالية ويضيف الأذكار الجديدة إليها دون تكرار', style: AppTypography.label(p.textSecondary)),
                       value: false,
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      activeColor: AppColors.accentGold,
+                      activeColor: p.primary,
                     ),
                     RadioListTile<bool>(
-                      title: const Text('استبدال كامل للأذكار المخصصة', style: TextStyle(fontSize: 13)),
-                      subtitle: const Text('حذف الأذكار المخصصة الحالية ووضع أذكار النسخة الاحتياطية فقط', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      title: Text('استبدال كامل للأذكار المخصصة', style: AppTypography.meta(p.textPrimary)),
+                      subtitle: Text('حذف الأذكار المخصصة الحالية ووضع أذكار النسخة الاحتياطية فقط', style: AppTypography.label(p.textSecondary)),
                       value: true,
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      activeColor: Colors.redAccent,
+                      activeColor: p.error,
                     ),
                   ],
                 ),
@@ -564,10 +530,9 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
         ),
         const SizedBox(height: 16),
 
-        // Method 1: Pick File from Phone
         _buildActionTile(
           icon: Icons.file_open_rounded,
-          iconColor: AppColors.accentGold,
+          iconColor: p.accent,
           title: 'اختيار ملف النسخة الاحتياطية (.json)',
           subtitle: 'استرجاع فوري من ملف JSON محفوظ على الهاتف أو Google Drive',
           onTap: _pickAndImportFile,
@@ -575,15 +540,11 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
         ),
         const SizedBox(height: 16),
 
-        // Method 2: Paste JSON Text
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            color: p.cardElevated,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -591,16 +552,16 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.code_rounded, size: 18, color: Colors.teal),
-                      SizedBox(width: 8),
-                      Text('أو لصق كود JSON مباشرة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      Icon(Icons.code_rounded, size: 18, color: p.primary),
+                      const SizedBox(width: 8),
+                      Text('أو لصق كود JSON مباشرة', style: AppTypography.rowTitle(p.textPrimary)),
                     ],
                   ),
                   TextButton.icon(
                     icon: const Icon(Icons.paste_rounded, size: 16),
-                    label: const Text('لصق من الحافظة', style: TextStyle(fontSize: 12)),
+                    label: Text('لصق من الحافظة', style: AppTypography.label(p.accentText)),
                     onPressed: () async {
                       final data = await Clipboard.getData(Clipboard.kTextPlain);
                       if (data?.text != null && data!.text!.isNotEmpty) {
@@ -619,9 +580,9 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
                 style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
                 decoration: InputDecoration(
                   hintText: 'ألصق محتوى ملف JSON هنا...',
-                  hintStyle: const TextStyle(fontSize: 12),
+                  hintStyle: AppTypography.label(p.textSecondary),
                   filled: true,
-                  fillColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                  fillColor: p.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -633,10 +594,14 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.download_done_rounded, size: 18),
-                  label: const Text('استيراد الكود الملصق'),
+                  label: Text(
+                    'استيراد الكود الملصق',
+                    style: AppTypography.meta(p.onPrimary, weight: FontWeight.w700),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: p.primary,
+                    foregroundColor: p.onPrimary,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   onPressed: _importFromPastedText,
@@ -657,17 +622,16 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
     required VoidCallback onTap,
     required bool isDark,
   }) {
+    final p = context.palette;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : AppColors.lightCard,
+          color: p.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          ),
+          border: Border.all(color: p.hairline, width: 0.75),
         ),
         child: Row(
           children: [
@@ -675,7 +639,7 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: isDark ? 0.16 : 0.1),
+                color: p.primaryContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: iconColor, size: 22),
@@ -685,19 +649,13 @@ class _AzkarBackupDialogState extends State<AzkarBackupDialog>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-                  ),
+                  Text(title, style: AppTypography.rowTitle(p.textPrimary)),
                   const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 11.5, color: Colors.grey, height: 1.3),
-                  ),
+                  Text(subtitle, style: AppTypography.label(p.textSecondary)),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: p.textSecondary),
           ],
         ),
       ),

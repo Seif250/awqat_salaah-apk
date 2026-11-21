@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/notification_service.dart';
 import '../../../../services/storage_service.dart';
@@ -44,17 +45,16 @@ class AdvancedSettingsPage extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final p = context.palette;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.analytics_outlined, color: AppColors.accentGold),
-            SizedBox(width: 8),
-            Text('تقرير التشخيص الشامل'),
+            Icon(Icons.analytics_outlined, color: p.accent),
+            const SizedBox(width: 8),
+            Text('تقرير التشخيص الشامل', style: AppTypography.sectionHeader(p.textPrimary)),
           ],
         ),
         content: SizedBox(
@@ -68,22 +68,21 @@ class AdvancedSettingsPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                    color: p.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.music_note_rounded, color: AppColors.accentGold, size: 22),
+                      Icon(Icons.music_note_rounded, color: p.accentText, size: 22),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('صوت الأذان النشط حالياً:', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                            Text('صوت الأذان النشط حالياً:', style: AppTypography.badge(p.textSecondary)),
                             Text(
                               '${soundCfg["displayName"]} (${soundCfg["channelId"]})',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              style: AppTypography.rowTitle(p.textPrimary),
                             ),
                           ],
                         ),
@@ -97,7 +96,7 @@ class AdvancedSettingsPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceAlt : Colors.grey.shade100,
+                    color: p.cardElevated,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -191,7 +190,7 @@ class AdvancedSettingsPage extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.black54 : Colors.grey.shade200,
+                      color: p.isDark ? Colors.black54 : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -210,7 +209,7 @@ class AdvancedSettingsPage extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.black54 : Colors.grey.shade200,
+                      color: p.isDark ? Colors.black54 : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -231,7 +230,7 @@ class AdvancedSettingsPage extends StatelessWidget {
           FilledButton.icon(
             icon: const Icon(Icons.copy_rounded, size: 16),
             label: const Text('نسخ تقرير التشخيص الشامل'),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.accentGold),
+            style: FilledButton.styleFrom(backgroundColor: p.primary, foregroundColor: p.onPrimary),
             onPressed: () {
               final pendingSummary = pending.map((p) => '[${p.id}] ${p.title}').join('\n');
               final report = StringBuffer()
@@ -369,50 +368,53 @@ class AdvancedSettingsPage extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (bCtx) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.playlist_play_rounded, color: AppColors.accentGold),
-                SizedBox(width: 8),
-                Text('تجربة أصوات الأذان كإشعار منبه', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...sounds.map((s) => ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentGold.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+      builder: (bCtx) {
+        final p = bCtx.palette;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.playlist_play_rounded, color: p.accent),
+                  const SizedBox(width: 8),
+                  Text('تجربة أصوات الأذان كإشعار منبه', style: AppTypography.sectionHeader(p.textPrimary)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...sounds.map((s) => ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: p.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.notifications_active_rounded, color: p.accentText, size: 20),
                     ),
-                    child: const Icon(Icons.notifications_active_rounded, color: AppColors.accentGold, size: 20),
-                  ),
-                  title: Text(s['name']!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(s['desc']!, style: const TextStyle(fontSize: 12)),
-                  trailing: FilledButton.tonal(
-                    onPressed: () async {
-                      final res = await NotificationService().showSoundTestNotification(s['key']!);
-                      if (context.mounted) {
-                        if (res == 'success') {
-                          AppSnackBar.showSuccess(context, 'تم تشغيل إشعار (${s["name"]}) بنجاح');
-                        } else {
-                          AppSnackBar.showError(context, 'تعذر إرسال الإشعار: $res');
+                    title: Text(s['name']!, style: AppTypography.rowTitle(p.textPrimary)),
+                    subtitle: Text(s['desc']!, style: AppTypography.label(p.textSecondary)),
+                    trailing: FilledButton.tonal(
+                      onPressed: () async {
+                        final res = await NotificationService().showSoundTestNotification(s['key']!);
+                        if (context.mounted) {
+                          if (res == 'success') {
+                            AppSnackBar.showSuccess(context, 'تم تشغيل إشعار (${s["name"]}) بنجاح');
+                          } else {
+                            AppSnackBar.showError(context, 'تعذر إرسال الإشعار: $res');
+                          }
                         }
-                      }
-                    },
-                    child: const Text('تجربة'),
-                  ),
-                )),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
+                      },
+                      child: const Text('تجربة'),
+                    ),
+                  )),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
     );
   }
 }

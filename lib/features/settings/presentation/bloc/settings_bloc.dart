@@ -18,6 +18,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<ChangeNotificationOffsetEvent>(_onChangeNotificationOffset);
     on<ChangeNotificationOffsetsEvent>(_onChangeNotificationOffsets);
     on<ChangeThemeModeEvent>(_onChangeThemeMode);
+    on<ChangeColorPaletteEvent>(_onChangeColorPalette);
     on<Toggle24HourFormatEvent>(_onToggle24HourFormat);
     on<UpdateAdjustmentsEvent>(_onUpdateAdjustments);
     on<UpdateIqamahOffsetsEvent>(_onUpdateIqamahOffsets);
@@ -41,6 +42,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       notificationOffsetMinutes: _storageService.notificationOffsetMinutes,
       notificationOffsets: _storageService.notificationOffsets,
       themeMode: _storageService.themeMode,
+      colorPalette: _storageService.colorPalette,
       is24HourFormat: _storageService.is24HourFormat,
       adjustFajr: _storageService.adjustFajr,
       adjustSunrise: _storageService.adjustSunrise,
@@ -123,6 +125,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     await _storageService.setThemeMode(event.themeMode);
     emit(state.copyWith(themeMode: event.themeMode));
+  }
+
+  Future<void> _onChangeColorPalette(
+    ChangeColorPaletteEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await _storageService.setColorPalette(event.colorPalette);
+    emit(state.copyWith(colorPalette: event.colorPalette));
   }
 
   Future<void> _onToggle24HourFormat(

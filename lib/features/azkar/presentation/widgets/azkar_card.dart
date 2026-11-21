@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/theme/app_color_palette.dart';
 import '../../../../core/theme/app_design_system.dart';
 import '../../data/models/azkar_item_model.dart';
 import 'azkar_card_components.dart';
@@ -20,6 +21,7 @@ class AzkarCard extends StatefulWidget {
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
   final bool isBookmarked;
+  final double fontScale;
 
   const AzkarCard({
     super.key,
@@ -38,6 +40,7 @@ class AzkarCard extends StatefulWidget {
     this.onMoveUp,
     this.onMoveDown,
     this.isBookmarked = false,
+    this.fontScale = 1.0,
   });
 
   @override
@@ -88,8 +91,12 @@ class _AzkarCardState extends State<AzkarCard>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = context.palette;
+    final isDark = palette.isDark;
     final isCompleted = widget.item.isCompleted;
+    final progressRatio = widget.item.targetCount > 0
+        ? (widget.item.currentCount / widget.item.targetCount).clamp(0.0, 1.0)
+        : (isCompleted ? 1.0 : 0.0);
 
     return Semantics(
       button: true,
@@ -101,6 +108,7 @@ class _AzkarCardState extends State<AzkarCard>
         decoration: AppDesignSystem.cardDecoration(
           isDark: isDark,
           isCompleted: isCompleted,
+          palette: palette,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusCard),
@@ -120,53 +128,76 @@ class _AzkarCardState extends State<AzkarCard>
                     }
                   : null,
               borderRadius: BorderRadius.circular(AppDesignSystem.radiusCard),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header: Number Circle, Title, More & Share actions
-                    AzkarCardHeader(
-                      item: widget.item,
-                      itemIndex: widget.itemIndex,
-                      isCompleted: isCompleted,
-                      isDark: isDark,
-                      isReorderMode: widget.isReorderMode,
-                      reorderIndex: widget.reorderIndex,
-                      onMoveUp: widget.onMoveUp,
-                      onMoveDown: widget.onMoveDown,
-                      onEdit: widget.onEdit,
-                      onDelete: widget.onDelete,
-                      onBookmark: widget.onBookmark,
-                      onShare: widget.onShare,
-                      isBookmarked: widget.isBookmarked,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header: Number Circle, Title, Share & Edit actions
+                        AzkarCardHeader(
+                          item: widget.item,
+                          itemIndex: widget.itemIndex,
+                          isCompleted: isCompleted,
+                          isDark: isDark,
+                          isReorderMode: widget.isReorderMode,
+                          reorderIndex: widget.reorderIndex,
+                          onMoveUp: widget.onMoveUp,
+                          onMoveDown: widget.onMoveDown,
+                          onEdit: widget.onEdit,
+                          onDelete: widget.onDelete,
+                          onBookmark: widget.onBookmark,
+                          onShare: widget.onShare,
+                          isBookmarked: widget.isBookmarked,
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Body: Open Dhikr Text + Subtle Hairline Virtue Note
+                        AzkarCardBody(
+                          item: widget.item,
+                          isDark: isDark,
+                          fontScale: widget.fontScale,
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Footer: Completion button + Interactive counter
+                        AzkarCardFooter(
+                          item: widget.item,
+                          isCompleted: isCompleted,
+                          isDark: isDark,
+                          isReorderMode: widget.isReorderMode,
+                          scaleAnimation: _scaleAnimation,
+                          onIncrement: widget.onIncrement,
+                          onDecrement: widget.onDecrement ?? () {},
+                          onToggleComplete: widget.onToggleComplete,
+                          onBookmark: widget.onBookmark ?? () {},
+                          isBookmarked: widget.isBookmarked,
+                        ),
+                      ],
                     ),
-
-                    const SizedBox(height: 8),
-
-                    // Body: Arabic Dhikr Text Container + Virtue "من فضلها" Container
-                    AzkarCardBody(
-                      item: widget.item,
-                      isDark: isDark,
-                    ),
-
-                    const SizedBox(height: 9),
-
-                    // Footer: Completion button + [-] Count [+] interactive controls
-                    AzkarCardFooter(
-                      item: widget.item,
-                      isCompleted: isCompleted,
-                      isDark: isDark,
-                      isReorderMode: widget.isReorderMode,
-                      scaleAnimation: _scaleAnimation,
-                      onIncrement: widget.onIncrement,
-                      onDecrement: widget.onDecrement ?? () {},
-                      onToggleComplete: widget.onToggleComplete,
-                      onBookmark: widget.onBookmark ?? () {},
-                      isBookmarked: widget.isBookmarked,
-                    ),
-                  ],
-                ),
+                  ),
+                  // Thin progress line along card bottom
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    tween: Tween<double>(begin: 0, end: progressRatio),
+                    builder: (context, value, _) {
+                      return LinearProgressIndicator(
+                        value: value,
+                        minHeight: 2.5,
+                        backgroundColor: palette.hairline.withValues(alpha: 0.45),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isCompleted ? palette.primary : palette.accent,
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),

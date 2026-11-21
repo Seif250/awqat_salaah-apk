@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/page_transitions.dart';
 import '../../../../services/storage_service.dart';
@@ -52,8 +53,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final p = context.palette;
 
     final slides = [
       _OnboardingSlideData(
@@ -80,6 +80,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     ];
 
     return Scaffold(
+      backgroundColor: p.background,
       body: BlocListener<LocationBloc, LocationState>(
         listener: (context, state) {
           if (state is LocationSuccess) {
@@ -93,22 +94,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               // Top Bar with Skip Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Brand mark
                     Row(
                       children: [
-                        const Icon(Icons.mosque_rounded, size: 22, color: AppColors.accentGold),
+                        Icon(Icons.mosque_outlined,
+                            size: 20, color: p.accentText),
                         const SizedBox(width: 8),
                         Text(
                           'وِرد',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                          ),
+                          style: AppTypography.pageTitle(p.textPrimary)
+                              .copyWith(fontSize: 18),
                         ),
                       ],
                     ),
@@ -117,16 +116,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         onPressed: () {
                           _pageController.animateToPage(
                             2,
-                            duration: const Duration(milliseconds: 350),
+                            duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutCubic,
                           );
                         },
-                        child: const Text(
+                        child: Text(
                           'تخطي',
-                          style: TextStyle(
-                            color: AppColors.accentGold,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTypography.label(p.accentText, size: 13.5),
                         ),
                       )
                     else
@@ -145,88 +141,61 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   },
                   itemBuilder: (context, index) {
                     final slide = slides[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 28, vertical: 24),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Spacer(flex: 1),
-                          // Icon Container with layered glow
+                          const SizedBox(height: 28),
                           Container(
-                            width: 120,
-                            height: 120,
+                            width: 104,
+                            height: 104,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.12),
+                              color: p.primaryContainer,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.accentGold.withValues(alpha: 0.6),
-                                width: 2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.accentGold.withValues(alpha: isDark ? 0.2 : 0.1),
-                                  blurRadius: 24,
-                                  spreadRadius: 2,
-                                ),
-                              ],
                             ),
                             child: Center(
                               child: Icon(
                                 slide.icon,
-                                size: 58,
-                                color: AppColors.accentGold,
+                                size: 48,
+                                color: p.accentText,
                               ),
                             ),
                           ),
                           const SizedBox(height: 24),
-
-                          // Badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 5),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryLight.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: AppColors.primaryLight.withValues(alpha: 0.35),
-                              ),
+                              color: p.cardElevated,
+                              borderRadius: BorderRadius.circular(18),
                             ),
                             child: Text(
                               slide.badge,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryLight,
+                              style: AppTypography.badge(
+                                p.accentText,
+                                size: 12,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 18),
-
-                          // Title
+                          const SizedBox(height: 16),
                           Text(
                             slide.title,
                             textAlign: TextAlign.center,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? AppColors.textPrimaryDark
-                                  : AppColors.textPrimaryLight,
-                            ),
+                            style: AppTypography.pageTitle(p.textPrimary)
+                                .copyWith(fontSize: 22),
                           ),
-                          const SizedBox(height: 14),
-
-                          // Description
+                          const SizedBox(height: 12),
                           Text(
                             slide.description,
                             textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
+                            style: AppTypography.body(
+                              p.textSecondary,
+                              size: 15,
                               height: 1.6,
-                              fontSize: 14.5,
                             ),
                           ),
-                          const Spacer(flex: 2),
                         ],
                       ),
                     );
@@ -236,82 +205,73 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
               // Bottom Area: Indicators & Action Buttons
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Column(
                   children: [
-                    // Dot Indicator
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
                         slides.length,
                         (index) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
+                          duration: const Duration(milliseconds: 220),
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           width: _currentPage == index ? 24 : 8,
                           height: 8,
                           decoration: BoxDecoration(
                             color: _currentPage == index
-                                ? AppColors.accentGold
-                                : (isDark ? Colors.white24 : Colors.black12),
+                                ? p.primary
+                                : p.border,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // Navigation buttons
+                    const SizedBox(height: 22),
                     if (_currentPage < 2)
                       ElevatedButton(
                         onPressed: _nextPage,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: p.primary,
+                          foregroundColor: p.onPrimary,
                           minimumSize: const Size(double.infinity, 52),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          elevation: 2,
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               'التالي',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
+                              style: AppTypography.label(p.onPrimary, size: 15.5),
                             ),
                             const SizedBox(width: 8),
-                            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                            Icon(Icons.arrow_forward_rounded,
+                                color: p.onPrimary, size: 20),
                           ],
                         ),
                       )
                     else ...[
-                      // Final Slide: Location selection
                       ElevatedButton.icon(
                         onPressed: () {
                           context
                               .read<LocationBloc>()
                               .add(const RequestCurrentLocationEvent());
                         },
-                        icon: const Icon(Icons.my_location_rounded, color: Colors.white),
-                        label: const Text(
+                        icon: Icon(Icons.my_location_rounded,
+                            color: p.onPrimary),
+                        label: Text(
                           'استخدام الموقع الحالي (تلقائي)',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                          style: AppTypography.label(p.onPrimary, size: 15),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: p.primary,
+                          foregroundColor: p.onPrimary,
                           minimumSize: const Size(double.infinity, 52),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          elevation: 2,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -322,16 +282,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             _navigateToHome(context);
                           }
                         },
-                        icon: const Icon(Icons.location_city_rounded, color: AppColors.accentGold),
-                        label: const Text(
+                        icon: Icon(Icons.location_city_outlined,
+                            color: p.accentText),
+                        label: Text(
                           'اختيار المدينة يدوياً',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: AppTypography.label(p.accentText, size: 15),
                         ),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 52),
-                          side: const BorderSide(color: AppColors.accentGold, width: 1.5),
+                          side: BorderSide(color: p.border, width: 1),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                       ),

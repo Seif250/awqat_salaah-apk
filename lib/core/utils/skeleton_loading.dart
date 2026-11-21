@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_color_palette.dart';
 
 /// Lightweight pulsing placeholder box.
 /// Uses simple opacity animation — extremely light on low-end devices.
@@ -17,13 +17,13 @@ class ShimmerBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        color: isDark ? AppColors.darkCard : const Color(0xFFE8EDE9),
+        color: p.cardElevated,
       ),
     );
   }

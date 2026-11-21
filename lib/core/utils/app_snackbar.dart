@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_color_palette.dart';
+import '../theme/app_typography.dart';
 
 /// Lightweight custom SnackBar with icon, rounded corners, and themed colors.
 /// No external dependencies. Minimal overhead — just styled SnackBar.
@@ -44,7 +45,7 @@ class AppSnackBar {
       context,
       message,
       Icons.info_rounded,
-      AppColors.accentGold,
+      context.palette.accent,
       actionLabel: actionLabel,
       onAction: onAction,
     );
@@ -68,7 +69,7 @@ class AppSnackBar {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message, style: const TextStyle(fontFamily: 'Cairo')),
+          content: Text(message, style: const TextStyle(fontFamily: AppTypography.uiFont)),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -243,10 +244,10 @@ class _ToastWidgetState extends State<_ToastWidget>
                           child: Text(
                             widget.message,
                             style: TextStyle(
-                              fontFamily: 'Cairo',
+                              fontFamily: AppTypography.uiFont,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : const Color(0xFF1E293B),
+                              color: isDark ? Colors.white : const Color(0xFF13201B),
                               height: 1.25,
                             ),
                             maxLines: 2,
@@ -267,7 +268,7 @@ class _ToastWidgetState extends State<_ToastWidget>
                               child: Text(
                                 widget.actionLabel!,
                                 style: TextStyle(
-                                  fontFamily: 'Cairo',
+                                  fontFamily: AppTypography.uiFont,
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w800,
                                   color: widget.accentColor,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/prayer_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/prayer_phase_glyph.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../data/models/prayer_time_model.dart';
 
@@ -18,28 +20,9 @@ class PrayerRow extends StatelessWidget {
     this.isLast = false,
   });
 
-  IconData _getPrayerIcon(PrayerType type) {
-    switch (type) {
-      case PrayerType.fajr:
-        return Icons.nights_stay_outlined;
-      case PrayerType.sunrise:
-        return Icons.wb_sunny_outlined;
-      case PrayerType.dhuhr:
-        return Icons.light_mode_outlined;
-      case PrayerType.asr:
-        return Icons.wb_twilight_outlined;
-      case PrayerType.maghrib:
-        return Icons.nightlight_outlined;
-      case PrayerType.isha:
-        return Icons.bedtime_outlined;
-      case PrayerType.none:
-        return Icons.access_time_outlined;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
     final now = DateTime.now();
     final isInIqamahWindow = prayer.isCurrentlyInIqamahWindow(now);
     final isSunrise = prayer.type == PrayerType.sunrise;
@@ -49,185 +32,168 @@ class PrayerRow extends StatelessWidget {
       is24Hour: is24Hour,
     );
 
-    final iqamahTimeFormatted = prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0
-        ? DateUtilsHelper.formatPrayerTime(
-            prayer.iqamahTime!,
-            is24Hour: is24Hour,
-          )
-        : null;
+    final iqamahTimeFormatted =
+        prayer.iqamahTime != null && prayer.iqamahOffsetMinutes > 0
+            ? DateUtilsHelper.formatPrayerTime(
+                prayer.iqamahTime!,
+                is24Hour: is24Hour,
+              )
+            : null;
 
     final isHighlighted = prayer.isNext || prayer.isCurrent || isInIqamahWindow;
+    final isPassed = !isHighlighted && prayer.time.isBefore(now);
 
     final semanticDescription = StringBuffer(prayer.type.nameArabic)
       ..write('، وقت الأذان $formattedTime');
     if (iqamahTimeFormatted != null) {
       semanticDescription.write('، موعد الإقامة $iqamahTimeFormatted');
     }
+    if (isInIqamahWindow) {
+      semanticDescription.write('، أُذِّن الآن');
+    } else if (prayer.isNext) {
+      semanticDescription.write('، الصلاة القادمة');
+    }
+
+    // Calm complementary highlight so NextPrayerCard remains primary focal point
+    final Color glyphColor = isInIqamahWindow
+        ? p.iqamah
+        : (isHighlighted
+            ? p.accentText
+            : (isSunrise ? p.sunrise : p.textSecondary));
 
     return Semantics(
       label: semanticDescription.toString(),
       container: true,
       excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isHighlighted
-              ? (isDark ? const Color(0xFF13281E) : const Color(0xFFEDF6F1))
-              : Colors.transparent,
-          border: isHighlighted
-              ? Border(
+        margin: isHighlighted
+            ? const EdgeInsets.symmetric(vertical: 3)
+            : EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        decoration: isHighlighted
+            ? BoxDecoration(
+                color: isInIqamahWindow ? p.iqamahContainer : p.cardElevated,
+                borderRadius: BorderRadius.circular(14),
+                border: Border(
                   right: BorderSide(
-                    color: isInIqamahWindow
-                        ? AppColors.iqamahActive
-                        : const Color(0xFFD4AF37),
-                    width: 3.5,
+                    color: isInIqamahWindow ? p.iqamah : p.accent,
+                    width: 3,
                   ),
-                )
-              : null,
-        ),
+                ),
+              )
+            : null,
         child: Row(
           children: [
-            // RIGHT: Subtle Circular Icon Container
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: isHighlighted
-                    ? (isInIqamahWindow
-                        ? AppColors.iqamahActive.withValues(alpha: 0.18)
-                        : (isDark ? AppColors.primary.withValues(alpha: 0.35) : const Color(0xFFD8ECE0)))
-                    : (isSunrise
-                        ? (isDark ? Colors.amber.withValues(alpha: 0.1) : const Color(0xFFFEF3C7))
-                        : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF2F4F2))),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _getPrayerIcon(prayer.type),
-                color: isInIqamahWindow
-                    ? AppColors.iqamahActive
-                    : (isHighlighted
-                        ? (isDark ? AppColors.accentGoldLight : AppColors.primary)
-                        : (isSunrise
-                            ? const Color(0xFFD97706)
-                            : (isDark ? Colors.white60 : const Color(0xFF6B7280)))),
-                size: 19,
+            // Clean astronomical phase glyph directly without repetitive grey circles
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: Center(
+                child: PrayerPhaseGlyph(
+                  type: prayer.type,
+                  color: glyphColor,
+                  accentColor: isHighlighted
+                      ? p.accent.withValues(alpha: 0.25)
+                      : glyphColor.withValues(alpha: 0.14),
+                  size: 20,
+                ),
               ),
             ),
             const SizedBox(width: 12),
 
-            // CENTER / Primary: Prayer Name & Secondary Iqama Info
+            // Prayer Name & Calm Metadata
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         prayer.type.nameArabic,
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 15.5,
-                          fontWeight: isHighlighted
-                              ? FontWeight.w800
-                              : (isSunrise ? FontWeight.w600 : FontWeight.w700),
-                          color: isHighlighted
-                              ? (isDark ? Colors.white : const Color(0xFF163A29))
-                              : (isSunrise
-                                  ? (isDark ? Colors.white70 : const Color(0xFF374151))
-                                  : (isDark ? AppColors.textPrimaryDark : const Color(0xFF1F2937))),
-                        ),
+                        style: AppTypography.rowTitle(
+                          isPassed ? p.textSecondary : p.textPrimary,
+                          weight:
+                              isHighlighted ? FontWeight.w700 : FontWeight.w600,
+                        ).copyWith(fontSize: 15.5),
                       ),
-                      if (isInIqamahWindow) ...[
-                        const SizedBox(width: 8),
+                      if (isInIqamahWindow)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: AppColors.iqamahActive.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: AppColors.iqamahActive.withValues(alpha: 0.6),
-                              width: 0.8,
-                            ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 1.5,
                           ),
-                          child: const Text(
+                          decoration: BoxDecoration(
+                            color: p.iqamah.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
                             'أُذِّن الآن',
-                            style: TextStyle(
-                              fontFamily: 'Cairo',
-                              color: AppColors.iqamahActive,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
+                            style: AppTypography.badge(p.iqamah, size: 10.5),
                           ),
+                        )
+                      else if (prayer.isNext)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: p.accent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                'القادمة',
+                                style: AppTypography.badge(
+                                  p.accentText,
+                                  size: 11,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ] else if (prayer.isNext) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF362B10)
-                                : const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: const Text(
-                            'القادمة',
-                            style: TextStyle(
-                              fontFamily: 'Cairo',
-                              color: Color(0xFF92400E),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 10.5,
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 2),
-
-                  // Metadata Subtitle: Adhan and Iqama
                   if (isSunrise)
                     Text(
                       'شروق الشمس',
-                      style: TextStyle(
-                        fontFamily: 'Cairo',
-                        fontSize: 11.5,
-                        color: isDark ? Colors.white38 : const Color(0xFF6B7280),
-                      ),
+                      style: AppTypography.meta(p.textSecondary, size: 11.5),
                     )
                   else
                     Text(
-                      iqamahTimeFormatted != null && prayer.iqamahOffsetMinutes > 0
+                      iqamahTimeFormatted != null &&
+                              prayer.iqamahOffsetMinutes > 0
                           ? 'الأذان $formattedTime  •  الإقامة $iqamahTimeFormatted'
                           : 'الأذان $formattedTime',
-                      style: TextStyle(
-                        fontFamily: 'Cairo',
-                        fontSize: 11.5,
-                        color: isDark ? Colors.white54 : const Color(0xFF6B7280),
-                        fontWeight: FontWeight.w500,
+                      style: AppTypography.meta(
+                        isPassed
+                            ? p.textSecondary.withValues(alpha: 0.85)
+                            : p.textSecondary,
+                        size: 11.5,
                       ),
                     ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
 
-            // LEFT: Prayer Time (Scannable, Bold, Tabular figures)
+            // Tabular Time Column
             Text(
               formattedTime,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 16,
-                fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-                color: isHighlighted
-                    ? (isDark ? const Color(0xFF4ADE80) : const Color(0xFF163A29))
-                    : (isSunrise
-                        ? (isDark ? Colors.white70 : const Color(0xFF4B5563))
-                        : (isDark ? AppColors.textPrimaryDark : const Color(0xFF1F2937))),
+              style: AppTypography.timeValue(
+                isHighlighted
+                    ? p.accentText
+                    : (isPassed ? p.textSecondary : p.textPrimary),
+                size: 16,
+                weight: isHighlighted ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
           ],

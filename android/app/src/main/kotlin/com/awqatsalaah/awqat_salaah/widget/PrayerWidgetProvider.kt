@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
@@ -52,10 +53,12 @@ class PrayerWidgetProvider : AppWidgetProvider() {
         private val PRAYER_ORDER = listOf("fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha")
         private val IQAMAH_PRAYERS = listOf("fajr", "dhuhr", "asr", "maghrib", "isha")
 
-        private val bitmapCache = mutableMapOf<Int, Bitmap>()
+        private val bitmapCache = mutableMapOf<String, Bitmap>()
 
         private fun getVectorBitmap(context: Context, drawableId: Int, widthDp: Int, heightDp: Int): Bitmap? {
-            val cached = bitmapCache[drawableId]
+            val nightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            val cacheKey = "${drawableId}_${nightMode}"
+            val cached = bitmapCache[cacheKey]
             if (cached != null && !cached.isRecycled) {
                 return cached
             }
@@ -68,7 +71,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 val canvas = Canvas(bitmap)
                 drawable.setBounds(0, 0, canvas.width, canvas.height)
                 drawable.draw(canvas)
-                bitmapCache[drawableId] = bitmap
+                bitmapCache[cacheKey] = bitmap
                 bitmap
             } catch (e: Throwable) {
                 WidgetDiagnostics.log(context, "getVectorBitmap ERROR: ${e.message}")
@@ -186,7 +189,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 }
 
                 // ── Bottom: 5 Prayers with Dynamic Highlight & Matching Icons ──
-                val goldColor = ContextCompat.getColor(context, R.color.widget_text_gold)
+                val activeColor = ContextCompat.getColor(context, R.color.widget_accent_text)
                 val primaryColor = ContextCompat.getColor(context, R.color.widget_text_primary)
                 val secondaryColor = ContextCompat.getColor(context, R.color.widget_text_secondary)
 
@@ -253,9 +256,11 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                     }
 
                     if (isActive) {
-                        views.setTextColor(config.labelId, goldColor)
-                        views.setTextColor(config.timeId, goldColor)
+                        views.setInt(config.colId, "setBackgroundResource", R.drawable.widget_active_prayer_bg)
+                        views.setTextColor(config.labelId, activeColor)
+                        views.setTextColor(config.timeId, activeColor)
                     } else {
+                        views.setInt(config.colId, "setBackgroundResource", 0)
                         views.setTextColor(config.labelId, secondaryColor)
                         views.setTextColor(config.timeId, primaryColor)
                     }

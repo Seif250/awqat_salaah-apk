@@ -1,7 +1,8 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_design_system.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../core/utils/page_transitions.dart';
@@ -19,6 +20,7 @@ import '../bloc/prayer_bloc.dart';
 import '../bloc/prayer_event.dart';
 import '../bloc/prayer_state.dart';
 import '../widgets/header_widget.dart';
+import '../widgets/monthly_prayer_calendar_sheet.dart';
 import '../widgets/next_prayer_card.dart';
 import '../widgets/prayer_list.dart';
 import 'main_navigation_screen.dart';
@@ -28,18 +30,17 @@ class PrayerTimesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final p = context.palette;
+    final horizontalPad = AppDesignSystem.pageHorizontalPadding(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: p.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        toolbarHeight: 58,
+        toolbarHeight: 56,
         centerTitle: true,
-        // Right side (in RTL): Qibla Compass Icon only (clean, matching design)
         leading: IconButton(
           icon: const Icon(Icons.explore_outlined),
           tooltip: 'القبلة',
@@ -51,14 +52,8 @@ class PrayerTimesPage extends StatelessWidget {
         ),
         title: Text(
           'مواقيت الصلاة',
-          style: TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 20.5,
-            fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.textPrimaryDark : const Color(0xFF163A29),
-          ),
+          style: AppTypography.pageTitle(p.textPrimary),
         ),
-        // Left side (in RTL): Settings Gear matching the Home page
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -71,7 +66,6 @@ class PrayerTimesPage extends StatelessWidget {
           ),
         ],
       ),
-
       body: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, settingsState) {
           return BlocConsumer<PrayerBloc, PrayerState>(
@@ -87,13 +81,20 @@ class PrayerTimesPage extends StatelessWidget {
 
               if (state is PrayerLoaded) {
                 return RefreshIndicator(
-                  color: AppColors.accentGold,
+                  color: p.primary,
                   onRefresh: () async {
-                    context.read<PrayerBloc>().add(const RefreshPrayerTimesEvent());
+                    context
+                        .read<PrayerBloc>()
+                        .add(const RefreshPrayerTimesEvent());
                   },
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPad,
+                      4,
+                      horizontalPad,
+                      28,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -109,27 +110,36 @@ class PrayerTimesPage extends StatelessWidget {
                             }
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         NextPrayerCard(
                           prayerDay: state.prayerDay,
                           remainingDuration: state.remainingDuration,
                           is24Hour: settingsState.is24HourFormat,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 22),
                         PrayerList(
                           prayerDay: state.prayerDay,
                           is24Hour: settingsState.is24HourFormat,
+                          onCalendarTap: () => MonthlyPrayerCalendarSheet.show(
+                            context,
+                            cityName: state.cityName,
+                            countryName: state.countryName,
+                            is24Hour: settingsState.is24HourFormat,
+                          ),
                         ),
                         const SizedBox(height: 20),
-                        _buildSunnahTimesCard(
+                        Container(height: 0.75, color: p.hairline),
+                        const SizedBox(height: 18),
+                        _buildSunnahTimesSection(
                           context: context,
                           prayerDay: state.prayerDay,
                           is24Hour: settingsState.is24HourFormat,
-                          isDark: isDark,
+                          palette: p,
                         ),
+                        const SizedBox(height: 18),
+                        Container(height: 0.75, color: p.hairline),
                         const SizedBox(height: 16),
-                        _buildPostPrayerCard(context, isDark),
-                        const SizedBox(height: 20),
+                        _buildPostPrayerActionRow(context, p),
                       ],
                     ),
                   ),
@@ -142,43 +152,30 @@ class PrayerTimesPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentGold.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.cloud_off_rounded,
-                          size: 48,
-                          color: AppColors.accentGold,
-                        ),
+                      Icon(
+                        Icons.cloud_off_rounded,
+                        size: 48,
+                        color: p.textSecondary,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'تعذر تحميل مواقيت الصلاة',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppTypography.sectionHeader(p.textPrimary),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'يرجى التأكد من تشغيل خدمة الموقع وإعادة المحاولة',
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondaryLight,
-                        ),
+                        style: AppTypography.body(p.textSecondary, size: 13.5),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       ElevatedButton.icon(
                         onPressed: () {
                           context
                               .read<PrayerBloc>()
                               .add(const RefreshPrayerTimesEvent());
                         },
-                        icon: const Icon(Icons.refresh_rounded),
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
                         label: const Text('إعادة المحاولة'),
                       ),
                     ],
@@ -192,122 +189,192 @@ class PrayerTimesPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSunnahTimesCard({
+  /// Open, non-boxed Sunnah & Nawafil times strip that adapts to narrow screens and font scaling.
+  Widget _buildSunnahTimesSection({
     required BuildContext context,
     required PrayerDayModel prayerDay,
     required bool is24Hour,
-    required bool isDark,
+    required WirdPalette palette,
   }) {
     final sunriseTime = prayerDay.sunrise.time;
     final duhaStartTime = sunriseTime.add(const Duration(minutes: 15));
     final maghribTime = prayerDay.maghrib.time;
     final nextFajrTime = prayerDay.fajr.time.add(const Duration(days: 1));
     final nightDuration = nextFajrTime.difference(maghribTime);
-    final midnightTime = maghribTime.add(Duration(seconds: nightDuration.inSeconds ~/ 2));
-    final lastThirdTime = nextFajrTime.subtract(Duration(seconds: nightDuration.inSeconds ~/ 3));
+    final midnightTime =
+        maghribTime.add(Duration(seconds: nightDuration.inSeconds ~/ 2));
+    final lastThirdTime =
+        nextFajrTime.subtract(Duration(seconds: nightDuration.inSeconds ~/ 3));
 
-    final duhaFormatted = DateUtilsHelper.formatPrayerTime(duhaStartTime, is24Hour: is24Hour);
-    final midnightFormatted = DateUtilsHelper.formatPrayerTime(midnightTime, is24Hour: is24Hour);
-    final lastThirdFormatted = DateUtilsHelper.formatPrayerTime(lastThirdTime, is24Hour: is24Hour);
+    final duhaFormatted =
+        DateUtilsHelper.formatPrayerTime(duhaStartTime, is24Hour: is24Hour);
+    final midnightFormatted =
+        DateUtilsHelper.formatPrayerTime(midnightTime, is24Hour: is24Hour);
+    final lastThirdFormatted =
+        DateUtilsHelper.formatPrayerTime(lastThirdTime, is24Hour: is24Hour);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _showSunnahDetailsSheet(
-          context: context,
-          duhaFormatted: duhaFormatted,
-          midnightFormatted: midnightFormatted,
-          lastThirdFormatted: lastThirdFormatted,
-          isDark: isDark,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: isDark ? AppColors.darkBorder : const Color(0xFFEFF2F0),
-              width: 1.0,
+    return InkWell(
+      onTap: () => _showSunnahDetailsSheet(
+        context: context,
+        duhaFormatted: duhaFormatted,
+        midnightFormatted: midnightFormatted,
+        lastThirdFormatted: lastThirdFormatted,
+        palette: palette,
+      ),
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: palette.accent,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'أوقات السنن والنوافل والوتر',
+                    style: AppTypography.sectionHeader(palette.textPrimary),
+                  ),
+                ),
+                Text(
+                  'التفاصيل',
+                  style: AppTypography.label(palette.accentText, size: 12),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  Icons.chevron_left_rounded,
+                  color: palette.accentText,
+                  size: 18,
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.035),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Chevron on the left (RTL end)
-              const Icon(
-                Icons.chevron_left_rounded,
-                color: Color(0xFF9CA3AF),
-                size: 22,
-              ),
-              const SizedBox(width: 10),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+                final isCompact =
+                    constraints.maxWidth < 330 || textScale > 1.2;
 
-              // Green book icon container
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1B4D3E).withValues(alpha: 0.35)
-                      : const Color(0xFFE2EFE7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.menu_book_outlined,
-                  color: isDark ? AppColors.accentGoldLight : const Color(0xFF163A29),
-                  size: 22,
-                ),
-              ),
+                final items = [
+                  (
+                    label: 'الضحى',
+                    time: duhaFormatted,
+                    accent: palette.sunrise,
+                  ),
+                  (
+                    label: 'نصف الليل',
+                    time: midnightFormatted,
+                    accent: palette.iqamah,
+                  ),
+                  (
+                    label: 'الثلث الأخير',
+                    time: lastThirdFormatted,
+                    accent: palette.accentText,
+                  ),
+                ];
 
-              const Spacer(),
+                if (isCompact) {
+                  return Wrap(
+                    spacing: 18,
+                    runSpacing: 12,
+                    children: items
+                        .map(
+                          (item) => SizedBox(
+                            width: (constraints.maxWidth - 20) / 2,
+                            child: _buildOpenSunnahMetric(
+                              label: item.label,
+                              time: item.time,
+                              accentColor: item.accent,
+                              palette: palette,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  );
+                }
 
-              // Right side (RTL start): Title, Subtitle and Sparkles
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                return IntrinsicHeight(
+                  child: Row(
                     children: [
-                      Text(
-                        'أوقات السنن والنوافل والوتر',
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.textPrimaryDark : const Color(0xFF163A29),
+                      for (int i = 0; i < items.length; i++) ...[
+                        Expanded(
+                          child: _buildOpenSunnahMetric(
+                            label: items[i].label,
+                            time: items[i].time,
+                            accentColor: items[i].accent,
+                            palette: palette,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 17,
-                        color: Color(0xFFD4AF37),
-                      ),
+                        if (i < items.length - 1)
+                          Container(
+                            width: 0.75,
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            color: palette.hairline,
+                          ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'أوقات مستحبة للصلاة في اليوم',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.white60 : const Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOpenSunnahMetric({
+    required String label,
+    required String time,
+    required Color accentColor,
+    required WirdPalette palette,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.meta(palette.textSecondary, size: 12),
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(
+            time,
+            style: AppTypography.timeValue(
+              palette.textPrimary,
+              size: 14,
+              weight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -317,20 +384,16 @@ class PrayerTimesPage extends StatelessWidget {
     required String duhaFormatted,
     required String midnightFormatted,
     required String lastThirdFormatted,
-    required bool isDark,
+    required WirdPalette palette,
   }) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : Colors.white,
+          color: palette.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : const Color(0xFFEFF2F0),
-            width: 1,
-          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -341,53 +404,50 @@ class PrayerTimesPage extends StatelessWidget {
                 width: 38,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : const Color(0xFFE5E7EB),
+                  color: palette.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.auto_awesome_rounded, size: 20, color: Color(0xFFD4AF37)),
-                const SizedBox(width: 8),
-                Text(
-                  'أوقات السنن والنوافل والوتر',
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : const Color(0xFF163A29),
-                  ),
-                ),
-              ],
+            Text(
+              'أوقات السنن والنوافل والوتر',
+              style: AppTypography.sectionHeader(palette.textPrimary)
+                  .copyWith(fontSize: 17),
             ),
             const SizedBox(height: 16),
             _buildSunnahDetailRow(
               title: 'صلاة الضحى',
               time: duhaFormatted,
-              subtitle: 'يبدأ وقتها بعد شروق الشمس بـ ١٥ دقيقة ويمتد حتى قبل الظهر',
-              icon: Icons.wb_sunny_rounded,
-              color: const Color(0xFFF59E0B),
-              isDark: isDark,
+              subtitle:
+                  'يبدأ وقتها بعد شروق الشمس بـ ١٥ دقيقة ويمتد حتى قبل الظهر',
+              icon: Icons.wb_sunny_outlined,
+              color: palette.sunrise,
+              palette: palette,
             ),
-            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Container(height: 0.75, color: palette.hairline),
+            ),
             _buildSunnahDetailRow(
               title: 'نصف الليل',
               time: midnightFormatted,
               subtitle: 'نهاية الوقت الاختياري لصلاة العشاء',
-              icon: Icons.nights_stay_rounded,
-              color: const Color(0xFF6366F1),
-              isDark: isDark,
+              icon: Icons.nights_stay_outlined,
+              color: palette.iqamah,
+              palette: palette,
             ),
-            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Container(height: 0.75, color: palette.hairline),
+            ),
             _buildSunnahDetailRow(
               title: 'الثلث الأخير من الليل',
               time: lastThirdFormatted,
               subtitle: 'وقت التنزل الإلهي وصلاة الوتر وقيام الليل',
-              icon: Icons.nightlight_round,
-              color: const Color(0xFFD4AF37),
-              isDark: isDark,
+              icon: Icons.nightlight_outlined,
+              color: palette.accentText,
+              palette: palette,
             ),
           ],
         ),
@@ -401,30 +461,14 @@ class PrayerTimesPage extends StatelessWidget {
     required String subtitle,
     required IconData icon,
     required Color color,
-    required bool isDark,
+    required WirdPalette palette,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAF9),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? Colors.white12 : const Color(0xFFEFF2F0),
-          width: 0.8,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: isDark ? 0.2 : 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(width: 12),
+          Icon(icon, size: 22, color: color),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,31 +476,22 @@ class PrayerTimesPage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : const Color(0xFF163A29),
-                  ),
+                  style: AppTypography.rowTitle(palette.textPrimary),
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 11,
-                    color: isDark ? Colors.white60 : const Color(0xFF6B7280),
-                  ),
+                  style: AppTypography.meta(palette.textSecondary, size: 11.5),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           Text(
             time,
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 14.5,
-              fontWeight: FontWeight.w800,
-              color: color,
+            style: AppTypography.timeValue(
+              palette.textPrimary,
+              size: 14.5,
+              weight: FontWeight.w700,
             ),
           ),
         ],
@@ -464,110 +499,101 @@ class PrayerTimesPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPostPrayerCard(BuildContext context, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          width: 1,
+  /// Calm open-tint action strip for post-prayer adhkar (replaces dark blurred image box)
+  Widget _buildPostPrayerActionRow(
+    BuildContext context,
+    WirdPalette palette,
+  ) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        context
+            .read<AzkarBloc>()
+            .add(const SelectCategoryEvent(AzkarCategory.postPrayer));
+        MainNavigationScreen.of(context)?.navigateToPage(2);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: palette.primaryContainer,
+          borderRadius: BorderRadius.circular(16),
         ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/serene_mihrab.jpg',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 0.8, sigmaY: 0.8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [
-                              Colors.black.withValues(alpha: 0.52),
-                              AppColors.primaryDark.withValues(alpha: 0.72),
-                            ]
-                          : [
-                              Colors.black.withValues(alpha: 0.40),
-                              AppColors.primaryDark.withValues(alpha: 0.65),
-                            ],
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+            final isCompact = constraints.maxWidth < 290 || textScale > 1.2;
+
+            final infoRow = Row(
+              children: [
+                Icon(
+                  Icons.auto_stories_outlined,
+                  color: palette.accentText,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'أذكار ما بعد الصلاة',
+                        style: AppTypography.rowTitle(
+                          palette.textPrimary,
+                          weight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'الاستغفار والتسبيح دبر كل صلاة مكتوبة',
+                        style: AppTypography.meta(
+                          palette.textSecondary,
+                          size: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-              child: Row(
+              ],
+            );
+
+            final trailingAction = Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'ابدأ الأذكار',
+                  style: AppTypography.label(palette.accentText, size: 12.5),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  Icons.chevron_left_rounded,
+                  color: palette.accentText,
+                  size: 18,
+                ),
+              ],
+            );
+
+            if (isCompact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentGold.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.auto_stories_rounded, color: AppColors.accentGoldLight, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'أذكار ما بعد الصلاة',
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'الاستغفار والتسبيح دبر كل صلاة مكتوبة',
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.85),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentGold,
-                      foregroundColor: AppColors.primaryDark,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      elevation: 0,
-                    ),
-                    onPressed: () {
-                      context.read<AzkarBloc>().add(const SelectCategoryEvent(AzkarCategory.postPrayer));
-                      MainNavigationScreen.of(context)?.navigateToPage(2);
-                    },
-                    child: const Text(
-                      'ابدأ الأذكار',
-                      style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 11.5),
-                    ),
+                  infoRow,
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: trailingAction,
                   ),
                 ],
-              ),
-            ),
-          ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: infoRow),
+                const SizedBox(width: 8),
+                trailingAction,
+              ],
+            );
+          },
         ),
       ),
     );

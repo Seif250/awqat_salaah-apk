@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/notification_service.dart';
 import '../widgets/settings_section_card.dart';
@@ -45,14 +46,15 @@ class _BatterySettingsPageState extends State<BatterySettingsPage> {
   }
 
   void _showManufacturerGuide(BuildContext context) {
+    final p = context.palette;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.phone_android_outlined, color: AppColors.accentGold),
-            SizedBox(width: 8),
-            Text('إرشادات حسب نوع الهاتف', style: TextStyle(fontSize: 16)),
+            Icon(Icons.phone_android_outlined, color: p.accent),
+            const SizedBox(width: 8),
+            Text('إرشادات حسب نوع الهاتف', style: AppTypography.sectionHeader(p.textPrimary)),
           ],
         ),
         content: const SingleChildScrollView(
@@ -192,7 +194,8 @@ class _BatterySettingsPageState extends State<BatterySettingsPage> {
                         icon: const Icon(Icons.battery_saver_outlined, size: 18),
                         label: const Text('فتح إعدادات البطارية'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: _isExempted ? AppColors.primary : AppColors.accentGold,
+                          backgroundColor: context.palette.primary,
+                          foregroundColor: context.palette.onPrimary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: _requestBatteryExemption,

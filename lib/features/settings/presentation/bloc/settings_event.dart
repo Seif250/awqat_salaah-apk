@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/prayer_constants.dart';
+import '../../../../core/theme/app_color_palette.dart';
 
 abstract class SettingsEvent extends Equatable {
   const SettingsEvent();
@@ -75,6 +76,14 @@ class ChangeThemeModeEvent extends SettingsEvent {
 
   @override
   List<Object?> get props => [themeMode];
+}
+
+class ChangeColorPaletteEvent extends SettingsEvent {
+  final AppColorPalette colorPalette;
+  const ChangeColorPaletteEvent(this.colorPalette);
+
+  @override
+  List<Object?> get props => [colorPalette];
 }
 
 class Toggle24HourFormatEvent extends SettingsEvent {

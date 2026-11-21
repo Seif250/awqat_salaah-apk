@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/notification_service.dart';
 import '../../../../services/storage_service.dart';
@@ -32,6 +33,7 @@ class AdhanSoundDialog {
       builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final p = context.palette;
             final options = [
               {
                 'key': AppConstants.soundTypeFull,
@@ -51,11 +53,11 @@ class AdhanSoundDialog {
             ];
 
             return AlertDialog(
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.music_note_rounded, color: AppColors.accentGold),
-                  SizedBox(width: 8),
-                  Text('اختيار صوت الأذان'),
+                  Icon(Icons.music_note_rounded, color: p.accent),
+                  const SizedBox(width: 8),
+                  Text('اختيار صوت الأذان', style: AppTypography.sectionHeader(p.textPrimary)),
                 ],
               ),
               content: SizedBox(
@@ -63,9 +65,9 @@ class AdhanSoundDialog {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'اختر صوت الأذان المفضل مع إمكانية الاستماع للتجربة قبل الاختيار:',
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                      style: AppTypography.meta(p.textSecondary),
                     ),
                     const SizedBox(height: 12),
                     ...options.map((opt) {
@@ -78,21 +80,17 @@ class AdhanSoundDialog {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected
-                                ? AppColors.accentGold
-                                : Colors.grey.withValues(alpha: 0.2),
-                            width: isSelected ? 1.5 : 1,
+                            color: isSelected ? p.primary : p.hairline,
+                            width: isSelected ? 1.5 : 0.75,
                           ),
-                          color: isSelected
-                              ? AppColors.accentGold.withValues(alpha: 0.08)
-                              : null,
+                          color: isSelected ? p.primaryContainer : null,
                         ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                           leading: Radio<String>(
                             value: key,
                             groupValue: selected,
-                            activeColor: AppColors.accentGold,
+                            activeColor: p.primary,
                             onChanged: (val) {
                               if (val != null) {
                                 setDialogState(() => selected = val);
@@ -101,17 +99,16 @@ class AdhanSoundDialog {
                           ),
                           title: Text(
                             opt['title']!,
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected ? AppColors.accentGold : null,
+                            style: AppTypography.rowTitle(
+                              isSelected ? p.accentText : p.textPrimary,
                             ),
                           ),
-                          subtitle: Text(opt['subtitle']!, style: const TextStyle(fontSize: 12)),
+                          subtitle: Text(opt['subtitle']!, style: AppTypography.label(p.textSecondary)),
                           trailing: IconButton.filledTonal(
                             tooltip: isPlaying ? 'إيقاف' : 'استماع',
                             icon: Icon(
                               isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                              color: isPlaying ? Colors.red : AppColors.accentGold,
+                              color: isPlaying ? p.error : p.accentText,
                               size: 22,
                             ),
                             onPressed: () async {
@@ -139,11 +136,11 @@ class AdhanSoundDialog {
                     NotificationService().stopAudioPreview();
                     Navigator.pop(dialogCtx);
                   },
-                  child: const Text('إلغاء'),
+                  child: Text('إلغاء', style: AppTypography.meta(p.textSecondary)),
                 ),
                 TextButton.icon(
-                  icon: const Icon(Icons.notifications_active_outlined, size: 17, color: AppColors.accentGold),
-                  label: const Text('تجربة إشعار'),
+                  icon: Icon(Icons.notifications_active_outlined, size: 17, color: p.accentText),
+                  label: Text('تجربة إشعار', style: AppTypography.meta(p.accentText)),
                   onPressed: () async {
                     await NotificationService().stopAudioPreview();
                     final res = await NotificationService().showSoundTestNotification(selected);
@@ -157,7 +154,7 @@ class AdhanSoundDialog {
                   },
                 ),
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.accentGold),
+                  style: FilledButton.styleFrom(backgroundColor: p.primary, foregroundColor: p.onPrimary),
                   onPressed: () async {
                     NotificationService().stopAudioPreview();
                     await StorageService().setNotificationSoundType(selected);

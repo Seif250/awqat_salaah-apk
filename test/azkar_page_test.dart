@@ -145,9 +145,36 @@ void main() {
       expect(find.byIcon(Icons.mode_edit_outline_rounded), findsWidgets);
 
       // Counter box and repetition controls
-      expect(find.textContaining('التكرار المطلوب'), findsWidgets);
-      expect(find.text('0'), findsWidgets);
+      expect(find.text('إتمام الورد'), findsNWidgets(2));
+      expect(find.text('مكتمل بحمد الله'), findsOneWidget);
+      expect(find.text('33 / 100'), findsOneWidget);
       expect(find.byIcon(Icons.check_rounded), findsWidgets);
+    });
+
+    testWidgets('Renders utility bar with search, filter, font scale, focus mode, and tasbih', (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('بحث'), findsOneWidget);
+      expect(find.text('المتبقي فقط'), findsOneWidget);
+      expect(find.text('أ-'), findsOneWidget);
+      expect(find.text('أ+'), findsOneWidget);
+      expect(find.text('وضع التركيز'), findsOneWidget);
+      expect(find.text('المسبحة'), findsOneWidget);
+
+      // Tap 'المتبقي فقط' hides the 1 completed item (zikr_2), leaving 2 cards
+      await tester.tap(find.text('المتبقي فقط'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AzkarCard), findsNWidgets(2));
+      expect(find.text('سيد الاستغفار'), findsNothing);
+
+      // Tap 'بحث' expands search field and filters by normalized Arabic text
+      await tester.tap(find.text('بحث'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'الكرسي');
+      await tester.pumpAndSettle();
+      expect(find.byType(AzkarCard), findsNWidgets(1));
+      expect(find.text('آية الكرسي'), findsOneWidget);
     });
 
     testWidgets('Azkar cards are wrapped in ReorderableDelayedDragStartListener for long-press moving', (tester) async {

@@ -7,7 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../presentation/bloc/azkar_bloc.dart';
 import '../../presentation/bloc/azkar_event.dart';
@@ -366,21 +367,18 @@ class AzkarBackupService {
     required int count,
     required List<AzkarItem> items,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
 
     showDialog(
       context: context,
       builder: (dlgCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
-            SizedBox(width: 10),
+            Icon(Icons.check_circle_rounded, color: p.success, size: 28),
+            const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                'تم حفظ النسخة الاحتياطية',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              child: Text('تم حفظ النسخة الاحتياطية', style: AppTypography.sectionHeader(p.textPrimary)),
             ),
           ],
         ),
@@ -390,21 +388,18 @@ class AzkarBackupService {
           children: [
             Text(
               'تم حفظ أذكارك المخصصة ($count أذكار) كملف JSON بنجاح في المسار التالي:',
-              style: const TextStyle(fontSize: 13, height: 1.4),
+              style: AppTypography.body(p.textPrimary),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                color: p.cardElevated,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.description_outlined, size: 20, color: AppColors.accentGold),
+                  Icon(Icons.description_outlined, size: 20, color: p.accent),
                   const SizedBox(width: 8),
                   Expanded(
                     child: SelectableText(
@@ -412,12 +407,12 @@ class AzkarBackupService {
                       style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 11.5,
-                        color: isDark ? Colors.white70 : Colors.black87,
+                        color: p.textPrimary,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    icon: Icon(Icons.copy_rounded, size: 18, color: p.textSecondary),
                     tooltip: 'نسخ المسار',
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: filePath));
@@ -434,8 +429,8 @@ class AzkarBackupService {
             icon: const Icon(Icons.share_rounded, size: 18),
             label: const Text('مشاركة الملف'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.accentGold,
-              side: const BorderSide(color: AppColors.accentGold),
+              foregroundColor: p.accentText,
+              side: BorderSide(color: p.primary.withValues(alpha: 0.4)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () {
@@ -445,8 +440,9 @@ class AzkarBackupService {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: p.primary,
+              foregroundColor: p.onPrimary,
+              elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => Navigator.pop(dlgCtx),

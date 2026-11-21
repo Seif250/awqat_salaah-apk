@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../data/models/azkar_item_model.dart';
 
 /// Calm, centered empty state view for Azkar categories.
@@ -19,6 +20,7 @@ class AzkarEmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final isCustom = category == AzkarCategory.custom;
 
     return Center(
@@ -27,60 +29,47 @@ class AzkarEmptyView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Subtle Islamic book icon with gold accent
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.accentGold.withValues(alpha: 0.1),
+                color: p.primaryContainer,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.menu_book_rounded,
-                size: 44,
-                color: AppColors.accentGold,
+                size: 42,
+                color: p.accent,
               ),
             ),
             const SizedBox(height: 20),
 
-            // Title
             Text(
               isCustom
                   ? 'لا توجد أذكار مخصصة حاليًا'
                   : 'لا توجد أذكار في هذا القسم',
-              style: const TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 16.5,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTypography.sectionHeader(p.textPrimary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
 
-            // Description
             Text(
               isCustom
                   ? 'أضف أذكارك الخاصة لتظهر هنا ويمكنك تعديلها أو حذفها في أي وقت.'
                   : 'يمكنك إضافة ذكر جديد إلى هذا القسم أو استعادة الأذكار الافتراضية الأصلية.',
-              style: const TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 13,
-                color: Colors.grey,
-                height: 1.5,
-              ),
+              style: AppTypography.meta(p.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
 
-            // Primary action button: + إضافة ذكر مخصص
             ElevatedButton.icon(
               icon: const Icon(Icons.add_rounded, size: 20),
               label: Text(
                 isCustom ? '+ إضافة ذكر مخصص' : 'إضافة ذكر هنا',
-                style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13),
+                style: AppTypography.meta(p.onPrimary, weight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: p.primary,
+                foregroundColor: p.onPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                 elevation: 0,
@@ -88,29 +77,23 @@ class AzkarEmptyView extends StatelessWidget {
               onPressed: onAdd,
             ),
 
-            // Secondary action button
             if (isCustom && onRestoreBackup != null) ...[
               const SizedBox(height: 10),
               TextButton.icon(
-                icon: const Icon(Icons.file_download_outlined, size: 18, color: AppColors.accentGold),
-                label: const Text(
+                icon: Icon(Icons.file_download_outlined, size: 18, color: p.accentText),
+                label: Text(
                   'استيراد نسخة احتياطية',
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.accentGold,
-                  ),
+                  style: AppTypography.meta(p.accentText, weight: FontWeight.w600),
                 ),
                 onPressed: onRestoreBackup,
               ),
             ] else if (!isCustom) ...[
               const SizedBox(height: 10),
               TextButton.icon(
-                icon: const Icon(Icons.restore_rounded, size: 18),
-                label: const Text(
+                icon: Icon(Icons.restore_rounded, size: 18, color: p.accentText),
+                label: Text(
                   'استعادة الأذكار الافتراضية',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 12.5),
+                  style: AppTypography.meta(p.accentText),
                 ),
                 onPressed: onRestore,
               ),

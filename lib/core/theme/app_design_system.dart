@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_color_palette.dart';
 import 'app_colors.dart';
 
 /// Comprehensive 2026 Production-Ready Islamic Mobile App Design System.
@@ -7,7 +8,7 @@ class AppDesignSystem {
   AppDesignSystem._();
 
   // ---------------------------------------------------------------------------
-  // SPACING SCALE (8pt base system with half-steps)
+  // SPACING SCALE & ADAPTIVE HELPERS
   // ---------------------------------------------------------------------------
   static const double space2 = 2.0;
   static const double space4 = 4.0;
@@ -21,6 +22,22 @@ class AppDesignSystem {
   static const double space24 = 24.0;
   static const double space28 = 28.0;
   static const double space32 = 32.0;
+
+  /// Responsive horizontal page margin (slightly tighter on narrow phones < 360dp).
+  static double pageHorizontalPadding(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width < 360 ? 16.0 : 20.0;
+  }
+
+  /// Hairline divider for open editorial sections without heavy card boxes.
+  static Widget hairlineDivider(WirdPalette palette, {double indent = 0}) {
+    return Divider(
+      height: 1,
+      thickness: 0.75,
+      indent: indent,
+      color: palette.hairline.withValues(alpha: palette.isDark ? 0.8 : 0.9),
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // BORDER RADIUS SCALE
@@ -39,21 +56,21 @@ class AppDesignSystem {
   static const BorderRadius borderSm = BorderRadius.all(Radius.circular(radiusSm));
 
   // ---------------------------------------------------------------------------
-  // SOFT SHADOWS (Subtle, modern, no harsh black borders)
+  // SOFT SHADOWS (Minimal elevation — calm editorial hierarchy)
   // ---------------------------------------------------------------------------
   static List<BoxShadow> cardShadow({bool isDark = false}) => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.035),
-          blurRadius: 10,
+          color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.025),
+          blurRadius: 8,
           spreadRadius: 0,
-          offset: const Offset(0, 3),
+          offset: const Offset(0, 2),
         ),
       ];
 
   static List<BoxShadow> heroShadow({bool isDark = false}) => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.08),
-          blurRadius: 14,
+          color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.06),
+          blurRadius: 16,
           spreadRadius: 0,
           offset: const Offset(0, 4),
         ),
@@ -61,10 +78,10 @@ class AppDesignSystem {
 
   static List<BoxShadow> navBarShadow({bool isDark = false}) => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-          blurRadius: 16,
+          color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.03),
+          blurRadius: 10,
           spreadRadius: 0,
-          offset: const Offset(0, -3),
+          offset: const Offset(0, -2),
         ),
       ];
 
@@ -72,11 +89,24 @@ class AppDesignSystem {
   // REUSABLE CARD & CONTAINER DECORATIONS
   // ---------------------------------------------------------------------------
 
-  /// Main Dhikr Card surface decoration
+  /// Soft elevated surface decoration (used selectively, avoiding boxed clutter)
   static BoxDecoration cardDecoration({
     required bool isDark,
     bool isCompleted = false,
+    WirdPalette? palette,
   }) {
+    if (palette != null) {
+      return BoxDecoration(
+        color: isCompleted ? palette.completedCardBg : palette.surface,
+        borderRadius: borderCard,
+        border: Border.all(
+          color: isCompleted
+              ? palette.completedCardBorder
+              : palette.border.withValues(alpha: 0.75),
+          width: isCompleted ? 1.1 : 0.75,
+        ),
+      );
+    }
     return BoxDecoration(
       color: isCompleted
           ? (isDark ? const Color(0xFF103324) : const Color(0xFFE5F0EA))
@@ -86,9 +116,8 @@ class AppDesignSystem {
         color: isCompleted
             ? (isDark ? const Color(0xFF246C4E) : const Color(0xFF8DC0A7))
             : (isDark ? AppColors.darkBorder : const Color(0xFFEFF2F0)),
-        width: isCompleted ? 1.4 : 1.0,
+        width: isCompleted ? 1.1 : 0.75,
       ),
-      boxShadow: cardShadow(isDark: isDark),
     );
   }
 
@@ -96,7 +125,20 @@ class AppDesignSystem {
   static BoxDecoration dhikrTextContainerDecoration({
     required bool isDark,
     bool isWarmParchment = false,
+    WirdPalette? palette,
   }) {
+    if (palette != null) {
+      return BoxDecoration(
+        color: isWarmParchment ? palette.quranParchmentBg : palette.dhikrContainerBg,
+        borderRadius: BorderRadius.circular(radiusMd),
+        border: Border.all(
+          color: isWarmParchment
+              ? palette.quranParchmentBorder
+              : palette.dhikrContainerBorder,
+          width: 0.8,
+        ),
+      );
+    }
     return BoxDecoration(
       color: isDark
           ? Colors.white.withValues(alpha: 0.04)
@@ -111,8 +153,21 @@ class AppDesignSystem {
     );
   }
 
-  /// Subtle sage container for "من فضلها" virtue box
-  static BoxDecoration virtueBoxDecoration({required bool isDark}) {
+  /// Subtle container for "من فضلها" virtue box
+  static BoxDecoration virtueBoxDecoration({
+    required bool isDark,
+    WirdPalette? palette,
+  }) {
+    if (palette != null) {
+      return BoxDecoration(
+        color: palette.virtueBg,
+        borderRadius: BorderRadius.circular(radiusSm + 2),
+        border: Border.all(
+          color: palette.virtueBorder,
+          width: 0.7,
+        ),
+      );
+    }
     return BoxDecoration(
       color: isDark ? const Color(0xFF13281E) : AppColors.sageLight,
       borderRadius: BorderRadius.circular(radiusSm + 2),
@@ -127,14 +182,16 @@ class AppDesignSystem {
   static BoxDecoration pillTabDecoration({
     required bool isSelected,
     required bool isDark,
+    WirdPalette? palette,
   }) {
+    final activePrimary = palette?.primary ?? AppColors.primary;
     if (isSelected) {
       return BoxDecoration(
-        color: AppColors.primary,
+        color: activePrimary,
         borderRadius: borderPill,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.18),
+            color: activePrimary.withValues(alpha: isDark ? 0.4 : 0.18),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -142,10 +199,10 @@ class AppDesignSystem {
       );
     }
     return BoxDecoration(
-      color: isDark ? AppColors.darkSurface : Colors.white,
+      color: palette?.surface ?? (isDark ? AppColors.darkSurface : Colors.white),
       borderRadius: borderPill,
       border: Border.all(
-        color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB),
+        color: palette?.border ?? (isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB)),
         width: 0.9,
       ),
     );
@@ -155,16 +212,19 @@ class AppDesignSystem {
   static BoxDecoration bookmarkButtonDecoration({
     required bool isSaved,
     required bool isDark,
+    WirdPalette? palette,
   }) {
+    final activePrimary = palette?.primary ?? AppColors.primary;
     return BoxDecoration(
       color: isSaved
-          ? (isDark ? AppColors.primary.withValues(alpha: 0.3) : AppColors.sageMedium)
+          ? (palette?.primaryContainer ??
+              (isDark ? AppColors.primary.withValues(alpha: 0.3) : AppColors.sageMedium))
           : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF2F6F3)),
       borderRadius: BorderRadius.circular(radiusSm + 2),
       border: Border.all(
         color: isSaved
-            ? AppColors.primary.withValues(alpha: 0.5)
-            : (isDark ? Colors.white12 : const Color(0xFFDFE9E2)),
+            ? activePrimary.withValues(alpha: 0.5)
+            : (palette?.border ?? (isDark ? Colors.white12 : const Color(0xFFDFE9E2))),
         width: 0.8,
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
 import '../bloc/settings_bloc.dart';
@@ -43,11 +44,9 @@ class AdjustmentsSettingsPage extends StatelessWidget {
                 child: Text(
                   '${value >= 0 ? '+' : ''}$value د',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: value != 0 ? AppColors.accentGold : null,
-                  ),
+                  style: AppTypography.rowTitle(
+                    value != 0 ? context.palette.accentText : context.palette.textPrimary,
+                  ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                 ),
               ),
               IconButton.filledTonal(

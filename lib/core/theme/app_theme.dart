@@ -1,75 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../utils/page_transitions.dart';
-import 'app_colors.dart';
+import 'app_color_palette.dart';
+import 'app_typography.dart';
 
 class AppTheme {
-  static const String fontCairo = 'Cairo';
+  static const String fontFamily = AppTypography.uiFont;
 
-  static TextTheme _buildCairoTextTheme(TextTheme base) {
-    return GoogleFonts.cairoTextTheme(base);
-  }
-
-  static ThemeData get lightTheme {
-    final baseTextTheme = ThemeData.light().textTheme;
-    final textTheme = _buildCairoTextTheme(baseTextTheme);
+  static ThemeData buildTheme(AppColorPalette palette, Brightness brightness) {
+    final p = WirdPalette.of(palette, brightness);
+    final effectiveDark = p.isDark;
+    final baseTextTheme = effectiveDark
+        ? ThemeData.dark().textTheme
+        : ThemeData.light().textTheme;
+    final textTheme = AppTypography.buildTextTheme(
+      baseTextTheme,
+      p.textPrimary,
+      p.textSecondary,
+    );
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: fontCairo,
-      fontFamilyFallback: const [fontCairo, 'sans-serif'],
-      brightness: Brightness.light,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        onPrimary: Colors.white,
-        primaryContainer: AppColors.primaryContainer,
-        onPrimaryContainer: AppColors.primaryDark,
-        secondary: AppColors.accentGold,
-        onSecondary: Colors.black,
-        surface: AppColors.lightSurface,
-        onSurface: AppColors.textPrimaryLight,
-        outline: AppColors.lightBorder,
-      ),
-      scaffoldBackgroundColor: AppColors.lightBackground,
+      fontFamily: AppTypography.uiFont,
+      fontFamilyFallback: AppTypography.uiFallback,
+      brightness: effectiveDark ? Brightness.dark : Brightness.light,
+      colorScheme: effectiveDark
+          ? ColorScheme.dark(
+              primary: p.primaryLight,
+              onPrimary: p.onPrimary,
+              primaryContainer: p.primaryContainer,
+              onPrimaryContainer: p.accentLight,
+              secondary: p.accent,
+              onSecondary: Colors.black,
+              surface: p.surface,
+              onSurface: p.textPrimary,
+              onSurfaceVariant: p.textSecondary,
+              outline: p.border,
+              outlineVariant: p.border.withValues(alpha: 0.6),
+            )
+          : ColorScheme.light(
+              primary: p.primary,
+              onPrimary: p.onPrimary,
+              primaryContainer: p.primaryContainer,
+              onPrimaryContainer: p.textPrimary,
+              secondary: p.accent,
+              onSecondary: Colors.white,
+              surface: p.surface,
+              onSurface: p.textPrimary,
+              onSurfaceVariant: p.textSecondary,
+              outline: p.border,
+              outlineVariant: p.border.withValues(alpha: 0.7),
+            ),
+      scaffoldBackgroundColor: p.background,
       textTheme: textTheme,
+      dividerTheme: DividerThemeData(
+        color: p.border,
+        thickness: 0.8,
+        space: 1,
+      ),
+      iconTheme: IconThemeData(color: p.textPrimary, size: 22),
       cardTheme: CardThemeData(
-        color: AppColors.lightCard,
+        color: p.card,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.lightBorder, width: 1),
+          side: BorderSide(color: p.border, width: 0.8),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: p.surface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: p.border, width: 0.8),
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: p.surface,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
-        systemOverlayStyle: const SystemUiOverlayStyle(
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness:
+              effectiveDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness:
+              effectiveDark ? Brightness.dark : Brightness.light,
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimaryLight),
-        titleTextStyle: textTheme.titleLarge?.copyWith(
-          color: AppColors.textPrimaryLight,
-          fontWeight: FontWeight.bold,
-          fontFamily: fontCairo,
-        ),
+        iconTheme: IconThemeData(color: p.textPrimary),
+        titleTextStyle: AppTypography.pageTitle(p.textPrimary),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary;
+            return effectiveDark ? p.accent : p.primary;
           }
           return null;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primaryContainer;
+            return effectiveDark ? p.cardElevated : p.primaryContainer;
           }
           return null;
         }),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: p.primary,
+          foregroundColor: p.onPrimary,
+          elevation: 0,
+          minimumSize: const Size(48, 44),
+          textStyle: AppTypography.label(p.onPrimary),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: p.accentText,
+          minimumSize: const Size(48, 44),
+          textStyle: AppTypography.label(p.accentText),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -79,77 +139,13 @@ class AppTheme {
           TargetPlatform.linux: AppPageTransitionsBuilder(),
         },
       ),
+      extensions: <ThemeExtension<dynamic>>[p],
     );
   }
 
-  static ThemeData get darkTheme {
-    final baseTextTheme = ThemeData.dark().textTheme;
-    final textTheme = _buildCairoTextTheme(baseTextTheme);
+  static ThemeData get lightTheme =>
+      buildTheme(AppColorPalette.goldenMushaf, Brightness.light);
 
-    return ThemeData(
-      useMaterial3: true,
-      fontFamily: fontCairo,
-      fontFamilyFallback: const [fontCairo, 'sans-serif'],
-      brightness: Brightness.dark,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primaryLight,
-        onPrimary: Colors.white,
-        primaryContainer: AppColors.darkCardElevated,
-        onPrimaryContainer: AppColors.accentGoldLight,
-        secondary: AppColors.accentGold,
-        onSecondary: Colors.black,
-        surface: AppColors.darkSurface,
-        onSurface: AppColors.textPrimaryDark,
-        outline: AppColors.darkBorder,
-      ),
-      scaffoldBackgroundColor: AppColors.darkBackground,
-      textTheme: textTheme,
-      cardTheme: CardThemeData(
-        color: AppColors.darkCard,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.darkBorder, width: 1),
-        ),
-      ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
-        ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimaryDark),
-        titleTextStyle: textTheme.titleLarge?.copyWith(
-          color: AppColors.textPrimaryDark,
-          fontWeight: FontWeight.bold,
-          fontFamily: fontCairo,
-        ),
-      ),
-      switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return AppColors.accentGold;
-          }
-          return null;
-        }),
-        trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return AppColors.darkCardElevated;
-          }
-          return null;
-        }),
-      ),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: AppPageTransitionsBuilder(),
-          TargetPlatform.iOS: AppPageTransitionsBuilder(),
-          TargetPlatform.windows: AppPageTransitionsBuilder(),
-          TargetPlatform.linux: AppPageTransitionsBuilder(),
-        },
-      ),
-    );
-  }
+  static ThemeData get darkTheme =>
+      buildTheme(AppColorPalette.goldenMushaf, Brightness.dark);
 }

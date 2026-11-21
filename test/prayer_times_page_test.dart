@@ -16,6 +16,36 @@ import 'package:awqat_salaah/features/settings/presentation/bloc/settings_state.
 
 class FakePrayerBloc extends Cubit<PrayerState> implements PrayerBloc {
   FakePrayerBloc(super.initialState);
+
+  @override
+  List<PrayerDayModel> calculateMonthPrayers(int year, int month) {
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final current = state;
+    final base = current is PrayerLoaded ? current.prayerDay : null;
+    return List.generate(daysInMonth, (i) {
+      final d = DateTime(year, month, i + 1);
+      final fajr = PrayerTimeModel(type: PrayerType.fajr, time: DateTime(year, month, i + 1, 4, 30));
+      final sunrise = PrayerTimeModel(type: PrayerType.sunrise, time: DateTime(year, month, i + 1, 5, 50));
+      final dhuhr = PrayerTimeModel(type: PrayerType.dhuhr, time: DateTime(year, month, i + 1, 12, 10));
+      final asr = PrayerTimeModel(type: PrayerType.asr, time: DateTime(year, month, i + 1, 15, 30));
+      final maghrib = PrayerTimeModel(type: PrayerType.maghrib, time: DateTime(year, month, i + 1, 18, 15));
+      final isha = PrayerTimeModel(type: PrayerType.isha, time: DateTime(year, month, i + 1, 19, 45));
+      return PrayerDayModel(
+        date: d,
+        fajr: base?.fajr ?? fajr,
+        sunrise: base?.sunrise ?? sunrise,
+        dhuhr: base?.dhuhr ?? dhuhr,
+        asr: base?.asr ?? asr,
+        maghrib: base?.maghrib ?? maghrib,
+        isha: base?.isha ?? isha,
+        phase: PrayerPhase.beforeAdhan,
+        focusPrayerType: PrayerType.asr,
+        targetTime: asr.time,
+        timeRemaining: const Duration(hours: 1),
+      );
+    });
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -152,6 +182,41 @@ void main() {
 
       // Dividers between rows in unified container
       expect(find.byType(Divider), findsNWidgets(5));
+    });
+
+    testWidgets('Renders Sunnah quick preview chips and opens MonthlyPrayerCalendarSheet on tap', (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('الضحى'), findsOneWidget);
+      expect(find.text('نصف الليل'), findsOneWidget);
+      expect(find.text('الثلث الأخير'), findsOneWidget);
+
+      await tester.tap(find.text('عرض التقويم'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('التقويم الشهري لمواقيت الصلاة'), findsOneWidget);
+      expect(find.text('اليوم'), findsOneWidget);
+    });
+
+    testWidgets('Renders without overflow on narrow 320px width and 1.4x font scale', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 640),
+            textScaler: TextScaler.linear(1.4),
+          ),
+          child: buildTestableWidget(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('مواقيت اليوم'), findsOneWidget);
+      expect(find.byType(PrayerRow), findsNWidgets(6));
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../azkar/data/models/azkar_item_model.dart';
 import '../../../azkar/presentation/bloc/azkar_state.dart';
 import '../../../azkar/presentation/utils/azkar_ui_helpers.dart';
@@ -65,7 +66,7 @@ class _WirdProgressCardState extends State<WirdProgressCard>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
     final isAllDone = widget.azkarState.totalCategoryCount > 0 &&
         widget.azkarState.completedCategoryCount >= widget.azkarState.totalCategoryCount;
     final progress = widget.azkarState.totalCategoryCount > 0
@@ -73,42 +74,16 @@ class _WirdProgressCardState extends State<WirdProgressCard>
             .clamp(0.0, 1.0)
         : 0.0;
 
+    final statusColor = isAllDone ? p.success : p.accentText;
+
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 350),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: isDark
-              ? [
-                  AppColors.darkCard,
-                  isAllDone
-                      ? AppColors.primaryDark.withValues(alpha: 0.7)
-                      : AppColors.primaryDark.withValues(alpha: 0.4),
-                ]
-              : [
-                  AppColors.lightCard,
-                  isAllDone
-                      ? AppColors.primaryContainer.withValues(alpha: 0.45)
-                      : AppColors.primaryContainer.withValues(alpha: 0.25),
-                ],
-        ),
+        color: isAllDone ? p.primaryContainer : p.card,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: isAllDone
-            ? [
-                BoxShadow(
-                  color: AppColors.primaryLight.withValues(alpha: isDark ? 0.18 : 0.12),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : null,
         border: Border.all(
-          color: isAllDone
-              ? AppColors.primaryLight.withValues(alpha: 0.6)
-              : AppColors.accentGold.withValues(alpha: 0.3),
-          width: isAllDone ? 1.4 : 1.0,
+          color: isAllDone ? p.primary.withValues(alpha: 0.35) : p.hairline,
+          width: isAllDone ? 1.2 : 0.75,
         ),
       ),
       child: Material(
@@ -120,21 +95,19 @@ class _WirdProgressCardState extends State<WirdProgressCard>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                // Icon or animated badge
                 Stack(
                   alignment: Alignment.center,
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: (isAllDone ? AppColors.primaryLight : AppColors.accentGold)
-                            .withValues(alpha: 0.15),
+                        color: p.primaryContainer,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         widget.azkarState.selectedCategory.categoryIcon,
                         size: 22,
-                        color: isAllDone ? AppColors.primaryLight : AppColors.accentGold,
+                        color: isAllDone ? p.success : p.accent,
                       ),
                     ),
                     if (isAllDone)
@@ -146,18 +119,11 @@ class _WirdProgressCardState extends State<WirdProgressCard>
                           child: Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryLight,
+                              color: p.success,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                                width: 1.5,
-                              ),
+                              border: Border.all(color: p.card, width: 1.5),
                             ),
-                            child: const Icon(
-                              Icons.check,
-                              size: 10,
-                              color: Colors.white,
-                            ),
+                            child: Icon(Icons.check, size: 10, color: p.onPrimary),
                           ),
                         ),
                       ),
@@ -173,10 +139,7 @@ class _WirdProgressCardState extends State<WirdProgressCard>
                           Expanded(
                             child: Text(
                               'الورد الحالي: ${widget.azkarState.selectedCategory.titleArabic}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
+                              style: AppTypography.rowTitle(p.textPrimary),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -187,28 +150,17 @@ class _WirdProgressCardState extends State<WirdProgressCard>
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryLight.withValues(alpha: 0.15),
+                                  color: p.card,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: AppColors.primaryLight.withValues(alpha: 0.4),
-                                  ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.stars_rounded,
-                                      size: 14,
-                                      color: AppColors.primaryLight,
-                                    ),
-                                    SizedBox(width: 4),
+                                    Icon(Icons.stars_rounded, size: 14, color: p.success),
+                                    const SizedBox(width: 4),
                                     Text(
                                       'مكتمل 🎉',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryLight,
-                                      ),
+                                      style: AppTypography.badge(p.success),
                                     ),
                                   ],
                                 ),
@@ -221,10 +173,7 @@ class _WirdProgressCardState extends State<WirdProgressCard>
                         isAllDone
                             ? 'مبارك! أتممت هذا الورد بحمد الله • اضغط للمراجعة'
                             : 'أنجزت ${widget.azkarState.completedCategoryCount} من ${widget.azkarState.totalCategoryCount} أذكار • اضغط للمتابعة',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white60 : Colors.black54,
-                        ),
+                        style: AppTypography.meta(p.textSecondary),
                       ),
                       const SizedBox(height: 6),
                       ClipRRect(
@@ -236,12 +185,8 @@ class _WirdProgressCardState extends State<WirdProgressCard>
                           builder: (context, val, _) {
                             return LinearProgressIndicator(
                               value: val,
-                              backgroundColor: isDark
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : Colors.black.withValues(alpha: 0.08),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isAllDone ? AppColors.primaryLight : AppColors.accentGold,
-                              ),
+                              backgroundColor: p.hairline,
+                              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
                               minHeight: 4,
                             );
                           },
@@ -254,7 +199,7 @@ class _WirdProgressCardState extends State<WirdProgressCard>
                 Icon(
                   Icons.chevron_left_rounded,
                   size: 20,
-                  color: isDark ? Colors.white54 : Colors.black45,
+                  color: p.textSecondary,
                 ),
               ],
             ),

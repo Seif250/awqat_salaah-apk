@@ -24,12 +24,14 @@ class AzkarLoaded extends AzkarState {
   final DailyAzkarProgress dailyProgress;
   final List<CustomZikr> customAzkar;
 
-  // Computed helper metrics
+  // Computed helper metrics & reading preferences
   final double categoryCompletionRate;
   final double morningCompletionRate;
   final double eveningCompletionRate;
   final int completedCategoryCount;
   final int totalCategoryCount;
+  final double fontScale;
+  final Set<AzkarCategory> completedCategories;
 
   const AzkarLoaded({
     required this.selectedCategory,
@@ -41,6 +43,8 @@ class AzkarLoaded extends AzkarState {
     required this.eveningCompletionRate,
     required this.completedCategoryCount,
     required this.totalCategoryCount,
+    this.fontScale = 1.0,
+    this.completedCategories = const {},
   });
 
   AzkarLoaded copyWith({
@@ -53,6 +57,8 @@ class AzkarLoaded extends AzkarState {
     double? eveningCompletionRate,
     int? completedCategoryCount,
     int? totalCategoryCount,
+    double? fontScale,
+    Set<AzkarCategory>? completedCategories,
   }) {
     return AzkarLoaded(
       selectedCategory: selectedCategory ?? this.selectedCategory,
@@ -64,6 +70,8 @@ class AzkarLoaded extends AzkarState {
       eveningCompletionRate: eveningCompletionRate ?? this.eveningCompletionRate,
       completedCategoryCount: completedCategoryCount ?? this.completedCategoryCount,
       totalCategoryCount: totalCategoryCount ?? this.totalCategoryCount,
+      fontScale: fontScale ?? this.fontScale,
+      completedCategories: completedCategories ?? this.completedCategories,
     );
   }
 
@@ -78,6 +86,8 @@ class AzkarLoaded extends AzkarState {
         eveningCompletionRate,
         completedCategoryCount,
         totalCategoryCount,
+        fontScale,
+        completedCategories,
       ];
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../data/models/azkar_item_model.dart';
 
 class DailyProgressHeader extends StatelessWidget {
@@ -20,47 +21,22 @@ class DailyProgressHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
     final isAllDone = totalCount > 0 && completedCount >= totalCount;
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isAllDone
-              ? AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.25)
-              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Row 1: Category Info & Progress & Reset
           Row(
             children: [
-              // Category Title
               Expanded(
                 child: Row(
                   children: [
                     Text(
                       category.titleArabic,
-                      style: TextStyle(
-                        fontFamily: 'Cairo',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDark,
-                      ),
+                      style: AppTypography.rowTitle(p.accentText),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -69,11 +45,7 @@ class DailyProgressHeader extends StatelessWidget {
                       Expanded(
                         child: Text(
                           category.timeDescription,
-                          style: TextStyle(
-                            fontFamily: 'Cairo',
-                            fontSize: 11,
-                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                          ),
+                          style: AppTypography.label(p.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -82,48 +54,46 @@ class DailyProgressHeader extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Progress Text (e.g. 3 / 13 مكتملة)
               Text(
                 isAllDone
                     ? 'مكتمل بحمد الله'
                     : '$completedCount / $totalCount مكتملة',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                  color: isAllDone
-                      ? AppColors.primary
-                      : (isDark ? AppColors.accentGoldLight : AppColors.primaryDark),
-                ),
+                style: AppTypography.label(
+                  isAllDone ? p.success : p.accentText,
+                  weight: FontWeight.w600,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               const SizedBox(width: 4),
-
-              // Reset subtle button
               InkWell(
                 onTap: () {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: const Text('إعادة تعيين الورد'),
-                      content: Text('هل تريد تصفير عدادات ${category.titleArabic} لليوم؟'),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      title: Text('إعادة تعيين الورد', style: AppTypography.sectionHeader(p.textPrimary)),
+                      content: Text(
+                        'هل تريد تصفير عدادات ${category.titleArabic} لليوم؟',
+                        style: AppTypography.body(p.textPrimary),
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text('إلغاء'),
+                          child: Text('إلغاء', style: AppTypography.meta(p.textSecondary)),
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            backgroundColor: p.primary,
+                            foregroundColor: p.onPrimary,
+                            elevation: 0,
                           ),
                           onPressed: () {
                             Navigator.pop(ctx);
                             onResetCategory();
                           },
-                          child: const Text('تصفير'),
+                          child: Text(
+                            'تصفير',
+                            style: AppTypography.meta(p.onPrimary, weight: FontWeight.w700),
+                          ),
                         ),
                       ],
                     ),
@@ -135,26 +105,21 @@ class DailyProgressHeader extends StatelessWidget {
                   child: Icon(
                     Icons.refresh_rounded,
                     size: 16,
-                    color: isDark ? Colors.white38 : Colors.black38,
+                    color: p.textSecondary,
                   ),
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: 7),
-
-          // Slim progress line (Subtle, 3px)
+          const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: totalCount > 0 ? completionRate.clamp(0.0, 1.0) : 0.0,
               minHeight: 3,
-              backgroundColor: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : const Color(0xFFE5E7EB),
+              backgroundColor: p.hairline,
               valueColor: AlwaysStoppedAnimation<Color>(
-                isAllDone ? AppColors.primary : AppColors.primaryLight,
+                isAllDone ? p.success : p.primary,
               ),
             ),
           ),

@@ -834,4 +834,125 @@ void main() {
       await bloc.close();
     });
   });
+
+  group('Catalog v1.6 Expansion, Migration & Font Scale Tests', () {
+    test('defaultAzkar includes requested supplications, full Muawwidhat, full q_2, and balanced categories', () {
+      final all = AzkarLocalData.defaultAzkar;
+
+      // User requested supplications
+      final hamm = all.firstWhere((a) => a.id == 'sup_hamm');
+      expect(hamm.title, contains('إزالة الهم والحزن'));
+      expect(hamm.arabicText, contains('رَبِيعَ قَلْبِي'));
+      expect(hamm.reference, equals('مسند الإمام أحمد، حديث رقم 3712'));
+      expect(hamm.matchesCategory(AzkarCategory.supplications), isTrue);
+      expect(hamm.matchesCategory(AzkarCategory.general), isTrue);
+
+      final khayr = all.firstWhere((a) => a.id == 'sup_khayr_barakah');
+      expect(khayr.title, contains('الدرجات العُلى من الجنة'));
+      expect(khayr.arabicText, contains('خَيْرَ الْمَسْأَلَةِ'));
+      expect(khayr.arabicText, contains('تُبَارِكَ لِي فِي نَفْسِي'));
+      expect(khayr.reference, equals('المعجم الكبير للطبراني'));
+      expect(khayr.matchesCategory(AzkarCategory.qiyam), isTrue);
+
+      final sup1 = all.firstWhere((a) => a.id == 'sup_1');
+      expect(sup1.matchesCategory(AzkarCategory.supplications), isTrue);
+      expect(sup1.matchesCategory(AzkarCategory.qiyam), isTrue);
+      expect(sup1.matchesCategory(AzkarCategory.general), isTrue);
+
+      // Full Muawwidhat text
+      final m2 = all.firstWhere((a) => a.id == 'm_2');
+      final e2 = all.firstWhere((a) => a.id == 'e_2');
+      expect(m2.arabicText, contains('وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ'));
+      expect(m2.arabicText, contains('مِنَ الْجِنَّةِ وَالنَّاسِ'));
+      expect(e2.arabicText, equals(m2.arabicText));
+
+      // Full q_2 text
+      final q2 = all.firstWhere((a) => a.id == 'q_2');
+      expect(q2.arabicText, contains('أَنْتَ الْمُقَدِّمُ وَأَنْتَ الْمُؤَخِّرُ'));
+
+      // Newly added items across categories
+      expect(all.any((a) => a.id == 'm_18'), isTrue);
+      expect(all.any((a) => a.id == 'e_11'), isTrue);
+      expect(all.any((a) => a.id == 'p_8'), isTrue);
+      expect(all.any((a) => a.id == 's_8'), isTrue);
+      expect(all.any((a) => a.id == 'q_4'), isTrue);
+      expect(all.any((a) => a.id == 'g_14'), isTrue);
+    });
+
+    test('restoreDefaultAzkar preserves user custom azkar', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final repo = AzkarRepository(prefs);
+
+      await repo.addCustomZikr(
+        CustomZikr(
+          id: 'user_custom_keep',
+          title: 'ذكري الخاص',
+          arabicText: 'سبحان الله وبحمده',
+          targetCount: 10,
+          createdAt: DateTime.now(),
+        ),
+      );
+      await repo.deleteZikrItem('m_1');
+
+      await repo.restoreDefaultAzkar();
+
+      final restored = repo.getAllCatalogItems();
+      expect(restored.any((i) => i.id == 'm_1'), isTrue);
+      expect(restored.any((i) => i.id == 'user_custom_keep'), isTrue);
+    });
+
+    test('v1.6 migration upgrades legacy catalog without deleting custom items', () async {
+      // Seed an older catalog with short m_2 and a custom item, without v1.6 flag
+      final legacyShortM2 = const AzkarItem(
+        id: 'm_2',
+        category: AzkarCategory.morning,
+        title: 'المعوذات',
+        arabicText: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ قُلْ أَعُوذُ بِرَبِّ النَّاسِ.',
+        targetCount: 3,
+      );
+      final customItem = const AzkarItem(
+        id: 'legacy_custom_1',
+        category: AzkarCategory.custom,
+        title: 'ورد قديم',
+        arabicText: 'أستغفر الله',
+        targetCount: 5,
+        isCustom: true,
+      );
+
+      SharedPreferences.setMockInitialValues({
+        AzkarRepository.keyCatalog: [
+          '{"id":"${legacyShortM2.id}","category":"morning","categories":["morning"],"title":"${legacyShortM2.title}","arabicText":"${legacyShortM2.arabicText}","targetCount":3,"currentCount":0,"isCompleted":false,"isCustom":false}',
+          '{"id":"${customItem.id}","category":"custom","categories":["custom"],"title":"${customItem.title}","arabicText":"${customItem.arabicText}","targetCount":5,"currentCount":0,"isCompleted":false,"isCustom":true}',
+        ],
+        AzkarRepository.keyCatalogMigrationV15: true,
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final repo = AzkarRepository(prefs);
+      final migrated = repo.getAllCatalogItems();
+
+      expect(migrated.any((i) => i.id == 'legacy_custom_1'), isTrue);
+      expect(migrated.any((i) => i.id == 'sup_hamm'), isTrue);
+      expect(migrated.any((i) => i.id == 'sup_khayr_barakah'), isTrue);
+      final updatedM2 = migrated.firstWhere((i) => i.id == 'm_2');
+      expect(updatedM2.arabicText, contains('وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ'));
+    });
+
+    test('font scale persists and clamps between 0.85 and 1.45', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final repo = AzkarRepository(prefs);
+
+      expect(repo.getAzkarFontScale(), equals(1.0));
+      await repo.setAzkarFontScale(1.25);
+      expect(repo.getAzkarFontScale(), equals(1.25));
+
+      await repo.setAzkarFontScale(3.0);
+      expect(repo.getAzkarFontScale(), equals(1.45));
+
+      await repo.setAzkarFontScale(0.2);
+      expect(repo.getAzkarFontScale(), equals(0.85));
+    });
+  });
 }

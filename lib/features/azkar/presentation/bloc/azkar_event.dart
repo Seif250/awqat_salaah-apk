@@ -185,3 +185,12 @@ class MoveZikrItemEvent extends AzkarEvent {
   @override
   List<Object?> get props => [category, fromIndex, toIndex];
 }
+
+class ChangeAzkarFontScaleEvent extends AzkarEvent {
+  final double fontScale;
+
+  const ChangeAzkarFontScaleEvent(this.fontScale);
+
+  @override
+  List<Object?> get props => [fontScale];
+}

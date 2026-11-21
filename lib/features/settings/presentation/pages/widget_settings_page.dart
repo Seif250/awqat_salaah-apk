@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../services/widget_service.dart';
 import '../widgets/settings_section_card.dart';
@@ -33,92 +34,116 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final p = context.palette;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ودجت الشاشة الرئيسية'),
+        title: Text('ودجت الشاشة الرئيسية', style: AppTypography.pageTitle(p.textPrimary)),
         centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
-          // Widget Live Preview Card
+          // Single-surface Widget Live Preview matching OS Day/Night widget
           Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceAlt : Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: p.card,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: p.border, width: 1),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Header: Location & Wird Wordmark
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('القاهرة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    Text(
-                      'وِرد',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: isDark ? AppColors.accentGold : AppColors.primary,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 14, color: p.accentText),
+                        const SizedBox(width: 4),
+                        Text('القاهرة', style: AppTypography.meta(p.textPrimary, weight: FontWeight.w600)),
+                      ],
                     ),
+                    Text('وِرد', style: AppTypography.label(p.accentText, weight: FontWeight.w800)),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceSelected : AppColors.lightSurfaceSelected,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'الصلاة القادمة: المغرب (06:15 م)',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '01:24:35',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.accentGold : AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'الإقامة: 06:25 م (+10 د)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? Colors.white70 : Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+
+                // Open Hero Section (no inner boxed card)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('الفجر 04:30', style: TextStyle(fontSize: 11)),
-                    Text('الظهر 12:05', style: TextStyle(fontSize: 11)),
-                    Text('العصر 03:30', style: TextStyle(fontSize: 11)),
-                    Text('العشاء 07:45', style: TextStyle(fontSize: 11)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('الصلاة القادمة', style: AppTypography.badge(p.accentText)),
+                          const SizedBox(height: 2),
+                          Text('المغرب • ٠٦:١٥ م', style: AppTypography.sectionHeader(p.textPrimary)),
+                          const SizedBox(height: 2),
+                          Text('الإقامة: ٠٦:٢٥ م', style: AppTypography.label(p.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('متبقي', style: AppTypography.label(p.textSecondary)),
+                        Text(
+                          '01:24:35',
+                          style: AppTypography.heroCountdown(p.accentText)
+                              .copyWith(fontSize: 22),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+                Container(height: 0.75, color: p.hairline),
+                const SizedBox(height: 10),
+
+                // Bottom 5-prayer row with subtle active pill
+                Row(
+                  children: [
+                    for (final item in const [
+                      ('الفجر', '04:30', false),
+                      ('الظهر', '12:05', false),
+                      ('العصر', '03:30', false),
+                      ('المغرب', '06:15', true),
+                      ('العشاء', '07:45', false),
+                    ])
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          decoration: item.$3
+                              ? BoxDecoration(
+                                  color: p.primaryContainer,
+                                  borderRadius: BorderRadius.circular(10),
+                                )
+                              : null,
+                          child: Column(
+                            children: [
+                              Text(
+                                item.$1,
+                                style: AppTypography.badge(
+                                  item.$3 ? p.accentText : p.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item.$2,
+                                style: AppTypography.badge(
+                                  item.$3 ? p.accentText : p.textPrimary,
+                                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -148,24 +173,21 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
           ),
           const SizedBox(height: 16),
 
-          // Instructions Card
+          // Instructions Note (flat container, matches OS Day/Night automatically)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+              color: p.cardElevated,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.touch_app_outlined, size: 18, color: AppColors.accentGold),
-                    SizedBox(width: 8),
-                    Text(
-                      'كيفية إضافة الودجت لشاشة هاتفك:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
+                    Icon(Icons.touch_app_outlined, size: 18, color: p.accent),
+                    const SizedBox(width: 8),
+                    Text('كيفية إضافة الودجت لشاشة هاتفك:', style: AppTypography.rowTitle(p.textPrimary)),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -174,12 +196,9 @@ class _WidgetSettingsPageState extends State<WidgetSettingsPage> {
                   '2. اضغط مطولاً على أي مساحة فارغة.\n'
                   '3. اختر "الأدوات" أو "الودجت" (Widgets).\n'
                   '4. ابحث عن تطبيق "وِرد" واختر الودجت.\n'
-                  '5. اسحب الودجت وضعه في المكان المناسب على شاشتك.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.7,
-                    color: isDark ? Colors.white70 : Colors.black87,
-                  ),
+                  '5. اسحب الودجت وضعه في المكان المناسب على شاشتك.\n\n'
+                  '• يتكيّف مظهر الودجت تلقائياً مع الوضع النهاري والليلي للنظام.',
+                  style: AppTypography.meta(p.textPrimary),
                 ),
               ],
             ),

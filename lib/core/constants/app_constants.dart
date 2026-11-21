@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'وِرد';
-  static const String appSubtitle = 'صلاتك، قرآنك، ذكرك';
+  static const String appSubtitle = 'صلاتك، ذكرك، وردك';
   static const String appVersion = '2.0.0';
 
   // Storage Keys - Location
@@ -19,6 +19,7 @@ class AppConstants {
   static const String keyNotificationOffset = 'notification_offset_minutes';
   static const String keyNotificationOffsetsList = 'notification_offsets_list';
   static const String keyThemeMode = 'theme_mode';
+  static const String keyColorPalette = 'color_palette_v1';
   static const String keyIs24HourFormat = 'is_24_hour_format';
 
   // Storage Keys - Minute Adjustments

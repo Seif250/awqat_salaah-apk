@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 import 'qibla_map_radar_widget.dart';
 
@@ -77,6 +78,7 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
   Widget build(BuildContext context) {
     const double dialSize = 310.0;
     const double radarSize = 200.0;
+    final p = context.palette;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -87,20 +89,18 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: _isAligned
-                ? const Color(0xFF1B4D2E)
-                : Colors.black.withValues(alpha: 0.35),
+            color: _isAligned ? p.primary : p.cardElevated,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: _isAligned ? AppColors.accentGold : Colors.white12,
-              width: _isAligned ? 1.5 : 1,
+              color: _isAligned ? p.accent : p.hairline,
+              width: _isAligned ? 1.5 : 0.75,
             ),
             boxShadow: _isAligned
                 ? [
                     BoxShadow(
-                      color: AppColors.accentGold.withValues(alpha: 0.35),
-                      blurRadius: 14,
-                      spreadRadius: 2,
+                      color: p.accent.withValues(alpha: 0.28),
+                      blurRadius: 12,
+                      spreadRadius: 1,
                     ),
                   ]
                 : null,
@@ -115,28 +115,28 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                         ? Icons.turn_right_rounded
                         : Icons.turn_left_rounded),
                 color: _isAligned
-                    ? AppColors.accentGoldLight
+                    ? p.accentLight
                     : (_relativeAngle.abs() <= 15
-                        ? Colors.amberAccent
-                        : Colors.white70),
+                        ? p.accentText
+                        : p.textSecondary),
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                _isAligned
-                    ? 'أنت بمواجهة الكعبة المشرفة مباشرة 🕋'
-                    : (_relativeAngle > 0
-                        ? 'أدر الهاتف يميناً بمقدار ${toArabicDigits(_relativeAngle.round())}°'
-                        : 'أدر الهاتف يساراً بمقدار ${toArabicDigits(_relativeAngle.abs().round())}°'),
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: _isAligned
-                      ? Colors.white
-                      : (_relativeAngle.abs() <= 15
-                          ? Colors.amberAccent
-                          : Colors.white70),
+              Flexible(
+                child: Text(
+                  _isAligned
+                      ? 'أنت بمواجهة الكعبة المشرفة مباشرة 🕋'
+                      : (_relativeAngle > 0
+                          ? 'أدر الهاتف يميناً بمقدار ${toArabicDigits(_relativeAngle.round())}°'
+                          : 'أدر الهاتف يساراً بمقدار ${toArabicDigits(_relativeAngle.abs().round())}°'),
+                  style: AppTypography.meta(
+                    _isAligned
+                        ? p.onPrimary
+                        : (_relativeAngle.abs() <= 15
+                            ? p.accentText
+                            : p.textPrimary),
+                    weight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -164,9 +164,9 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accentGold.withValues(alpha: 0.4),
-                        blurRadius: 24,
-                        spreadRadius: 4,
+                        color: p.accent.withValues(alpha: 0.35),
+                        blurRadius: 22,
+                        spreadRadius: 3,
                       ),
                     ],
                   ),
@@ -184,6 +184,8 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                     painter: _CompassDialPainter(
                       qiblaAngle: widget.qiblaAngle,
                       isAligned: _isAligned,
+                      accentColor: p.accent,
+                      primaryDarkColor: p.primaryDark,
                     ),
                   ),
                 ),
@@ -212,7 +214,11 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                   width: dialSize,
                   height: dialSize,
                   child: CustomPaint(
-                    painter: _QiblaPointerPainter(isAligned: _isAligned),
+                    painter: _QiblaPointerPainter(
+                      isAligned: _isAligned,
+                      accentColor: p.accent,
+                      accentLightColor: p.accentLight,
+                    ),
                   ),
                 ),
               ),
@@ -223,7 +229,7 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
                 child: Icon(
                   Icons.arrow_drop_down_rounded,
                   size: 28,
-                  color: _isAligned ? AppColors.accentGold : Colors.redAccent,
+                  color: _isAligned ? p.accent : p.error,
                 ),
               ),
             ],
@@ -237,10 +243,14 @@ class _QiblaCompassWidgetState extends State<QiblaCompassWidget> {
 class _CompassDialPainter extends CustomPainter {
   final double qiblaAngle;
   final bool isAligned;
+  final Color accentColor;
+  final Color primaryDarkColor;
 
   _CompassDialPainter({
     required this.qiblaAngle,
     required this.isAligned,
+    required this.accentColor,
+    required this.primaryDarkColor,
   });
 
   @override
@@ -250,19 +260,19 @@ class _CompassDialPainter extends CustomPainter {
 
     // 1. Outer Bezel Ring
     final bezelPaint = Paint()
-      ..color = const Color(0xFF14241B)
+      ..color = primaryDarkColor
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, bezelPaint);
 
     final borderPaint = Paint()
-      ..color = isAligned ? AppColors.accentGold : const Color(0xFF4A6B56)
+      ..color = isAligned ? accentColor : const Color(0xFF4A6B56)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
     canvas.drawCircle(center, radius - 1, borderPaint);
 
     // Inner rim dividing bezel from map
     final innerRimPaint = Paint()
-      ..color = isAligned ? AppColors.accentGold : const Color(0xFF7A583A)
+      ..color = isAligned ? accentColor : const Color(0xFF7A583A)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
     canvas.drawCircle(center, radius * 0.68, innerRimPaint);
@@ -277,7 +287,7 @@ class _CompassDialPainter extends CustomPainter {
       final tickPaint = Paint()
         ..color = isCardinal
             ? (deg == 0 ? Colors.redAccent : Colors.white)
-            : (isMajor ? AppColors.accentGold : Colors.white38)
+            : (isMajor ? accentColor : Colors.white38)
         ..strokeWidth = isCardinal ? 2.0 : (isMajor ? 1.5 : 1.0);
 
       final p1 = Offset(
@@ -295,7 +305,7 @@ class _CompassDialPainter extends CustomPainter {
         final textSpan = TextSpan(
           text: '$deg°',
           style: const TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: AppTypography.uiFont,
             fontSize: 8,
             color: Colors.white60,
           ),
@@ -322,7 +332,7 @@ class _CompassDialPainter extends CustomPainter {
       final textSpan = TextSpan(
         text: c.label,
         style: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: AppTypography.uiFont,
           fontSize: 13,
           fontWeight: FontWeight.bold,
           color: c.color,
@@ -339,21 +349,28 @@ class _CompassDialPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CompassDialPainter oldDelegate) {
-    return oldDelegate.qiblaAngle != qiblaAngle || oldDelegate.isAligned != isAligned;
+    return oldDelegate.qiblaAngle != qiblaAngle ||
+        oldDelegate.isAligned != isAligned ||
+        oldDelegate.accentColor != accentColor;
   }
 }
 
 class _QiblaPointerPainter extends CustomPainter {
   final bool isAligned;
+  final Color accentColor;
+  final Color accentLightColor;
 
-  _QiblaPointerPainter({required this.isAligned});
+  _QiblaPointerPainter({
+    required this.isAligned,
+    required this.accentColor,
+    required this.accentLightColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Needle pointing upwards towards Qibla
     final tip = Offset(center.dx, center.dy - radius + 14);
     final leftBase = Offset(center.dx - 9, center.dy - radius * 0.68 + 10);
     final rightBase = Offset(center.dx + 9, center.dy - radius * 0.68 + 10);
@@ -366,7 +383,7 @@ class _QiblaPointerPainter extends CustomPainter {
       ..close();
 
     final needlePaint = Paint()
-      ..color = isAligned ? AppColors.accentGoldLight : AppColors.accentGold
+      ..color = isAligned ? accentLightColor : accentColor
       ..style = PaintingStyle.fill;
     canvas.drawPath(needlePath, needlePaint);
 
@@ -376,15 +393,15 @@ class _QiblaPointerPainter extends CustomPainter {
       ..strokeWidth = 1.0;
     canvas.drawPath(needlePath, needleBorder);
 
-    // Kaaba emblem at the tip of the needle
     final emblemPaint = Paint()
-      ..color = isAligned ? Colors.amberAccent : AppColors.accentGold
+      ..color = isAligned ? accentLightColor : accentColor
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(center.dx, tip.dy - 3), 4.5, emblemPaint);
   }
 
   @override
   bool shouldRepaint(covariant _QiblaPointerPainter oldDelegate) {
-    return oldDelegate.isAligned != isAligned;
+    return oldDelegate.isAligned != isAligned ||
+        oldDelegate.accentColor != accentColor;
   }
 }

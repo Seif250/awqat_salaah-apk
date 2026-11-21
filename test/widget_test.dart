@@ -114,7 +114,7 @@ void main() {
       );
 
       expect(find.text('سبحان الله وبحمده'), findsOneWidget);
-      expect(find.text('10/33'), findsOneWidget);
+      expect(find.text('10 / 33'), findsOneWidget);
 
       // Tap card to increment
       await tester.tap(find.text('سبحان الله وبحمده'));

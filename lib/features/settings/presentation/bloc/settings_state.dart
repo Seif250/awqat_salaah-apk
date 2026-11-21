@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/prayer_constants.dart';
+import '../../../../core/theme/app_color_palette.dart';
 
 class SettingsState extends Equatable {
   final AppCalculationMethod calculationMethod;
@@ -11,6 +12,7 @@ class SettingsState extends Equatable {
   final int notificationOffsetMinutes;
   final List<int> notificationOffsets;
   final ThemeMode themeMode;
+  final AppColorPalette colorPalette;
   final bool is24HourFormat;
 
   // Minute Adjustments
@@ -44,6 +46,7 @@ class SettingsState extends Equatable {
     this.notificationOffsetMinutes = 0,
     this.notificationOffsets = const [0],
     this.themeMode = ThemeMode.system,
+    this.colorPalette = AppColorPalette.goldenMushaf,
     this.is24HourFormat = false,
     this.adjustFajr = 0,
     this.adjustSunrise = 0,
@@ -72,6 +75,7 @@ class SettingsState extends Equatable {
     int? notificationOffsetMinutes,
     List<int>? notificationOffsets,
     ThemeMode? themeMode,
+    AppColorPalette? colorPalette,
     bool? is24HourFormat,
     int? adjustFajr,
     int? adjustSunrise,
@@ -102,6 +106,7 @@ class SettingsState extends Equatable {
           notificationOffsetMinutes ?? this.notificationOffsetMinutes,
       notificationOffsets: notificationOffsets ?? this.notificationOffsets,
       themeMode: themeMode ?? this.themeMode,
+      colorPalette: colorPalette ?? this.colorPalette,
       is24HourFormat: is24HourFormat ?? this.is24HourFormat,
       adjustFajr: adjustFajr ?? this.adjustFajr,
       adjustSunrise: adjustSunrise ?? this.adjustSunrise,
@@ -137,6 +142,7 @@ class SettingsState extends Equatable {
         notificationOffsetMinutes,
         notificationOffsets,
         themeMode,
+        colorPalette,
         is24HourFormat,
         adjustFajr,
         adjustSunrise,

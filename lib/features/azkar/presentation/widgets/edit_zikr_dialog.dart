@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../data/models/azkar_item_model.dart';
 import 'edit_zikr_form_fields.dart';
@@ -74,11 +75,13 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.item?.title ?? '');
-    _textController = TextEditingController(text: widget.item?.arabicText ?? '');
+    _textController =
+        TextEditingController(text: widget.item?.arabicText ?? '');
     _targetCount = widget.item?.targetCount ?? 3;
     _countController = TextEditingController(text: _targetCount.toString());
     _rewardController = TextEditingController(text: widget.item?.reward ?? '');
-    _referenceController = TextEditingController(text: widget.item?.reference ?? '');
+    _referenceController =
+        TextEditingController(text: widget.item?.reference ?? '');
 
     final initialCat = widget.initialCategory ?? AzkarCategory.custom;
     if (widget.item != null) {
@@ -103,14 +106,17 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
 
   void _save() {
     if (_formKey.currentState?.validate() ?? false) {
-      final parsedCount = int.tryParse(_countController.text.trim()) ?? _targetCount;
+      final parsedCount =
+          int.tryParse(_countController.text.trim()) ?? _targetCount;
       if (parsedCount <= 0) {
-        AppSnackBar.showWarning(context, 'يرجى إدخال عدد تكرار صحيح أكبر من الصفر');
+        AppSnackBar.showWarning(
+            context, 'يرجى إدخال عدد تكرار صحيح أكبر من الصفر');
         return;
       }
 
       if (_selectedCategories.isEmpty) {
-        AppSnackBar.showWarning(context, 'يرجى اختيار قسم واحد على الأقل للذكر');
+        AppSnackBar.showWarning(
+            context, 'يرجى اختيار قسم واحد على الأقل للذكر');
         return;
       }
 
@@ -154,40 +160,46 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
 
   void _confirmDelete() {
     if (widget.item == null || widget.onDelete == null) return;
+    final p = context.palette;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_outline_rounded, color: Colors.red),
-            SizedBox(width: 8),
-            Text('حذف الذكر', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            Icon(Icons.delete_outline_rounded, color: p.error),
+            const SizedBox(width: 8),
+            Text('حذف الذكر',
+                style: AppTypography.sectionHeader(p.textPrimary)),
           ],
         ),
         content: Text(
           'هل أنت متأكد من حذف "${widget.item!.title}"؟\n\n'
           'سيتم إزالة هذا الذكر نهائياً من قائمتك المخصصة.',
-          style: const TextStyle(fontFamily: 'Cairo', height: 1.5),
+          style: AppTypography.body(p.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo')),
+            child: Text('إلغاء', style: AppTypography.meta(p.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: p.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.pop(context);
               widget.onDelete!();
             },
-            child: const Text('نعم، حذف', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            child: Text('نعم، حذف',
+                style:
+                    AppTypography.meta(Colors.white, weight: FontWeight.w700)),
           ),
         ],
       ),
@@ -196,11 +208,12 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
+    final isDark = p.isDark;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        color: p.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
@@ -230,7 +243,8 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                 decoration: InputDecoration(
                   labelText: 'اسم الذكر *',
                   hintText: 'مثال: سيد الاستغفار، الصلاة على النبي...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
                   prefixIcon: const Icon(Icons.title_rounded),
                 ),
                 validator: (val) => (val == null || val.trim().isEmpty)
@@ -244,12 +258,14 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                 controller: _textController,
                 maxLines: 5,
                 textDirection: TextDirection.rtl,
-                style: const TextStyle(fontFamily: 'Amiri', fontSize: 16, height: 1.6),
+                style: const TextStyle(
+                    fontFamily: 'Amiri', fontSize: 16, height: 1.6),
                 decoration: InputDecoration(
                   labelText: 'نص الذكر أو الدعاء *',
                   hintText: 'اكتب نص الذكر كاملاً هنا...',
                   alignLabelWithHint: true,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
                   prefixIcon: const Padding(
                     padding: EdgeInsets.only(bottom: 60),
                     child: Icon(Icons.format_quote_rounded),
@@ -287,7 +303,8 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                       textAlign: TextAlign.center,
                       decoration: InputDecoration(
                         labelText: 'العدد المحدد',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14)),
                       ),
                       validator: (val) {
                         final n = int.tryParse(val?.trim() ?? '');
@@ -309,7 +326,8 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
               // 4. Category (القسم)
               ZikrCategorySelector(
                 selectedCategories: _selectedCategories,
-                onChanged: (updated) => setState(() => _selectedCategories = updated),
+                onChanged: (updated) =>
+                    setState(() => _selectedCategories = updated),
                 isDark: isDark,
               ),
               const SizedBox(height: 14),
@@ -321,7 +339,8 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                 decoration: InputDecoration(
                   labelText: 'المصدر أو المرجع (اختياري)',
                   hintText: 'مثال: صحيح البخاري، الترمذي...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
                   prefixIcon: const Icon(Icons.menu_book_rounded),
                 ),
               ),
@@ -334,7 +353,8 @@ class _EditZikrDialogState extends State<EditZikrDialog> {
                 decoration: InputDecoration(
                   labelText: 'ملاحظة أو فضل الذكر (اختياري)',
                   hintText: 'مثال: يقال عند الاستيقاظ، حطت خطاياه...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
                   prefixIcon: const Icon(Icons.note_alt_outlined),
                 ),
               ),

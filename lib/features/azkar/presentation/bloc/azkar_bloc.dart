@@ -28,6 +28,7 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     on<ImportCustomAzkarEvent>(_onImportCustomAzkar);
     on<ReorderAzkarEvent>(_onReorderAzkar);
     on<MoveZikrItemEvent>(_onMoveZikrItem);
+    on<ChangeAzkarFontScaleEvent>(_onChangeAzkarFontScale);
   }
 
   AzkarCategory _defaultCategoryForCurrentTime() {
@@ -329,6 +330,17 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
     ));
   }
 
+  Future<void> _onChangeAzkarFontScale(
+    ChangeAzkarFontScaleEvent event,
+    Emitter<AzkarState> emit,
+  ) async {
+    final clamped = event.fontScale.clamp(0.85, 1.45).toDouble();
+    await repository.setAzkarFontScale(clamped);
+    if (state is AzkarLoaded) {
+      emit((state as AzkarLoaded).copyWith(fontScale: clamped));
+    }
+  }
+
   AzkarLoaded _buildLoadedState({
     required AzkarCategory selectedCategory,
     required List<AzkarItem> items,
@@ -341,15 +353,26 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
         ? completedCategoryCount / totalCategoryCount
         : 0.0;
 
-    // Morning rate
-    final morningItems = repository.getCategoryItems(AzkarCategory.morning, progress);
-    final morningDone = morningItems.where((e) => e.isCompleted).length;
-    final morningRate = morningItems.isNotEmpty ? morningDone / morningItems.length : 0.0;
+    final completedCategories = <AzkarCategory>{};
+    double morningRate = 0.0;
+    double eveningRate = 0.0;
 
-    // Evening rate
-    final eveningItems = repository.getCategoryItems(AzkarCategory.evening, progress);
-    final eveningDone = eveningItems.where((e) => e.isCompleted).length;
-    final eveningRate = eveningItems.isNotEmpty ? eveningDone / eveningItems.length : 0.0;
+    for (final cat in AzkarCategory.values) {
+      final catItems = cat == selectedCategory
+          ? items
+          : repository.getCategoryItems(cat, progress);
+      if (catItems.isNotEmpty) {
+        final doneCount = catItems.where((e) => e.isCompleted).length;
+        if (doneCount == catItems.length) {
+          completedCategories.add(cat);
+        }
+        if (cat == AzkarCategory.morning) {
+          morningRate = doneCount / catItems.length;
+        } else if (cat == AzkarCategory.evening) {
+          eveningRate = doneCount / catItems.length;
+        }
+      }
+    }
 
     return AzkarLoaded(
       selectedCategory: selectedCategory,
@@ -361,6 +384,8 @@ class AzkarBloc extends Bloc<AzkarEvent, AzkarState> {
       eveningCompletionRate: eveningRate,
       completedCategoryCount: completedCategoryCount,
       totalCategoryCount: totalCategoryCount,
+      fontScale: repository.getAzkarFontScale(),
+      completedCategories: completedCategories,
     );
   }
 }

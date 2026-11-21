@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/app_constants.dart';
 import '../core/constants/prayer_constants.dart';
+import '../core/theme/app_color_palette.dart';
 
 class StorageService {
   final SharedPreferences _prefs;
@@ -137,6 +138,15 @@ class StorageService {
     if (mode == ThemeMode.dark) val = 'dark';
     return _prefs.setString(AppConstants.keyThemeMode, val);
   }
+
+  // Color Palette
+  AppColorPalette get colorPalette =>
+      AppColorPaletteExtension.fromStorageKey(
+        _prefs.getString(AppConstants.keyColorPalette),
+      );
+
+  Future<void> setColorPalette(AppColorPalette palette) =>
+      _prefs.setString(AppConstants.keyColorPalette, palette.storageKey);
 
   // Time format
   bool get is24HourFormat =>

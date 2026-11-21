@@ -5,6 +5,7 @@ import '../../../../services/prayer_calculation_service.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../services/widget_service.dart';
 import '../../../../services/notification_service.dart';
+import '../../data/models/prayer_day_model.dart';
 import 'prayer_event.dart';
 import 'prayer_state.dart';
 
@@ -220,6 +221,48 @@ class PrayerBloc extends Bloc<PrayerEvent, PrayerState> with WidgetsBindingObser
         emit(loaded.copyWith(remainingDuration: remaining));
       }
     }
+  }
+
+  /// Offline monthly prayer timetable for any Gregorian [year] and [month].
+  List<PrayerDayModel> calculateMonthPrayers(int year, int month) {
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final lat = _storageService.latitude;
+    final lng = _storageService.longitude;
+    final method = _storageService.calculationMethod;
+    final madhab = _storageService.madhab;
+    final adjFajr = _storageService.adjustFajr;
+    final adjSunrise = _storageService.adjustSunrise;
+    final adjDhuhr = _storageService.adjustDhuhr;
+    final adjAsr = _storageService.adjustAsr;
+    final adjMaghrib = _storageService.adjustMaghrib;
+    final adjIsha = _storageService.adjustIsha;
+    final iqFajr = _storageService.iqamahFajr;
+    final iqDhuhr = _storageService.iqamahDhuhr;
+    final iqAsr = _storageService.iqamahAsr;
+    final iqMaghrib = _storageService.iqamahMaghrib;
+    final iqIsha = _storageService.iqamahIsha;
+
+    return List<PrayerDayModel>.generate(daysInMonth, (index) {
+      final date = DateTime(year, month, index + 1);
+      return _calculationService.calculatePrayerTimes(
+        latitude: lat,
+        longitude: lng,
+        date: date,
+        method: method,
+        madhab: madhab,
+        adjustFajr: adjFajr,
+        adjustSunrise: adjSunrise,
+        adjustDhuhr: adjDhuhr,
+        adjustAsr: adjAsr,
+        adjustMaghrib: adjMaghrib,
+        adjustIsha: adjIsha,
+        iqamahFajr: iqFajr,
+        iqamahDhuhr: iqDhuhr,
+        iqamahAsr: iqAsr,
+        iqamahMaghrib: iqMaghrib,
+        iqamahIsha: iqIsha,
+      );
+    });
   }
 
   @override

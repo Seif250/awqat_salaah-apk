@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../data/models/azkar_item_model.dart';
 import '../utils/azkar_ui_helpers.dart';
@@ -17,7 +18,7 @@ class EditZikrHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final p = context.palette;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -26,20 +27,18 @@ class EditZikrHeader extends StatelessWidget {
           children: [
             Icon(
               isEditing ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded,
-              color: AppColors.accentGold,
+              color: p.accent,
               size: 26,
             ),
             const SizedBox(width: 8),
             Text(
               isEditing ? 'تعديل الذكر' : 'إضافة ذكر جديد',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTypography.sectionHeader(p.textPrimary),
             ),
           ],
         ),
         IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(Icons.close_rounded, color: p.textSecondary),
           onPressed: onClose,
         ),
       ],
@@ -62,28 +61,24 @@ class ZikrCategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        color: p.cardElevated,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.category_outlined, size: 18, color: AppColors.accentGold),
+              Icon(Icons.category_outlined, size: 18, color: p.accent),
               const SizedBox(width: 8),
-              Text(
-                'أقسام وظهور الذكر (يمكنك اختيار أكثر من قسم):',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12.5,
-                  color: isDark ? Colors.white : AppColors.primaryDark,
+              Expanded(
+                child: Text(
+                  'أقسام وظهور الذكر (يمكنك اختيار أكثر من قسم):',
+                  style: AppTypography.meta(p.textPrimary, weight: FontWeight.w700),
                 ),
               ),
             ],
@@ -99,22 +94,19 @@ class ZikrCategorySelector extends StatelessWidget {
                 avatar: Icon(
                   cat.categoryIcon,
                   size: 15,
-                  color: isSelected ? Colors.white : AppColors.accentGold,
+                  color: isSelected ? p.onPrimary : p.accent,
                 ),
                 label: Text(cat.titleArabic),
-                labelStyle: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                labelStyle: AppTypography.label(
+                  isSelected ? p.onPrimary : p.textPrimary,
+                  weight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
-                selectedColor: AppColors.primary,
-                backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                selectedColor: p.primary,
+                backgroundColor: p.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: isSelected
-                        ? AppColors.primary
-                        : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                    color: isSelected ? p.primary : p.hairline,
                   ),
                 ),
                 showCheckmark: false,
@@ -154,29 +146,26 @@ class ZikrTargetCountChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'عدد التكرار:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              style: AppTypography.meta(p.textPrimary, weight: FontWeight.w700),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
-                color: AppColors.accentGold.withValues(alpha: 0.15),
+                color: p.primaryContainer,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$targetCount ${targetCount == 1 ? "مرة" : "مرات"}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accentGold,
-                ),
+                style: AppTypography.badge(p.accentText),
               ),
             ),
           ],
@@ -192,11 +181,10 @@ class ZikrTargetCountChips extends StatelessWidget {
               selected: isSelected,
               showCheckmark: false,
               visualDensity: VisualDensity.compact,
-              selectedColor: AppColors.accentGold.withValues(alpha: 0.25),
-              labelStyle: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? AppColors.accentGold : null,
+              selectedColor: p.primaryContainer,
+              labelStyle: AppTypography.label(
+                isSelected ? p.accentText : p.textPrimary,
+                weight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
               onSelected: (selected) {
                 if (selected) onCountChanged(count);
@@ -226,14 +214,15 @@ class EditZikrActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Row(
       children: [
         if (showDelete && onDelete != null) ...[
           OutlinedButton.icon(
-            icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-            label: const Text('حذف الذكر', style: TextStyle(color: Colors.red)),
+            icon: Icon(Icons.delete_outline_rounded, color: p.error),
+            label: Text('حذف الذكر', style: AppTypography.meta(p.error)),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.red),
+              side: BorderSide(color: p.error),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
@@ -244,10 +233,14 @@ class EditZikrActionButtons extends StatelessWidget {
         Expanded(
           child: ElevatedButton.icon(
             icon: Icon(isEditing ? Icons.save_rounded : Icons.add_rounded),
-            label: Text(isEditing ? 'حفظ التعديلات' : 'إضافة الذكر إلى الورد'),
+            label: Text(
+              isEditing ? 'حفظ التعديلات' : 'إضافة الذكر إلى الورد',
+              style: AppTypography.body(p.onPrimary, weight: FontWeight.w700),
+            ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: p.primary,
+              foregroundColor: p.onPrimary,
+              elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),

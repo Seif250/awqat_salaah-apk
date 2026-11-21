@@ -4,7 +4,8 @@ import '../../../../core/utils/page_transitions.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/prayer_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_state.dart';
 // import '../../../quran/presentation/bloc/quran_bloc.dart';
@@ -53,30 +54,31 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showPrivacyPolicy(BuildContext context) {
+    final p = context.palette;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.privacy_tip_outlined, color: AppColors.accentGold),
-            SizedBox(width: 8),
-            Text('سياسة الخصوصية', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            Icon(Icons.privacy_tip_outlined, color: p.accent),
+            const SizedBox(width: 8),
+            Text('سياسة الخصوصية', style: AppTypography.sectionHeader(p.textPrimary)),
           ],
         ),
-        content: const SingleChildScrollView(
+        content: SingleChildScrollView(
           child: Text(
             'تطبيق "وِرد" يحترم خصوصيتك بالكامل:\n\n'
             '• لا يتم جمع أو تخزين أو مشاركة أي بيانات شخصية أو موقعك الجغرافي مع أي جهة خارجية.\n'
             '• يتم استخدام موقعك الجغرافي حصرياً داخل جهازك لحساب أوقات الصلاة فلكياً دون الحاجة للاتصال بالإنترنت.\n'
             '• جميع الأذكار والتفضيلات والإعدادات يتم حفظها محلياً على جهازك فقط.',
-            style: TextStyle(fontFamily: 'Cairo', height: 1.6, fontSize: 13),
+            style: AppTypography.body(p.textPrimary),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إغلاق', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            child: Text('إغلاق', style: AppTypography.meta(p.accentText, weight: FontWeight.w700)),
           ),
         ],
       ),
@@ -349,12 +351,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final p = context.palette;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الإعدادات', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+        title: Text('الإعدادات', style: AppTypography.pageTitle(p.textPrimary)),
         centerTitle: true,
       ),
       body: BlocBuilder<SettingsBloc, SettingsState>(
@@ -513,7 +514,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       SettingsTile(
                         icon: Icons.palette_outlined,
                         title: 'المظهر وتنسيق الوقت',
-                        subtitle: '$themeSubtitle • ${settingsState.is24HourFormat ? "24 ساعة" : "12 ساعة"}',
+                        subtitle: '${settingsState.colorPalette.titleArabic} • $themeSubtitle • ${settingsState.is24HourFormat ? "24 ساعة" : "12 ساعة"}',
                         showDivider: true,
                         onTap: () {
                           Navigator.push(
@@ -557,13 +558,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         TextButton.icon(
                           icon: const Icon(Icons.privacy_tip_outlined, size: 16),
-                          label: const Text(
-                            'سياسة الخصوصية',
-                            style: TextStyle(fontFamily: 'Cairo', fontSize: 13),
-                          ),
-                          style: TextButton.styleFrom(
-                            foregroundColor: isDark ? Colors.white70 : Colors.black54,
-                          ),
+                          label: Text('سياسة الخصوصية', style: AppTypography.meta(p.textSecondary)),
+                          style: TextButton.styleFrom(foregroundColor: p.textSecondary),
                           onPressed: () => _showPrivacyPolicy(context),
                         ),
                         const SizedBox(height: 4),
@@ -573,11 +569,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             child: Text(
                               '${AppConstants.appName} • ${AppConstants.appSubtitle} • الإصدار ${AppConstants.appVersion}',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 11.5,
-                                color: isDark ? Colors.white38 : Colors.black38,
-                              ),
+                              style: AppTypography.label(p.textSecondary),
                             ),
                           ),
                         ),

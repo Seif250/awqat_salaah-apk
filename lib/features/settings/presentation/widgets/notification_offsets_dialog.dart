@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 
@@ -38,12 +39,13 @@ class NotificationOffsetsDialog {
       builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final p = context.palette;
             return AlertDialog(
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.timer_outlined, color: AppColors.accentGold),
-                  SizedBox(width: 8),
-                  Text('مواعيد تنبيه الصلاة'),
+                  Icon(Icons.timer_outlined, color: p.accent),
+                  const SizedBox(width: 8),
+                  Text('مواعيد تنبيه الصلاة', style: AppTypography.sectionHeader(p.textPrimary)),
                 ],
               ),
               content: SizedBox(
@@ -53,9 +55,9 @@ class NotificationOffsetsDialog {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'يمكنك اختيار أكثر من موعد تنبيه للصلاة الواحدة:',
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                        style: AppTypography.meta(p.textSecondary),
                       ),
                       const SizedBox(height: 8),
                       ...standardOptions.map((entry) {
@@ -65,13 +67,13 @@ class NotificationOffsetsDialog {
                           contentPadding: EdgeInsets.zero,
                           title: Text(
                             entry.value,
-                            style: TextStyle(
-                              fontWeight: isChecked ? FontWeight.bold : FontWeight.normal,
-                              color: isChecked ? AppColors.accentGold : null,
+                            style: AppTypography.body(
+                              isChecked ? p.accentText : p.textPrimary,
+                              weight: isChecked ? FontWeight.w700 : FontWeight.w400,
                             ),
                           ),
                           value: isChecked,
-                          activeColor: AppColors.accentGold,
+                          activeColor: p.primary,
                           onChanged: (bool? val) {
                             setDialogState(() {
                               if (val == true) {
@@ -92,10 +94,10 @@ class NotificationOffsetsDialog {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogCtx),
-                  child: const Text('إلغاء'),
+                  child: Text('إلغاء', style: AppTypography.meta(p.textSecondary)),
                 ),
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.accentGold),
+                  style: FilledButton.styleFrom(backgroundColor: p.primary, foregroundColor: p.onPrimary),
                   onPressed: () {
                     final result = selected.toList()..sort();
                     context.read<SettingsBloc>().add(ChangeNotificationOffsetsEvent(result));

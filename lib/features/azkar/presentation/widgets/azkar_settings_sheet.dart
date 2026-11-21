@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/page_transitions.dart';
 import '../../../settings/presentation/pages/azkar_settings_page.dart';
@@ -91,32 +92,34 @@ class AzkarSettingsSheet extends StatelessWidget {
   }
 
   void _confirmRestoreDefaults(BuildContext context) {
+    final p = context.palette;
     Navigator.pop(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.restore_rounded, color: AppColors.accentGold),
-            SizedBox(width: 8),
-            Text('استعادة الأذكار الأصلية', style: TextStyle(fontFamily: 'Cairo')),
+            Icon(Icons.restore_rounded, color: p.accent),
+            const SizedBox(width: 8),
+            Text('استعادة الأذكار الأصلية', style: AppTypography.sectionHeader(p.textPrimary)),
           ],
         ),
-        content: const Text(
+        content: Text(
           'هل تريد استعادة جميع أذكار السنة النبوية الافتراضية؟\n\n'
           'سيتم استرجاع جميع الأذكار الأصلية مع الاحتفاظ بالأذكار التي قمت بإضافتها بنفسك.',
-          style: TextStyle(fontFamily: 'Cairo', height: 1.5),
+          style: AppTypography.body(p.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo')),
+            child: Text('إلغاء', style: AppTypography.meta(p.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: p.primary,
+              foregroundColor: p.onPrimary,
+              elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () {
@@ -124,7 +127,7 @@ class AzkarSettingsSheet extends StatelessWidget {
               context.read<AzkarBloc>().add(const RestoreDefaultAzkarEvent());
               AppSnackBar.showSuccess(context, 'تمت استعادة الأذكار الافتراضية بنجاح');
             },
-            child: const Text('استعادة', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold)),
+            child: Text('استعادة', style: AppTypography.meta(p.onPrimary, weight: FontWeight.w700)),
           ),
         ],
       ),
@@ -133,12 +136,12 @@ class AzkarSettingsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final p = context.palette;
+    final isDark = p.isDark;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        color: p.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -147,49 +150,40 @@ class AzkarSettingsSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Drag handle
             Center(
               child: Container(
                 width: 36,
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black12,
+                  color: p.hairline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
 
-            // Sheet Title
             Row(
               children: [
-                const Icon(Icons.settings_outlined, color: AppColors.primary, size: 22),
+                Icon(Icons.settings_outlined, color: p.accentText, size: 22),
                 const SizedBox(width: 8),
-                const Text(
-                  'خيارات وإعدادات الأذكار',
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text('خيارات وإعدادات الأذكار', style: AppTypography.sectionHeader(p.textPrimary)),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20),
+                  icon: Icon(Icons.close_rounded, size: 20, color: p.textSecondary),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // SECTION 1: إدارة الورد والعدادات
-            _buildSectionHeader('الورد اليومي والعدادات'),
+            _buildSectionHeader(p, 'الورد اليومي والعدادات'),
             _buildSettingTile(
               context: context,
+              p: p,
               icon: Icons.restart_alt_rounded,
               title: 'تصفير عدادات هذا القسم',
               subtitle: 'إعادة ضبط عداد ${currentCategory.titleArabic} إلى البداية',
-              iconColor: Colors.teal,
+              iconColor: p.primary,
               onTap: () {
                 Navigator.pop(context);
                 context.read<AzkarBloc>().add(ResetCategoryProgressEvent(currentCategory));
@@ -199,53 +193,41 @@ class AzkarSettingsSheet extends StatelessWidget {
             ),
             _buildSettingTile(
               context: context,
+              p: p,
               icon: Icons.restore_rounded,
               title: 'استعادة الأذكار الافتراضية',
               subtitle: 'إعادة أذكار السنة النبوية دون حذف أذكارك المخصصة',
-              iconColor: AppColors.accentGold,
+              iconColor: p.accent,
               onTap: () => _confirmRestoreDefaults(context),
               isDark: isDark,
             ),
 
             const SizedBox(height: 16),
 
-            // SECTION 2: البيانات (النسخ الاحتياطي والاسترجاع)
-            _buildSectionHeader('أذكاري المخصصة والنسخ الاحتياطي'),
+            _buildSectionHeader(p, 'أذكاري المخصصة والنسخ الاحتياطي'),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkCard : Colors.white,
+                color: p.cardElevated,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.shield_outlined, size: 18, color: AppColors.accentGold),
-                      SizedBox(width: 8),
+                      Icon(Icons.shield_outlined, size: 18, color: p.accent),
+                      const SizedBox(width: 8),
                       Text(
                         'النسخ الاحتياطي للأذكار المخصصة',
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppTypography.rowTitle(p.textPrimary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'احفظ أذكارك المخصصة واسترجعها عند الحاجة أو عند نقل الهاتف إلى جهاز آخر.',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 12,
-                      color: Colors.grey,
-                      height: 1.4,
-                    ),
+                    style: AppTypography.meta(p.textSecondary),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -253,17 +235,15 @@ class AzkarSettingsSheet extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: isDark ? AppColors.accentGoldLight : AppColors.primary,
-                            side: BorderSide(
-                              color: isDark ? AppColors.accentGold : AppColors.primary,
-                            ),
+                            foregroundColor: p.accentText,
+                            side: BorderSide(color: p.primary.withValues(alpha: 0.4)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           icon: const Icon(Icons.file_upload_outlined, size: 16),
-                          label: const Text(
+                          label: Text(
                             'تصدير أذكاري',
-                            style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold),
+                            style: AppTypography.meta(p.accentText, weight: FontWeight.w700),
                           ),
                           onPressed: () => _handleExport(context),
                         ),
@@ -272,15 +252,16 @@ class AzkarSettingsSheet extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            backgroundColor: p.primary,
+                            foregroundColor: p.onPrimary,
+                            elevation: 0,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           icon: const Icon(Icons.file_download_outlined, size: 16),
-                          label: const Text(
+                          label: Text(
                             'استيراد أذكار',
-                            style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold),
+                            style: AppTypography.meta(p.onPrimary, weight: FontWeight.w700),
                           ),
                           onPressed: () => _handleImport(context),
                         ),
@@ -293,14 +274,14 @@ class AzkarSettingsSheet extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // SECTION 3: التنبيهات والتخصيص
-            _buildSectionHeader('التنبيهات والتخصيص'),
+            _buildSectionHeader(p, 'التنبيهات والتخصيص'),
             _buildSettingTile(
               context: context,
+              p: p,
               icon: Icons.notifications_active_outlined,
               title: 'مواعيد التنبيه بالورد اليومي',
               subtitle: 'تخصيص أوقات تذكير الصباح والمساء والنوم وقيام الليل',
-              iconColor: AppColors.primary,
+              iconColor: p.primary,
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context, FadeSlidePageRoute(page: const AzkarSettingsPage()));
@@ -313,23 +294,19 @@ class AzkarSettingsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(WirdPalette p, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, top: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          fontFamily: 'Cairo',
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-        ),
+        style: AppTypography.label(p.accentText, weight: FontWeight.w700),
       ),
     );
   }
 
   Widget _buildSettingTile({
     required BuildContext context,
+    required WirdPalette p,
     required IconData icon,
     required String title,
     required String subtitle,
@@ -337,15 +314,13 @@ class AzkarSettingsSheet extends StatelessWidget {
     required bool isDark,
     Color? iconColor,
   }) {
+    final effectiveIcon = iconColor ?? p.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
+        color: p.card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          width: 0.8,
-        ),
+        border: Border.all(color: p.hairline, width: 0.75),
       ),
       child: ListTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -353,28 +328,14 @@ class AzkarSettingsSheet extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: (iconColor ?? AppColors.primary).withValues(alpha: 0.1),
+            color: p.primaryContainer,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: iconColor ?? AppColors.primary, size: 20),
+          child: Icon(icon, color: effectiveIcon, size: 20),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(
-            fontFamily: 'Cairo',
-            fontSize: 11,
-            color: Colors.grey,
-          ),
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+        title: Text(title, style: AppTypography.rowTitle(p.textPrimary)),
+        subtitle: Text(subtitle, style: AppTypography.label(p.textSecondary)),
+        trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: p.textSecondary),
         onTap: onTap,
       ),
     );

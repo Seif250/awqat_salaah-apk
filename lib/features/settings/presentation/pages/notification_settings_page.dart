@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../prayer_times/presentation/bloc/prayer_bloc.dart';
 import '../../../prayer_times/presentation/bloc/prayer_event.dart';
 import '../bloc/settings_bloc.dart';
@@ -80,12 +81,11 @@ class NotificationSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final p = context.palette;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تنبيهات الصلاة'),
+        title: Text('تنبيهات الصلاة', style: AppTypography.pageTitle(p.textPrimary)),
         centerTitle: true,
       ),
       body: BlocBuilder<SettingsBloc, SettingsState>(
@@ -102,64 +102,54 @@ class NotificationSettingsPage extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                        color: p.primaryContainer,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.notifications_outlined, size: 20, color: AppColors.accentGold),
+                      child: Icon(Icons.notifications_outlined, size: 20, color: p.accentText),
                     ),
-                    title: const Text('تفعيل إشعارات الصلاة', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('إظهار تنبيهات مواقيت الصلاة في شريط الإشعارات'),
+                    title: Text('تفعيل إشعارات الصلاة', style: AppTypography.rowTitle(p.textPrimary)),
+                    subtitle: Text('إظهار تنبيهات مواقيت الصلاة في شريط الإشعارات', style: AppTypography.meta(p.textSecondary)),
                     value: state.notificationsEnabled,
-                    activeThumbColor: AppColors.accentGold,
+                    activeThumbColor: p.primary,
                     onChanged: (val) {
                       context.read<SettingsBloc>().add(ToggleNotificationsEvent(val));
                     },
                   ),
                   if (state.notificationsEnabled) ...[
-                    Divider(
-                      height: 1,
-                      indent: 66,
-                      endIndent: 16,
-                      color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
-                    ),
+                    Divider(height: 1, indent: 66, endIndent: 16, color: p.hairline),
                     SwitchListTile(
                       secondary: Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                          color: p.primaryContainer,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.volume_up_outlined, size: 20, color: AppColors.accentGold),
+                        child: Icon(Icons.volume_up_outlined, size: 20, color: p.accentText),
                       ),
-                      title: const Text('صوت الأذان والاهتزاز', style: TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: const Text('تشغيل صوت أذان المؤذن كاملاً عند حلول مواعيد الصلاة والتنبيه'),
+                      title: Text('صوت الأذان والاهتزاز', style: AppTypography.rowTitle(p.textPrimary)),
+                      subtitle: Text('تشغيل صوت أذان المؤذن كاملاً عند حلول مواعيد الصلاة والتنبيه', style: AppTypography.meta(p.textSecondary)),
                       value: state.notificationSoundEnabled,
-                      activeThumbColor: AppColors.accentGold,
+                      activeThumbColor: p.primary,
                       onChanged: (val) {
                         context.read<SettingsBloc>().add(ToggleNotificationSoundEvent(val));
                       },
                     ),
                     if (state.notificationSoundEnabled) ...[
-                      Divider(
-                        height: 1,
-                        indent: 66,
-                        endIndent: 16,
-                        color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
-                      ),
+                      Divider(height: 1, indent: 66, endIndent: 16, color: p.hairline),
                       ListTile(
                         leading: Container(
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                            color: p.primaryContainer,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.music_note_outlined, size: 20, color: AppColors.accentGold),
+                          child: Icon(Icons.music_note_outlined, size: 20, color: p.accentText),
                         ),
-                        title: const Text('صوت إشعار الأذان', style: TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(AdhanSoundDialog.getSoundDisplayName(state.notificationSoundType)),
-                        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                        title: Text('صوت إشعار الأذان', style: AppTypography.rowTitle(p.textPrimary)),
+                        subtitle: Text(AdhanSoundDialog.getSoundDisplayName(state.notificationSoundType), style: AppTypography.meta(p.textSecondary)),
+                        trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: p.textSecondary),
                         onTap: () => AdhanSoundDialog.show(context, state.notificationSoundType),
                       ),
                     ],
@@ -178,14 +168,14 @@ class NotificationSettingsPage extends StatelessWidget {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.accentGold.withValues(alpha: isDark ? 0.12 : 0.08),
+                          color: p.primaryContainer,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.alarm_outlined, size: 20, color: AppColors.accentGold),
+                        child: Icon(Icons.alarm_outlined, size: 20, color: p.accentText),
                       ),
-                      title: const Text('مواعيد التنبيه قبل أو عند الأذان', style: TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(NotificationOffsetsDialog.formatNotificationOffsets(state.notificationOffsets)),
-                      trailing: const Icon(Icons.chevron_left_rounded),
+                      title: Text('مواعيد التنبيه قبل أو عند الأذان', style: AppTypography.rowTitle(p.textPrimary)),
+                      subtitle: Text(NotificationOffsetsDialog.formatNotificationOffsets(state.notificationOffsets), style: AppTypography.meta(p.textSecondary)),
+                      trailing: Icon(Icons.chevron_left_rounded, color: p.textSecondary),
                       onTap: () => NotificationOffsetsDialog.show(context, state.notificationOffsets),
                     ),
                   ],
@@ -251,7 +241,7 @@ class NotificationSettingsPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+                  color: p.cardElevated,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -259,15 +249,11 @@ class NotificationSettingsPage extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline_rounded, size: 18, color: isDark ? Colors.white54 : Colors.black45),
+                        Icon(Icons.info_outline_rounded, size: 18, color: p.textSecondary),
                         const SizedBox(width: 8),
                         Text(
                           'توضيح الفروق في المنظومة:',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white70 : Colors.black87,
-                          ),
+                          style: AppTypography.rowTitle(p.textPrimary),
                         ),
                       ],
                     ),
@@ -276,11 +262,7 @@ class NotificationSettingsPage extends StatelessWidget {
                       '• الإشعار: رسالة التنبيه التي تظهر في شريط إشعارات الهاتف.\n'
                       '• الأذان: صوت أذان المؤذن كاملاً عند حلول مواقيت الصلاة ومواعيد التنبيه.\n'
                       '• الإقامة: فارق الدقائق بين الأذان وبدء الصلاة في المسجد لمتابعة العد التنازلي بدقة.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.6,
-                        color: isDark ? Colors.white60 : Colors.black54,
-                      ),
+                      style: AppTypography.meta(p.textSecondary),
                     ),
                   ],
                 ),

@@ -13,6 +13,8 @@ class AzkarRepository {
   static const String keyCustomAzkarList = 'azkar_custom_list_v1';
   static const String keyCatalogMigrationV14 = 'azkar_catalog_migration_v1_4';
   static const String keyCatalogMigrationV15 = 'azkar_catalog_migration_v1_5';
+  static const String keyCatalogMigrationV16 = 'azkar_catalog_migration_v1_6';
+  static const String keyAzkarFontScale = 'azkar_font_scale_v1';
 
   AzkarRepository(this._prefs);
 
@@ -59,6 +61,18 @@ class AzkarRepository {
   // CATALOG MANAGEMENT (Edit, Delete, Add, Restore)
   // ═══════════════════════════════════════════════════════════
 
+  /// Get current user font scale for Azkar cards (clamped 0.85..1.45)
+  double getAzkarFontScale() {
+    final scale = _prefs.getDouble(keyAzkarFontScale) ?? 1.0;
+    return scale.clamp(0.85, 1.45).toDouble();
+  }
+
+  /// Persist user font scale for Azkar cards
+  Future<void> setAzkarFontScale(double scale) async {
+    final clamped = scale.clamp(0.85, 1.45).toDouble();
+    await _prefs.setDouble(keyAzkarFontScale, clamped);
+  }
+
   /// Get all items from the dynamic user catalog
   List<AzkarItem> getAllCatalogItems() {
     final jsonList = _prefs.getStringList(keyCatalog);
@@ -68,19 +82,54 @@ class AzkarRepository {
             .map((str) => AzkarItem.fromJson(jsonDecode(str) as Map<String, dynamic>))
             .toList();
 
-        // Ensure newly introduced system Azkar are migrated once
-        if (!(_prefs.getBool(keyCatalogMigrationV15) ?? false)) {
+        // Ensure newly introduced system Azkar and enriched texts are migrated once (v1.6)
+        final v15Done = _prefs.getBool(keyCatalogMigrationV15) ?? false;
+        final v16Done = _prefs.getBool(keyCatalogMigrationV16) ?? false;
+        if (!v15Done || !v16Done) {
           bool updated = false;
+          final defaultsById = {
+            for (final def in AzkarLocalData.defaultAzkar) def.id: def,
+          };
+
+          // Refresh truncated texts & multi-category links for specific system IDs
+          for (int idx = 0; idx < items.length; idx++) {
+            final current = items[idx];
+            final def = defaultsById[current.id];
+            if (def == null || current.isCustom) continue;
+
+            if ((current.id == 'm_2' || current.id == 'e_2') &&
+                !current.arabicText.contains('وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ')) {
+              items[idx] = current.copyWith(arabicText: def.arabicText);
+              updated = true;
+            } else if (current.id == 'q_2' &&
+                !current.arabicText.contains('أَنْتَ الْمُقَدِّمُ وَأَنْتَ الْمُؤَخِّرُ')) {
+              items[idx] = current.copyWith(arabicText: def.arabicText);
+              updated = true;
+            } else if (current.id == 'sup_1' || current.id == 'sup_5') {
+              final mergedCategories = {
+                ...current.effectiveCategories,
+                ...def.effectiveCategories,
+              }.toList();
+              if (mergedCategories.length > current.effectiveCategories.length) {
+                items[idx] = current.copyWith(categories: mergedCategories);
+                updated = true;
+              }
+            }
+          }
+
+          // Append any newly added default Azkar
           for (final def in AzkarLocalData.defaultAzkar) {
             if (!items.any((i) => i.id == def.id)) {
               items.add(def);
               updated = true;
             }
           }
+
           if (updated) {
             saveAllCatalogItems(items);
           }
           _prefs.setBool(keyCatalogMigrationV15, true);
+          _prefs.setBool(keyCatalogMigrationV16, true);
         }
 
         return items;
@@ -91,6 +140,7 @@ class AzkarRepository {
     final defaults = List<AzkarItem>.from(AzkarLocalData.defaultAzkar);
     saveAllCatalogItems(defaults);
     _prefs.setBool(keyCatalogMigrationV15, true);
+    _prefs.setBool(keyCatalogMigrationV16, true);
     return defaults;
   }
 
@@ -129,11 +179,17 @@ class AzkarRepository {
     ));
   }
 
-  /// Restore default Azkar database
+  /// Restore default Azkar database while preserving user custom Azkar
   Future<void> restoreDefaultAzkar() async {
+    final customItems = getCustomAzkarItems();
     final defaults = List<AzkarItem>.from(AzkarLocalData.defaultAzkar);
-    await saveAllCatalogItems(defaults);
+    final restored = <AzkarItem>[
+      ...customItems.where((c) => !defaults.any((d) => d.id == c.id)),
+      ...defaults,
+    ];
+    await saveAllCatalogItems(restored);
     await _prefs.setBool(keyCatalogMigrationV15, true);
+    await _prefs.setBool(keyCatalogMigrationV16, true);
   }
 
   /// Add new zikr (to any category or multiple categories)

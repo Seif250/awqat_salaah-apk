@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../azkar/presentation/pages/azkar_page.dart';
 import 'home_page.dart';
 import 'prayer_times_page.dart';
@@ -19,7 +20,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class MainNavigationScreenState extends State<MainNavigationScreen> {
   late final PageController _pageController;
-  int _currentIndex = 0; // Default to HomePage (الرئيسية) as specified
+  int _currentIndex = 0;
   bool _isNavBarVisible = true;
 
   @override
@@ -44,8 +45,8 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     if (_pageController.hasClients) {
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
       );
     }
   }
@@ -64,10 +65,10 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
 
     return Scaffold(
-      extendBody: true,
+      backgroundColor: p.background,
       body: NotificationListener<UserScrollNotification>(
         onNotification: (notification) {
           if (notification.metrics.axis == Axis.vertical) {
@@ -98,62 +99,52 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: AnimatedSlide(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOutCubic,
-        offset: _isNavBarVisible ? Offset.zero : const Offset(0, 1.2),
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 200),
-          opacity: _isNavBarVisible ? 1.0 : 0.0,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.wirdWhite,
-              border: Border(
-                top: BorderSide(
-                  color: isDark ? AppColors.darkBorder : AppColors.wirdBorder,
-                  width: 1,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: SizedBox(
-                height: 74,
-                child: Row(
-                  children: [
-                    _buildNavItem(
-                      index: 0,
-                      icon: Icons.home_outlined,
-                      selectedIcon: Icons.home_rounded,
-                      label: 'الرئيسية',
-                      isDark: isDark,
+      bottomNavigationBar: AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        child: _isNavBarVisible
+            ? Material(
+                color: p.surface,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: p.hairline, width: 0.75),
                     ),
-                    _buildNavItem(
-                      index: 1,
-                      icon: Icons.mosque_outlined,
-                      selectedIcon: Icons.mosque_rounded,
-                      label: 'المواقيت',
-                      isDark: isDark,
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: SizedBox(
+                      height: 62,
+                      child: Row(
+                        children: [
+                          _buildNavItem(
+                            index: 0,
+                            icon: Icons.home_outlined,
+                            selectedIcon: Icons.home_rounded,
+                            label: 'الرئيسية',
+                            palette: p,
+                          ),
+                          _buildNavItem(
+                            index: 1,
+                            icon: Icons.mosque_outlined,
+                            selectedIcon: Icons.mosque_rounded,
+                            label: 'المواقيت',
+                            palette: p,
+                          ),
+                          _buildNavItem(
+                            index: 2,
+                            icon: Icons.auto_stories_outlined,
+                            selectedIcon: Icons.auto_stories_rounded,
+                            label: 'الأذكار',
+                            palette: p,
+                          ),
+                        ],
+                      ),
                     ),
-                    _buildNavItem(
-                      index: 2,
-                      icon: Icons.format_list_bulleted_rounded,
-                      selectedIcon: Icons.format_list_bulleted_rounded,
-                      label: 'الأذكار',
-                      isDark: isDark,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
-        ),
+              )
+            : const SizedBox.shrink(),
       ),
     );
   }
@@ -163,65 +154,52 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     required IconData icon,
     required IconData selectedIcon,
     required String label,
-    required bool isDark,
+    required WirdPalette palette,
   }) {
     final isSelected = _currentIndex == index;
+    final activeColor = palette.accentText;
 
     return Expanded(
       child: Semantics(
         button: true,
         selected: isSelected,
         label: '$label${isSelected ? '، الصفحة الحالية' : ''}',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => navigateToPage(index),
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    width: 56,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? (isDark
-                              ? const Color(0xFF1B4D3E)
-                              : AppColors.wirdSageGreen)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        isSelected ? selectedIcon : icon,
-                        color: isSelected
-                            ? (isDark ? AppColors.accentGoldLight : AppColors.wirdPrimaryGreen)
-                            : (isDark ? Colors.white60 : const Color(0xFF7B8581)),
-                        size: 22,
-                      ),
-                    ),
+        child: InkWell(
+          onTap: () => navigateToPage(index),
+          splashColor: palette.primary.withValues(alpha: 0.06),
+          highlightColor: Colors.transparent,
+          child: SizedBox(
+            height: 62,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isSelected ? palette.navActiveBg : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 10.5,
-                      color: isSelected
-                          ? (isDark ? AppColors.accentGoldLight : AppColors.wirdPrimaryGreen)
-                          : (isDark ? Colors.white60 : const Color(0xFF7B8581)),
-                    ),
+                  child: Icon(
+                    isSelected ? selectedIcon : icon,
+                    color: isSelected ? activeColor : palette.textSecondary,
+                    size: 21,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.badge(
+                    isSelected ? activeColor : palette.textSecondary,
+                    size: 11.5,
+                  ).copyWith(
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

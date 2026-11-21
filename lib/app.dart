@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/constants/app_constants.dart';
+import 'core/theme/app_color_palette.dart';
 import 'core/theme/app_theme.dart';
 import 'features/azkar/data/repositories/azkar_repository.dart';
 import 'features/azkar/presentation/bloc/azkar_bloc.dart';
@@ -81,12 +82,17 @@ class AwqatSalaahApp extends StatelessWidget {
         ],
       child: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, settingsState) {
+          final selectedPalette = settingsState.colorPalette;
+          final effectiveThemeMode = selectedPalette.forcesDarkMode
+              ? ThemeMode.dark
+              : settingsState.themeMode;
+
           return MaterialApp(
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: settingsState.themeMode,
+            theme: AppTheme.buildTheme(selectedPalette, Brightness.light),
+            darkTheme: AppTheme.buildTheme(selectedPalette, Brightness.dark),
+            themeMode: effectiveThemeMode,
             locale: const Locale('ar'),
             supportedLocales: const [
               Locale('ar'),

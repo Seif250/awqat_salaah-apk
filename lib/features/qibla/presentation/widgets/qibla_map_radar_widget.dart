@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 
 class QiblaMapRadarWidget extends StatefulWidget {
@@ -49,12 +50,13 @@ class _QiblaMapRadarWidgetState extends State<QiblaMapRadarWidget>
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return AnimatedBuilder(
       animation: _animController,
       builder: (context, child) {
         return ClipOval(
           child: Container(
-            color: const Color(0xFF0D1C14),
+            color: p.primaryDark,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -71,6 +73,8 @@ class _QiblaMapRadarWidgetState extends State<QiblaMapRadarWidget>
                       pulseProgress: _animController.value,
                       isAligned: widget.isAligned,
                       zoom: _zoomLevel,
+                      accentColor: p.accent,
+                      accentLightColor: p.accentLight,
                     ),
                   ),
                 ),
@@ -112,21 +116,16 @@ class _QiblaMapRadarWidgetState extends State<QiblaMapRadarWidget>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: Colors.black.withValues(alpha: 0.55),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: AppColors.accentGold.withValues(alpha: 0.4),
+                          color: p.accent.withValues(alpha: 0.45),
                           width: 0.8,
                         ),
                       ),
                       child: Text(
                         'المسافة إلى مكة: ${toArabicDigits(widget.distanceKm.round())} كم',
-                        style: const TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.accentGoldLight,
-                        ),
+                        style: AppTypography.badge(p.accentLight),
                       ),
                     ),
                   ),
@@ -162,6 +161,8 @@ class _RadarMapPainter extends CustomPainter {
   final double pulseProgress;
   final bool isAligned;
   final double zoom;
+  final Color accentColor;
+  final Color accentLightColor;
 
   _RadarMapPainter({
     required this.userLat,
@@ -170,6 +171,8 @@ class _RadarMapPainter extends CustomPainter {
     required this.pulseProgress,
     required this.isAligned,
     required this.zoom,
+    required this.accentColor,
+    required this.accentLightColor,
   });
 
   @override
@@ -233,7 +236,7 @@ class _RadarMapPainter extends CustomPainter {
 
     // Draw dashed / glowing trajectory line
     final dashPaint = Paint()
-      ..color = isAligned ? AppColors.accentGoldLight : const Color(0xFF81C784)
+      ..color = isAligned ? accentLightColor : const Color(0xFF81C784)
       ..strokeWidth = 2.0;
 
     const int segments = 12;
@@ -270,7 +273,7 @@ class _RadarMapPainter extends CustomPainter {
     final userTextSpan = TextSpan(
       text: 'أنت',
       style: TextStyle(
-        fontFamily: 'Cairo',
+        fontFamily: AppTypography.uiFont,
         fontSize: 9,
         fontWeight: FontWeight.bold,
         color: Colors.white.withValues(alpha: 0.9),
@@ -288,7 +291,7 @@ class _RadarMapPainter extends CustomPainter {
     // 6. Kaaba Marker at target location
     // Kaaba glowing aura
     final kaabaAuraPaint = Paint()
-      ..color = AppColors.accentGold.withValues(alpha: 0.35)
+      ..color = accentColor.withValues(alpha: 0.35)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(kaabaOffset, 12.0, kaabaAuraPaint);
 
@@ -302,14 +305,14 @@ class _RadarMapPainter extends CustomPainter {
 
     // Gold Kiswa border on Kaaba Cube
     final kiswaPaint = Paint()
-      ..color = AppColors.accentGold
+      ..color = accentColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawRRect(RRect.fromRectAndRadius(kaabaRect, const Radius.circular(2.5)), kiswaPaint);
 
     // Kaaba Gold Band
     final bandPaint = Paint()
-      ..color = AppColors.accentGoldLight
+      ..color = accentLightColor
       ..strokeWidth = 1.0;
     canvas.drawLine(
       Offset(kaabaRect.left, kaabaRect.top + 4),
@@ -321,10 +324,10 @@ class _RadarMapPainter extends CustomPainter {
     final kaabaTextSpan = TextSpan(
       text: 'مكة',
       style: TextStyle(
-        fontFamily: 'Cairo',
+        fontFamily: AppTypography.uiFont,
         fontSize: 9,
         fontWeight: FontWeight.bold,
-        color: AppColors.accentGoldLight,
+        color: accentLightColor,
         shadows: [
           Shadow(
             color: Colors.black.withValues(alpha: 0.8),

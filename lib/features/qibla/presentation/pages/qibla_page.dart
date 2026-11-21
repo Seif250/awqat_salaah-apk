@@ -4,7 +4,8 @@ import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_color_palette.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/arabic_numbers.dart';
 import '../../../location/presentation/bloc/location_bloc.dart';
 import '../../../location/presentation/bloc/location_event.dart';
@@ -149,46 +150,44 @@ class _QiblaPageState extends State<QiblaPage> {
   }
 
   void _showCalibrationDialog() {
+    final p = context.palette;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.screen_rotation_rounded, color: AppColors.accentGold),
-            SizedBox(width: 8),
-            Text(
-              'معايرة البوصلة',
-              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-            ),
+            Icon(Icons.screen_rotation_rounded, color: p.accentText),
+            const SizedBox(width: 8),
+            Text('معايرة البوصلة', style: AppTypography.sectionHeader(p.textPrimary)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.all_inclusive_rounded,
               size: 56,
-              color: AppColors.accentGold,
+              color: p.accentText,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'للحصول على أعلى دقة، حرّك هاتفك في الهواء على شكل الرقم (8) بالإنجليزية عدة مرات بعيداً عن المعادن والمجالات المغناطيسية.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 13, height: 1.6),
+              style: AppTypography.body(p.textPrimary),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.accentGold.withValues(alpha: 0.1),
+                color: p.primaryContainer,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text(
+              child: Text(
                 '💡 تأكد من تفعيل خدمة الموقع الجغرافي ووضع الهاتف في وضع أفقي مستوٍ.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 11),
+                style: AppTypography.label(p.textPrimary),
               ),
             ),
           ],
@@ -199,8 +198,8 @@ class _QiblaPageState extends State<QiblaPage> {
             children: [
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.accentGold,
-                  side: const BorderSide(color: AppColors.accentGold),
+                  foregroundColor: p.accentText,
+                  side: BorderSide(color: p.primary.withValues(alpha: 0.4)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () {
@@ -208,17 +207,24 @@ class _QiblaPageState extends State<QiblaPage> {
                   _initCompass();
                 },
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('إعادة تهيئة البوصلة', style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold)),
+                label: Text(
+                  'إعادة تهيئة البوصلة',
+                  style: AppTypography.meta(p.accentText, weight: FontWeight.w700),
+                ),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accentGold,
-                  foregroundColor: const Color(0xFF1E1A17),
+                  backgroundColor: p.primary,
+                  foregroundColor: p.onPrimary,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('حسناً، فهمت', style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'حسناً، فهمت',
+                  style: AppTypography.meta(p.onPrimary, weight: FontWeight.w700),
+                ),
               ),
             ],
           ),
@@ -228,45 +234,43 @@ class _QiblaPageState extends State<QiblaPage> {
   }
 
   void _showSunGuideDialog() {
+    final p = context.palette;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.wb_sunny_rounded, color: Colors.amber),
-            SizedBox(width: 8),
-            Text(
-              'تحديد القبلة بظل الشمس',
-              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
-            ),
+            Icon(Icons.wb_sunny_rounded, color: p.sunrise),
+            const SizedBox(width: 8),
+            Text('تحديد القبلة بظل الشمس', style: AppTypography.sectionHeader(p.textPrimary)),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'ظاهرة تعامد الشمس على الكعبة المشرفة:',
-              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, fontSize: 13),
+              style: AppTypography.rowTitle(p.textPrimary),
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(
               'تتعامد الشمس مباشرة فوق الكعبة المشرفة مرتين كل عام (٢٧-٢٨ مايو و١٥-١٦ يوليو). في تلك اللحظات، يكون اتجاه القبلة في أي مكان في العالم معاكساً لظل أي شاخص عمودي.',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 12, height: 1.5),
+              style: AppTypography.meta(p.textPrimary),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
               'وفي سائر الأيام، توفر البوصلة الرقمية والخريطة المدمجة التوجيه الدقيق المباشر.',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Colors.grey),
+              style: AppTypography.meta(p.textSecondary),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إغلاق', style: TextStyle(fontFamily: 'Cairo')),
+            child: Text('إغلاق', style: AppTypography.meta(p.accentText, weight: FontWeight.w700)),
           ),
         ],
       ),
@@ -275,14 +279,14 @@ class _QiblaPageState extends State<QiblaPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = context.palette;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: p.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'اتجاه القبلة الشريفة',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold),
+          style: AppTypography.pageTitle(p.textPrimary),
         ),
         actions: [
           IconButton(
@@ -310,7 +314,6 @@ class _QiblaPageState extends State<QiblaPage> {
             cityName = locState.cityName;
             countryName = locState.countryName;
           } else {
-            // Fallback to prayer bloc
             final prayerState = context.watch<PrayerBloc>().state;
             if (prayerState is PrayerLoaded) {
               cityName = prayerState.cityName;
@@ -318,61 +321,39 @@ class _QiblaPageState extends State<QiblaPage> {
             }
           }
 
-          // Calculate Qibla direction angle from True North using astronomical formula
           final qiblaObj = Qibla(Coordinates(lat, lng));
           final double qiblaAngle = qiblaObj.direction;
           final double distanceKm = _calculateDistanceKm(lat, lng);
           final cardinalDesc = _getDirectionCardinal(qiblaAngle);
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Top City Location Header with Change button
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                    ),
-                  ),
+                // Open Editorial Location Header (no boxed border clutter)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentGold.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.location_on_rounded,
-                          color: AppColors.accentGold,
-                          size: 20,
-                        ),
+                      Icon(
+                        Icons.location_on_rounded,
+                        color: p.accent,
+                        size: 20,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               '$cityName، $countryName',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                              ),
+                              style: AppTypography.rowTitle(p.textPrimary),
                             ),
                             Text(
                               '${lat.toStringAsFixed(2)}° ش • ${lng.toStringAsFixed(2)}° ق',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontSize: 11,
-                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              style: AppTypography.label(p.textSecondary).copyWith(
+                                fontFeatures: const [FontFeature.tabularFigures()],
                               ),
                             ),
                           ],
@@ -380,7 +361,7 @@ class _QiblaPageState extends State<QiblaPage> {
                       ),
                       TextButton.icon(
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.accentGold,
+                          foregroundColor: p.accentText,
                         ),
                         onPressed: () async {
                           await LocationPickerSheet.show(context);
@@ -389,20 +370,21 @@ class _QiblaPageState extends State<QiblaPage> {
                           }
                         },
                         icon: const Icon(Icons.edit_location_alt_rounded, size: 16),
-                        label: const Text(
+                        label: Text(
                           'تغيير',
-                          style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.bold),
+                          style: AppTypography.meta(p.accentText, weight: FontWeight.w700),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                Container(height: 0.75, color: p.hairline),
+                const SizedBox(height: 14),
 
-                // Live Sensor Status Badge
-                _buildSensorStatusBadge(isDark),
+                // Live Sensor Status Strip
+                _buildSensorStatusBadge(p),
 
-                // Qibla Compass Dial with Integrated Map Inside!
+                // Qibla Compass Dial with Integrated Map Inside
                 Center(
                   child: QiblaCompassWidget(
                     userLat: lat,
@@ -414,119 +396,104 @@ class _QiblaPageState extends State<QiblaPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // Live Angle Stats Grid (Bearing, Difference, Distance)
-                Row(
-                  children: [
-                    _buildStatCard(
-                      title: 'زاوية القبلة',
-                      value: '${toArabicDigits(qiblaAngle.round())}°',
-                      subtitle: cardinalDesc,
-                      icon: Icons.explore_rounded,
-                      color: AppColors.accentGold,
-                      isDark: isDark,
+                // Open 3-Column Metrics Strip divided by clean vertical hairlines
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: p.hairline, width: 0.75),
+                      bottom: BorderSide(color: p.hairline, width: 0.75),
                     ),
-                    const SizedBox(width: 10),
-                    _buildStatCard(
-                      title: 'المسافة لمكة',
-                      value: toArabicDigits(distanceKm.round()),
-                      subtitle: 'كيلومتر',
-                      icon: Icons.straighten_rounded,
-                      color: const Color(0xFF2E7D32),
-                      isDark: isDark,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        _buildStatColumn(
+                          p: p,
+                          title: 'زاوية القبلة',
+                          value: '${toArabicDigits(qiblaAngle.round())}°',
+                          subtitle: cardinalDesc,
+                          accentColor: p.accentText,
+                        ),
+                        Container(width: 0.75, color: p.hairline),
+                        _buildStatColumn(
+                          p: p,
+                          title: 'المسافة لمكة',
+                          value: toArabicDigits(distanceKm.round()),
+                          subtitle: 'كيلومتر',
+                          accentColor: p.success,
+                        ),
+                        Container(width: 0.75, color: p.hairline),
+                        _buildStatColumn(
+                          p: p,
+                          title: 'الاتجاه الحالي',
+                          value: '${toArabicDigits(_currentHeading.round())}°',
+                          subtitle: _getDirectionCardinal(_currentHeading),
+                          accentColor: p.accentText,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    _buildStatCard(
-                      title: 'الاتجاه الحالي',
-                      value: '${toArabicDigits(_currentHeading.round())}°',
-                      subtitle: _getDirectionCardinal(_currentHeading),
-                      icon: Icons.navigation_rounded,
-                      color: const Color(0xFF1976D2),
-                      isDark: isDark,
-                    ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 16),
 
-                // Automatic Compass Sensor Status & Live Calibration Card
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                    ),
-                  ),
-                  child: Column(
+                // Automatic Compass Sensor Status & Live Calibration Row
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.autorenew_rounded,
-                              size: 20,
-                              color: Color(0xFF4CAF50),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: p.primaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.autorenew_rounded,
+                          size: 20,
+                          color: p.success,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                Row(
-                                  children: [
-                                    const Text(
-                                      'التوجيه التلقائي للمستشعر نشط',
-                                      style: TextStyle(
-                                        fontFamily: 'Cairo',
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF2E7D32).withValues(alpha: 0.18),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: const Text(
-                                        'تلقائي',
-                                        style: TextStyle(
-                                          fontFamily: 'Cairo',
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF4CAF50),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
                                 Text(
-                                  _hasCompassSensor
-                                      ? 'البوصلة تدور تلقائياً مع حركة يدك لتوجيهك بدقة نحو القبلة'
-                                      : 'جهازك لا يدعم مستشعر البوصلة المغناطيسي',
-                                  style: TextStyle(
-                                    fontFamily: 'Cairo',
-                                    fontSize: 11.5,
-                                    color: isDark ? Colors.white60 : Colors.black54,
+                                  'التوجيه التلقائي للمستشعر نشط',
+                                  style: AppTypography.rowTitle(p.textPrimary),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: p.primaryContainer,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'تلقائي',
+                                    style: AppTypography.badge(p.success),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.screen_rotation_rounded, size: 20, color: AppColors.accentGold),
-                            tooltip: 'معايرة البوصلة',
-                            onPressed: _showCalibrationDialog,
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              _hasCompassSensor
+                                  ? 'البوصلة تدور تلقائياً مع حركة يدك لتوجيهك بدقة نحو القبلة'
+                                  : 'جهازك لا يدعم مستشعر البوصلة المغناطيسي',
+                              style: AppTypography.label(p.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.screen_rotation_rounded, size: 20, color: p.accentText),
+                        tooltip: 'معايرة البوصلة',
+                        onPressed: _showCalibrationDialog,
                       ),
                     ],
                   ),
@@ -539,55 +506,30 @@ class _QiblaPageState extends State<QiblaPage> {
     );
   }
 
-  Widget _buildStatCard({
+  Widget _buildStatColumn({
+    required WirdPalette p,
     required String title,
     required String value,
     required String subtitle,
-    required IconData icon,
-    required Color color,
-    required bool isDark,
+    required Color accentColor,
   }) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : AppColors.lightCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withValues(alpha: isDark ? 0.35 : 0.4),
-            width: 1.2,
-          ),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 6),
+            Text(title, style: AppTypography.label(p.textSecondary)),
+            const SizedBox(height: 4),
             Text(
-              title,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 11,
-                color: isDark ? Colors.white60 : Colors.black54,
+              value,
+              style: AppTypography.sectionHeader(p.textPrimary).copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
             const SizedBox(height: 2),
             Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ),
-            ),
-            Text(
               subtitle,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 10,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTypography.badge(accentColor),
             ),
           ],
         ),
@@ -595,24 +537,23 @@ class _QiblaPageState extends State<QiblaPage> {
     );
   }
 
-  Widget _buildSensorStatusBadge(bool isDark) {
+  Widget _buildSensorStatusBadge(WirdPalette p) {
     if (!_hasCompassSensor) {
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.amber.withValues(alpha: isDark ? 0.15 : 0.1),
+          color: p.cardElevated,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(Icons.info_outline_rounded, color: Colors.amber, size: 20),
-            SizedBox(width: 10),
+            Icon(Icons.info_outline_rounded, color: p.accent, size: 20),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'مستشعر البوصلة المغناطيسي غير متوفر على هذا الجهاز. تم تفعيل التوجيه اليدوي بالسحب.',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 11, height: 1.4),
+                style: AppTypography.label(p.textPrimary),
               ),
             ),
           ],
@@ -623,27 +564,26 @@ class _QiblaPageState extends State<QiblaPage> {
     if (_isAutoCompass && _sensorDataReceived) {
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF1B4D2E).withValues(alpha: isDark ? 0.4 : 0.25),
+          color: p.primaryContainer,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [
             Container(
               width: 8,
               height: 8,
-              decoration: const BoxDecoration(
-                color: Color(0xFF4CAF50),
+              decoration: BoxDecoration(
+                color: p.success,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: Text(
                 'البوصلة التلقائية نشطة • يلتف القرص تلقائياً مع دوران هاتفك',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 11, fontWeight: FontWeight.w600),
+                style: AppTypography.label(p.textPrimary, weight: FontWeight.w600),
               ),
             ),
             TextButton(
@@ -656,7 +596,10 @@ class _QiblaPageState extends State<QiblaPage> {
                   _isAutoCompass = false;
                 });
               },
-              child: const Text('وضع يدوي', style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: AppColors.accentGold)),
+              child: Text(
+                'وضع يدوي',
+                style: AppTypography.label(p.accentText, weight: FontWeight.w700),
+              ),
             ),
           ],
         ),
@@ -668,33 +611,33 @@ class _QiblaPageState extends State<QiblaPage> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: isDark ? 0.15 : 0.1),
+          color: p.cardElevated,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.touch_app_rounded, color: Colors.orangeAccent, size: 18),
+            Icon(Icons.touch_app_rounded, color: p.accent, size: 18),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
                 'التوجيه اليدوي مفعل',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 11, fontWeight: FontWeight.bold),
+                style: AppTypography.label(p.textPrimary, weight: FontWeight.w700),
               ),
             ),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accentGold,
-                foregroundColor: const Color(0xFF1E1A17),
+                backgroundColor: p.primary,
+                foregroundColor: p.onPrimary,
+                elevation: 0,
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: _resumeAutoCompass,
               icon: const Icon(Icons.screen_rotation_rounded, size: 14),
-              label: const Text(
+              label: Text(
                 'تفعيل التلقائي',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 11, fontWeight: FontWeight.bold),
+                style: AppTypography.badge(p.onPrimary),
               ),
             ),
           ],
@@ -702,27 +645,25 @@ class _QiblaPageState extends State<QiblaPage> {
       );
     }
 
-    // Still waiting for sensor response
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        color: p.cardElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
       ),
-      child: const Row(
+      child: Row(
         children: [
           SizedBox(
             width: 14,
             height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accentGold),
+            child: CircularProgressIndicator(strokeWidth: 2, color: p.primary),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               'جاري قراءة مستشعر البوصلة... حرّك الهاتف في الهواء لتنشيط المستشعر',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 11),
+              style: AppTypography.label(p.textSecondary),
             ),
           ),
         ],
